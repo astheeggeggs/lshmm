@@ -1,6 +1,7 @@
 import numpy as np
 import numba as nb
 import time
+import msprime
 
 # https://github.com/numba/numba/issues/1269
 @nb.njit
@@ -61,6 +62,31 @@ def rand_for_testing_hap(n, m, mean_r=1e-5, mean_mu=1e-5):
 
     return H, s, r, mu, e
 
+def rand_for_testing_hap_better(n, length=100000, mean_r=1e-5, mean_mu=1e-5):
+    
+    # Simulate 
+    ts = msprime.simulate(
+        n+1, length=length, mutation_rate=mean_mu, recombination_rate=mean_r
+        )
+    m = ts.get_num_sites()
+    H = ts.genotype_matrix()
+    s = H[:,0].reshape(1,H.shape[0])
+    H = H[:,1:].T
+
+    # Recombination probability
+    r = mean_r * np.ones(m) * ((np.random.rand(m) + 0.5)/2)
+    r[0] = 0
+
+    # Error probability
+    mu = mean_mu * np.ones(m) * ((np.random.rand(m) + 0.5)/2)
+
+    # Define the emission probability matrix
+    e  = np.zeros((2,m))
+    e[0,:] = mu
+    e[1,:] = 1 - mu
+
+    return H, s, r, mu, e, m
+
 # Mathematic notation version, but slower - samples x variants throughout
 @nb.jit
 def forwards_ls_hap(n, m, H, s, e, r):
@@ -72,11 +98,14 @@ def forwards_ls_hap(n, m, H, s, e, r):
     F = np.zeros((n,m))
     c = np.ones(m)
     F[:,0] = 1/n * e[np.equal(H[:,0], s[0,0]).astype(np.int64),0]
+    c[0] = np.sum(F[:,0])
+    F[:,0] *= 1/c[0]
     r_n = r/n
 
     # Forwards pass
     for l in range(1,m):
-        F[:,l] = F[:,l-1] * (1 - r[l]) + np.sum(F[:,l-1]) * r_n[l]
+        # F[:,l] = F[:,l-1] * (1 - r[l]) + np.sum(F[:,l-1]) * r_n[l] # Don't need to multiply by F[:,l-1] as we've normalised.
+        F[:,l] = F[:,l-1] * (1 - r[l]) + r_n[l]
         F[:,l] *= e[np.equal(H[:,l], s[0,l]).astype(np.int64),l]
         c[l] = np.sum(F[:,l])
         F[:,l] *= 1/c[l]
@@ -152,7 +181,6 @@ def forwards_viterbi_hap_naive(n, m, H, s, e, r):
             # Get the vector to maximise over
             v = np.zeros(n)
             for k in range(n):
-                # v[k] = e[np.equal(H[i,j], s[0,j]).astype(int),j] * V[k,j-1]
                 v[k] = e[np.int64(np.equal(H[i,j], s[0,j])),j] * V[k,j-1]
                 if k == i:
                     v[k] *= 1 - r[j] + r_n[j]
@@ -1037,9 +1065,8 @@ def get_phased_path(n, path):
     return np.unravel_index(path, (n,n))
 
 n = 50
-m = 100
 
-H, s, r, mu, e = rand_for_testing_hap(n, m)
+H, s, r, mu, e, m = rand_for_testing_hap_better(n, length=1e7)
 
 tic = time.perf_counter()
 F, c, ll = forwards_ls_hap(n, m, H, s, e, r)
@@ -1167,466 +1194,466 @@ toc = time.perf_counter()
 print(f"viterbi in {toc - tic:0.4f} seconds")
 path_ll = path_ll_dip(G, phased_path, s, e)
 
-class LiStephensBase:
-    """
-    Superclass of Li and Stephens tests.
-    """
+# class LiStephensBase:
+#     """
+#     Superclass of Li and Stephens tests.
+#     """
 
-    def assertCompressedMatricesEqual(self, cm1, cm2):
-        """
-        Checks that the specified compressed matrices contain the same data.
-        """
-        A1 = cm1.decode()
-        A2 = cm2.decode()
-        assert np.allclose(A1, A2)
-        assert A1.shape == A2.shape
-        assert cm1.num_sites == cm2.num_sites
-        nf1 = cm1.normalisation_factor
-        nf2 = cm1.normalisation_factor
-        assert np.allclose(nf1, nf2)
-        assert nf1.shape == nf2.shape
-        # It seems that we can't rely on the number of transitions in the two
-        # implementations being equal, which seems odd given that we should
-        # be doing things identically. Still, once the decoded matrices are the
-        # same then it seems highly likely to be correct.
+#     def assertCompressedMatricesEqual(self, cm1, cm2):
+#         """
+#         Checks that the specified compressed matrices contain the same data.
+#         """
+#         A1 = cm1.decode()
+#         A2 = cm2.decode()
+#         assert np.allclose(A1, A2)
+#         assert A1.shape == A2.shape
+#         assert cm1.num_sites == cm2.num_sites
+#         nf1 = cm1.normalisation_factor
+#         nf2 = cm1.normalisation_factor
+#         assert np.allclose(nf1, nf2)
+#         assert nf1.shape == nf2.shape
+#         # It seems that we can't rely on the number of transitions in the two
+#         # implementations being equal, which seems odd given that we should
+#         # be doing things identically. Still, once the decoded matrices are the
+#         # same then it seems highly likely to be correct.
 
-        # if not np.array_equal(cm1.num_transitions, cm2.num_transitions):
-        #     print()
-        #     print(cm1.num_transitions)
-        #     print(cm2.num_transitions)
-        # self.assertTrue(np.array_equal(cm1.num_transitions, cm2.num_transitions))
-        # for j in range(cm1.num_sites):
-        #     s1 = dict(cm1.get_site(j))
-        #     s2 = dict(cm2.get_site(j))
-        #     self.assertEqual(set(s1.keys()), set(s2.keys()))
-        #     for key in s1.keys():
-        #         self.assertAlmostEqual(s1[key], s2[key])
+#         # if not np.array_equal(cm1.num_transitions, cm2.num_transitions):
+#         #     print()
+#         #     print(cm1.num_transitions)
+#         #     print(cm2.num_transitions)
+#         # self.assertTrue(np.array_equal(cm1.num_transitions, cm2.num_transitions))
+#         # for j in range(cm1.num_sites):
+#         #     s1 = dict(cm1.get_site(j))
+#         #     s2 = dict(cm2.get_site(j))
+#         #     self.assertEqual(set(s1.keys()), set(s2.keys()))
+#         #     for key in s1.keys():
+#         #         self.assertAlmostEqual(s1[key], s2[key])
 
-    def example_haplotypes(self, ts, alleles, num_random=10, seed=2):
-        rng = np.random.RandomState(seed)
-        H = ts.genotype_matrix(alleles=alleles).T
-        haplotypes = [H[0], H[-1]]
-        for _ in range(num_random):
-            # Choose a random path through H
-            p = rng.randint(0, ts.num_samples, ts.num_sites)
-            h = H[p, np.arange(ts.num_sites)]
-            haplotypes.append(h)
-        h = H[0].copy()
-        h[-1] = tskit.MISSING_DATA
-        haplotypes.append(h)
-        h = H[0].copy()
-        h[ts.num_sites // 2] = tskit.MISSING_DATA
-        haplotypes.append(h)
-        # All missing is OK tool
-        h = H[0].copy()
-        h[:] = tskit.MISSING_DATA
-        haplotypes.append(h)
-        return haplotypes
+#     def example_haplotypes(self, ts, alleles, num_random=10, seed=2):
+#         rng = np.random.RandomState(seed)
+#         H = ts.genotype_matrix(alleles=alleles).T
+#         haplotypes = [H[0], H[-1]]
+#         for _ in range(num_random):
+#             # Choose a random path through H
+#             p = rng.randint(0, ts.num_samples, ts.num_sites)
+#             h = H[p, np.arange(ts.num_sites)]
+#             haplotypes.append(h)
+#         h = H[0].copy()
+#         h[-1] = tskit.MISSING_DATA
+#         haplotypes.append(h)
+#         h = H[0].copy()
+#         h[ts.num_sites // 2] = tskit.MISSING_DATA
+#         haplotypes.append(h)
+#         # All missing is OK tool
+#         h = H[0].copy()
+#         h[:] = tskit.MISSING_DATA
+#         haplotypes.append(h)
+#         return haplotypes
 
-    def example_parameters(self, ts, alleles, seed=1):
-        """
-        Returns an iterator over combinations of haplotype, recombination and mutation
-        rates.
-        """
-        rng = np.random.RandomState(seed)
-        haplotypes = self.example_haplotypes(ts, alleles, seed=seed)
+#     def example_parameters(self, ts, alleles, seed=1):
+#         """
+#         Returns an iterator over combinations of haplotype, recombination and mutation
+#         rates.
+#         """
+#         rng = np.random.RandomState(seed)
+#         haplotypes = self.example_haplotypes(ts, alleles, seed=seed)
 
-        # This is the exact matching limit.
-        rho = np.zeros(ts.num_sites) + 0.01
-        mu = np.zeros(ts.num_sites)
-        rho[0] = 0
-        for h in haplotypes:
-            yield h, rho, mu
+#         # This is the exact matching limit.
+#         rho = np.zeros(ts.num_sites) + 0.01
+#         mu = np.zeros(ts.num_sites)
+#         rho[0] = 0
+#         for h in haplotypes:
+#             yield h, rho, mu
 
-        # Here we have equal mutation and recombination
-        rho = np.zeros(ts.num_sites) + 0.01
-        mu = np.zeros(ts.num_sites) + 0.01
-        rho[0] = 0
-        for h in haplotypes:
-            yield h, rho, mu
+#         # Here we have equal mutation and recombination
+#         rho = np.zeros(ts.num_sites) + 0.01
+#         mu = np.zeros(ts.num_sites) + 0.01
+#         rho[0] = 0
+#         for h in haplotypes:
+#             yield h, rho, mu
 
-        # Mixture of random and extremes
-        rhos = [
-            np.zeros(ts.num_sites) + 0.999,
-            np.zeros(ts.num_sites) + 1e-6,
-            rng.uniform(0, 1, ts.num_sites),
-        ]
-        # mu can't be more than 1 / 3 if we have 4 alleles
-        mus = [
-            np.zeros(ts.num_sites) + 0.33,
-            np.zeros(ts.num_sites) + 1e-6,
-            rng.uniform(0, 0.33, ts.num_sites),
-        ]
-        for h, rho, mu in itertools.product(haplotypes, rhos, mus):
-            rho[0] = 0
-            yield h, rho, mu
+#         # Mixture of random and extremes
+#         rhos = [
+#             np.zeros(ts.num_sites) + 0.999,
+#             np.zeros(ts.num_sites) + 1e-6,
+#             rng.uniform(0, 1, ts.num_sites),
+#         ]
+#         # mu can't be more than 1 / 3 if we have 4 alleles
+#         mus = [
+#             np.zeros(ts.num_sites) + 0.33,
+#             np.zeros(ts.num_sites) + 1e-6,
+#             rng.uniform(0, 0.33, ts.num_sites),
+#         ]
+#         for h, rho, mu in itertools.product(haplotypes, rhos, mus):
+#             rho[0] = 0
+#             yield h, rho, mu
 
-    def assertAllClose(self, A, B):
-        assert np.allclose(A, B)
+#     def assertAllClose(self, A, B):
+#         assert np.allclose(A, B)
 
-    def test_simple_n_4_no_recombination(self):
-        ts = msprime.simulate(4, recombination_rate=0, mutation_rate=0.5, random_seed=1)
-        assert ts.num_sites > 3
-        self.verify(ts)
+#     def test_simple_n_4_no_recombination(self):
+#         ts = msprime.simulate(4, recombination_rate=0, mutation_rate=0.5, random_seed=1)
+#         assert ts.num_sites > 3
+#         self.verify(ts)
 
-    def test_simple_n_3(self):
-        ts = msprime.simulate(3, recombination_rate=2, mutation_rate=7, random_seed=2)
-        assert ts.num_sites > 5
-        self.verify(ts)
+#     def test_simple_n_3(self):
+#         ts = msprime.simulate(3, recombination_rate=2, mutation_rate=7, random_seed=2)
+#         assert ts.num_sites > 5
+#         self.verify(ts)
 
-    def test_simple_n_7(self):
-        ts = msprime.simulate(7, recombination_rate=2, mutation_rate=5, random_seed=2)
-        assert ts.num_sites > 5
-        self.verify(ts)
+#     def test_simple_n_7(self):
+#         ts = msprime.simulate(7, recombination_rate=2, mutation_rate=5, random_seed=2)
+#         assert ts.num_sites > 5
+#         self.verify(ts)
 
-    def test_simple_n_8_high_recombination(self):
-        ts = msprime.simulate(8, recombination_rate=20, mutation_rate=5, random_seed=2)
-        assert ts.num_trees > 15
-        assert ts.num_sites > 5
-        self.verify(ts)
+#     def test_simple_n_8_high_recombination(self):
+#         ts = msprime.simulate(8, recombination_rate=20, mutation_rate=5, random_seed=2)
+#         assert ts.num_trees > 15
+#         assert ts.num_sites > 5
+#         self.verify(ts)
 
-    def test_simple_n_15(self):
-        ts = msprime.simulate(15, recombination_rate=2, mutation_rate=5, random_seed=2)
-        assert ts.num_sites > 5
-        self.verify(ts)
+#     def test_simple_n_15(self):
+#         ts = msprime.simulate(15, recombination_rate=2, mutation_rate=5, random_seed=2)
+#         assert ts.num_sites > 5
+#         self.verify(ts)
 
-    def test_jukes_cantor_n_3(self):
-        ts = msprime.simulate(3, mutation_rate=2, random_seed=2)
-        ts = tsutil.jukes_cantor(ts, num_sites=10, mu=10, seed=4)
-        self.verify(ts, tskit.ALLELES_ACGT)
+#     def test_jukes_cantor_n_3(self):
+#         ts = msprime.simulate(3, mutation_rate=2, random_seed=2)
+#         ts = tsutil.jukes_cantor(ts, num_sites=10, mu=10, seed=4)
+#         self.verify(ts, tskit.ALLELES_ACGT)
 
-    def test_jukes_cantor_n_8_high_recombination(self):
-        ts = msprime.simulate(8, recombination_rate=20, random_seed=2)
-        ts = tsutil.jukes_cantor(ts, num_sites=20, mu=5, seed=4)
-        self.verify(ts, tskit.ALLELES_ACGT)
+#     def test_jukes_cantor_n_8_high_recombination(self):
+#         ts = msprime.simulate(8, recombination_rate=20, random_seed=2)
+#         ts = tsutil.jukes_cantor(ts, num_sites=20, mu=5, seed=4)
+#         self.verify(ts, tskit.ALLELES_ACGT)
 
-    def test_jukes_cantor_n_15(self):
-        ts = msprime.simulate(15, mutation_rate=2, random_seed=2)
-        ts = tsutil.jukes_cantor(ts, num_sites=10, mu=0.1, seed=10)
-        self.verify(ts, tskit.ALLELES_ACGT)
+#     def test_jukes_cantor_n_15(self):
+#         ts = msprime.simulate(15, mutation_rate=2, random_seed=2)
+#         ts = tsutil.jukes_cantor(ts, num_sites=10, mu=0.1, seed=10)
+#         self.verify(ts, tskit.ALLELES_ACGT)
 
-    def test_jukes_cantor_balanced_ternary(self):
-        ts = tskit.Tree.generate_balanced(27, arity=3).tree_sequence
-        ts = tsutil.jukes_cantor(ts, num_sites=10, mu=0.1, seed=10)
-        self.verify(ts, tskit.ALLELES_ACGT)
+#     def test_jukes_cantor_balanced_ternary(self):
+#         ts = tskit.Tree.generate_balanced(27, arity=3).tree_sequence
+#         ts = tsutil.jukes_cantor(ts, num_sites=10, mu=0.1, seed=10)
+#         self.verify(ts, tskit.ALLELES_ACGT)
 
-    @pytest.mark.skip(reason="Not supporting internal samples yet")
-    def test_ancestors_n_3(self):
-        ts = msprime.simulate(3, recombination_rate=2, mutation_rate=7, random_seed=2)
-        assert ts.num_sites > 5
-        tables = ts.dump_tables()
-        print(tables.nodes)
-        tables.nodes.flags = np.ones_like(tables.nodes.flags)
-        print(tables.nodes)
-        ts = tables.tree_sequence()
-        self.verify(ts)
-
-
-@pytest.mark.slow
-class ForwardAlgorithmBase(LiStephensBase):
-    """
-    Base for forward algorithm tests.
-    """
+#     @pytest.mark.skip(reason="Not supporting internal samples yet")
+#     def test_ancestors_n_3(self):
+#         ts = msprime.simulate(3, recombination_rate=2, mutation_rate=7, random_seed=2)
+#         assert ts.num_sites > 5
+#         tables = ts.dump_tables()
+#         print(tables.nodes)
+#         tables.nodes.flags = np.ones_like(tables.nodes.flags)
+#         print(tables.nodes)
+#         ts = tables.tree_sequence()
+#         self.verify(ts)
 
 
-class TestNumpyMatrixMethod(ForwardAlgorithmBase):
-    """
-    Tests that we compute the same values from the numpy matrix method as
-    the naive algorithm.
-    """
-
-    def verify(self, ts, alleles=tskit.ALLELES_01):
-        G = ts.genotype_matrix(alleles=alleles)
-        for h, rho, mu in self.example_parameters(ts, alleles):
-            F1, S1 = ls_forward_matrix(h, alleles, G, rho, mu)
-            F2, S2 = ls_forward_matrix_naive(h, alleles, G, rho, mu)
-            self.assertAllClose(F1, F2)
-            self.assertAllClose(S1, S2)
+# @pytest.mark.slow
+# class ForwardAlgorithmBase(LiStephensBase):
+#     """
+#     Base for forward algorithm tests.
+#     """
 
 
-class ViterbiAlgorithmBase(LiStephensBase):
-    """
-    Base for viterbi algoritm tests.
-    """
+# class TestNumpyMatrixMethod(ForwardAlgorithmBase):
+#     """
+#     Tests that we compute the same values from the numpy matrix method as
+#     the naive algorithm.
+#     """
+
+#     def verify(self, ts, alleles=tskit.ALLELES_01):
+#         G = ts.genotype_matrix(alleles=alleles)
+#         for h, rho, mu in self.example_parameters(ts, alleles):
+#             F1, S1 = ls_forward_matrix(h, alleles, G, rho, mu)
+#             F2, S2 = ls_forward_matrix_naive(h, alleles, G, rho, mu)
+#             self.assertAllClose(F1, F2)
+#             self.assertAllClose(S1, S2)
 
 
-class TestExactMatchViterbi(ViterbiAlgorithmBase):
-    def verify(self, ts, alleles=tskit.ALLELES_01):
-        G = ts.genotype_matrix(alleles=alleles)
-        H = G.T
-        # print(H)
-        rho = np.zeros(ts.num_sites) + 0.1
-        mu = np.zeros(ts.num_sites)
-        rho[0] = 0
-        for h in H:
-            p1 = ls_viterbi_naive(h, alleles, G, rho, mu)
-            p2 = ls_viterbi_vectorised(h, alleles, G, rho, mu)
-            cm1 = ls_viterbi_tree(h, alleles, ts, rho, mu, use_lib=True)
-            p3 = cm1.traceback()
-            cm2 = ls_viterbi_tree(h, alleles, ts, rho, mu, use_lib=False)
-            p4 = cm1.traceback()
-            self.assertCompressedMatricesEqual(cm1, cm2)
-
-            assert len(np.unique(p1)) == 1
-            assert len(np.unique(p2)) == 1
-            assert len(np.unique(p3)) == 1
-            assert len(np.unique(p4)) == 1
-            m1 = H[p1, np.arange(H.shape[1])]
-            assert np.array_equal(m1, h)
-            m2 = H[p2, np.arange(H.shape[1])]
-            assert np.array_equal(m2, h)
-            m3 = H[p3, np.arange(H.shape[1])]
-            assert np.array_equal(m3, h)
-            m4 = H[p3, np.arange(H.shape[1])]
-            assert np.array_equal(m4, h)
+# class ViterbiAlgorithmBase(LiStephensBase):
+#     """
+#     Base for viterbi algoritm tests.
+#     """
 
 
-@pytest.mark.slow
-class TestGeneralViterbi(ViterbiAlgorithmBase, unittest.TestCase):
-    def verify(self, ts, alleles=tskit.ALLELES_01):
-        # np.set_printoptions(linewidth=20000)
-        # np.set_printoptions(threshold=20000000)
-        G = ts.genotype_matrix(alleles=alleles)
-        # m, n = G.shape
-        for h, rho, mu in self.example_parameters(ts, alleles):
-            # print("h = ", h)
-            # print("rho=", rho)
-            # print("mu = ", mu)
-            p1 = ls_viterbi_vectorised(h, alleles, G, rho, mu)
-            p2 = ls_viterbi_naive(h, alleles, G, rho, mu)
-            cm1 = ls_viterbi_tree(h, alleles, ts, rho, mu, use_lib=True)
-            p3 = cm1.traceback()
-            cm2 = ls_viterbi_tree(h, alleles, ts, rho, mu, use_lib=False)
-            p4 = cm1.traceback()
-            self.assertCompressedMatricesEqual(cm1, cm2)
-            # print()
-            # m1 = H[p1, np.arange(m)]
-            # m2 = H[p2, np.arange(m)]
-            # m3 = H[p3, np.arange(m)]
-            # count = np.unique(p1).shape[0]
-            # print()
-            # print("\tp1 = ", p1)
-            # print("\tp2 = ", p2)
-            # print("\tp3 = ", p3)
-            # print("\tm1 = ", m1)
-            # print("\tm2 = ", m2)
-            # print("\t h = ", h)
-            proba1 = ls_path_log_probability(h, p1, alleles, G, rho, mu)
-            proba2 = ls_path_log_probability(h, p2, alleles, G, rho, mu)
-            proba3 = ls_path_log_probability(h, p3, alleles, G, rho, mu)
-            proba4 = ls_path_log_probability(h, p4, alleles, G, rho, mu)
-            # print("\t P = ", proba1, proba2)
-            self.assertAlmostEqual(proba1, proba2, places=6)
-            self.assertAlmostEqual(proba1, proba3, places=6)
-            self.assertAlmostEqual(proba1, proba4, places=6)
+# class TestExactMatchViterbi(ViterbiAlgorithmBase):
+#     def verify(self, ts, alleles=tskit.ALLELES_01):
+#         G = ts.genotype_matrix(alleles=alleles)
+#         H = G.T
+#         # print(H)
+#         rho = np.zeros(ts.num_sites) + 0.1
+#         mu = np.zeros(ts.num_sites)
+#         rho[0] = 0
+#         for h in H:
+#             p1 = ls_viterbi_naive(h, alleles, G, rho, mu)
+#             p2 = ls_viterbi_vectorised(h, alleles, G, rho, mu)
+#             cm1 = ls_viterbi_tree(h, alleles, ts, rho, mu, use_lib=True)
+#             p3 = cm1.traceback()
+#             cm2 = ls_viterbi_tree(h, alleles, ts, rho, mu, use_lib=False)
+#             p4 = cm1.traceback()
+#             self.assertCompressedMatricesEqual(cm1, cm2)
+
+#             assert len(np.unique(p1)) == 1
+#             assert len(np.unique(p2)) == 1
+#             assert len(np.unique(p3)) == 1
+#             assert len(np.unique(p4)) == 1
+#             m1 = H[p1, np.arange(H.shape[1])]
+#             assert np.array_equal(m1, h)
+#             m2 = H[p2, np.arange(H.shape[1])]
+#             assert np.array_equal(m2, h)
+#             m3 = H[p3, np.arange(H.shape[1])]
+#             assert np.array_equal(m3, h)
+#             m4 = H[p3, np.arange(H.shape[1])]
+#             assert np.array_equal(m4, h)
 
 
-class TestMissingHaplotypes(LiStephensBase):
-    def verify(self, ts, alleles=tskit.ALLELES_01):
-        G = ts.genotype_matrix(alleles=alleles)
-        H = G.T
-
-        rho = np.zeros(ts.num_sites) + 0.1
-        rho[0] = 0
-        mu = np.zeros(ts.num_sites) + 0.001
-
-        # When everything is missing data we should have no recombinations.
-        h = H[0].copy()
-        h[:] = tskit.MISSING_DATA
-        path = ls_viterbi_vectorised(h, alleles, G, rho, mu)
-        assert np.all(path == 0)
-        cm = ls_viterbi_tree(h, alleles, ts, rho, mu, use_lib=True)
-        # For the tree base algorithm it's not simple which particular sample
-        # gets chosen.
-        path = cm.traceback()
-        assert len(set(path)) == 1
-
-        # TODO Not clear what else we can check about missing data.
-
-
-class TestForwardMatrixScaling(ForwardAlgorithmBase, unittest.TestCase):
-    """
-    Tests that we get the correct values from scaling version of the matrix
-    algorithm works correctly.
-    """
-
-    def verify(self, ts, alleles=tskit.ALLELES_01):
-        G = ts.genotype_matrix(alleles=alleles)
-        computed_log_proba = False
-        for h, rho, mu in self.example_parameters(ts, alleles):
-            F_unscaled = ls_forward_matrix_unscaled(h, alleles, G, rho, mu)
-            F, S = ls_forward_matrix(h, alleles, G, rho, mu)
-            column = np.atleast_2d(np.cumprod(S)).T
-            F_scaled = F * column
-            self.assertAllClose(F_scaled, F_unscaled)
-            log_proba1 = forward_matrix_log_proba(F, S)
-            psum = np.sum(F_unscaled[-1])
-            # If the computed probability is close to zero, there's no point in
-            # computing.
-            if psum > 1e-20:
-                computed_log_proba = True
-                log_proba2 = np.log(psum)
-                self.assertAlmostEqual(log_proba1, log_proba2)
-        assert computed_log_proba
+# @pytest.mark.slow
+# class TestGeneralViterbi(ViterbiAlgorithmBase, unittest.TestCase):
+#     def verify(self, ts, alleles=tskit.ALLELES_01):
+#         # np.set_printoptions(linewidth=20000)
+#         # np.set_printoptions(threshold=20000000)
+#         G = ts.genotype_matrix(alleles=alleles)
+#         # m, n = G.shape
+#         for h, rho, mu in self.example_parameters(ts, alleles):
+#             # print("h = ", h)
+#             # print("rho=", rho)
+#             # print("mu = ", mu)
+#             p1 = ls_viterbi_vectorised(h, alleles, G, rho, mu)
+#             p2 = ls_viterbi_naive(h, alleles, G, rho, mu)
+#             cm1 = ls_viterbi_tree(h, alleles, ts, rho, mu, use_lib=True)
+#             p3 = cm1.traceback()
+#             cm2 = ls_viterbi_tree(h, alleles, ts, rho, mu, use_lib=False)
+#             p4 = cm1.traceback()
+#             self.assertCompressedMatricesEqual(cm1, cm2)
+#             # print()
+#             # m1 = H[p1, np.arange(m)]
+#             # m2 = H[p2, np.arange(m)]
+#             # m3 = H[p3, np.arange(m)]
+#             # count = np.unique(p1).shape[0]
+#             # print()
+#             # print("\tp1 = ", p1)
+#             # print("\tp2 = ", p2)
+#             # print("\tp3 = ", p3)
+#             # print("\tm1 = ", m1)
+#             # print("\tm2 = ", m2)
+#             # print("\t h = ", h)
+#             proba1 = ls_path_log_probability(h, p1, alleles, G, rho, mu)
+#             proba2 = ls_path_log_probability(h, p2, alleles, G, rho, mu)
+#             proba3 = ls_path_log_probability(h, p3, alleles, G, rho, mu)
+#             proba4 = ls_path_log_probability(h, p4, alleles, G, rho, mu)
+#             # print("\t P = ", proba1, proba2)
+#             self.assertAlmostEqual(proba1, proba2, places=6)
+#             self.assertAlmostEqual(proba1, proba3, places=6)
+#             self.assertAlmostEqual(proba1, proba4, places=6)
 
 
-class TestForwardTree(ForwardAlgorithmBase):
-    """
-    Tests that the tree algorithm computes the same forward matrix as the
-    simple method.
-    """
+# class TestMissingHaplotypes(LiStephensBase):
+#     def verify(self, ts, alleles=tskit.ALLELES_01):
+#         G = ts.genotype_matrix(alleles=alleles)
+#         H = G.T
 
-    def verify(self, ts, alleles=tskit.ALLELES_01):
-        G = ts.genotype_matrix(alleles=alleles)
-        for h, rho, mu in self.example_parameters(ts, alleles):
-            F, S = ls_forward_matrix(h, alleles, G, rho, mu)
-            cm1 = ls_forward_tree(h, alleles, ts, rho, mu, use_lib=True)
-            cm2 = ls_forward_tree(h, alleles, ts, rho, mu, use_lib=False)
-            self.assertCompressedMatricesEqual(cm1, cm2)
-            Ft = cm1.decode()
-            self.assertAllClose(S, cm1.normalisation_factor)
-            self.assertAllClose(F, Ft)
+#         rho = np.zeros(ts.num_sites) + 0.1
+#         rho[0] = 0
+#         mu = np.zeros(ts.num_sites) + 0.001
 
+#         # When everything is missing data we should have no recombinations.
+#         h = H[0].copy()
+#         h[:] = tskit.MISSING_DATA
+#         path = ls_viterbi_vectorised(h, alleles, G, rho, mu)
+#         assert np.all(path == 0)
+#         cm = ls_viterbi_tree(h, alleles, ts, rho, mu, use_lib=True)
+#         # For the tree base algorithm it's not simple which particular sample
+#         # gets chosen.
+#         path = cm.traceback()
+#         assert len(set(path)) == 1
 
-class TestAllPaths(unittest.TestCase):
-    """
-    Tests that we compute the correct forward probablities if we sum over all
-    possible paths through the genotype matrix.
-    """
-
-    def verify(self, G, h):
-        m, n = G.shape
-        rho = np.zeros(m) + 0.1
-        mu = np.zeros(m) + 0.01
-        rho[0] = 0
-        proba = 0
-        for path in itertools.product(range(n), repeat=m):
-            proba += ls_path_probability(h, path, G, rho, mu)
-
-        alleles = [["0", "1"] for _ in range(m)]
-        F = ls_forward_matrix_unscaled(h, alleles, G, rho, mu)
-        forward_proba = np.sum(F[-1])
-        self.assertAlmostEqual(proba, forward_proba)
-
-    def test_n3_m4(self):
-        G = np.array(
-            [
-                # fmt: off
-                [1, 0, 0],
-                [0, 0, 1],
-                [1, 0, 1],
-                [0, 1, 1],
-                # fmt: on
-            ]
-        )
-        self.verify(G, [0, 0, 0, 0])
-        self.verify(G, [1, 1, 1, 1])
-        self.verify(G, [1, 1, 0, 0])
-
-    def test_n4_m5(self):
-        G = np.array(
-            [
-                # fmt: off
-                [1, 0, 0, 0],
-                [0, 0, 1, 1],
-                [1, 0, 1, 1],
-                [0, 1, 1, 0],
-                # fmt: on
-            ]
-        )
-        self.verify(G, [0, 0, 0, 0, 0])
-        self.verify(G, [1, 1, 1, 1, 1])
-        self.verify(G, [1, 1, 0, 0, 0])
-
-    def test_n5_m5(self):
-        G = np.zeros((5, 5), dtype=int)
-        np.fill_diagonal(G, 1)
-        self.verify(G, [0, 0, 0, 0, 0])
-        self.verify(G, [1, 1, 1, 1, 1])
-        self.verify(G, [1, 1, 0, 0, 0])
+#         # TODO Not clear what else we can check about missing data.
 
 
-class TestBasicViterbi:
-    """
-    Very simple tests of the Viterbi algorithm.
-    """
+# class TestForwardMatrixScaling(ForwardAlgorithmBase, unittest.TestCase):
+#     """
+#     Tests that we get the correct values from scaling version of the matrix
+#     algorithm works correctly.
+#     """
 
-    def verify_exact_match(self, G, h, path):
-        m, n = G.shape
-        rho = np.zeros(m) + 1e-9
-        mu = np.zeros(m)  # Set mu to zero exact match
-        rho[0] = 0
-        alleles = [["0", "1"] for _ in range(m)]
-        path1 = ls_viterbi_naive(h, alleles, G, rho, mu)
-        path2 = ls_viterbi_vectorised(h, alleles, G, rho, mu)
-        assert list(path1) == path
-        assert list(path2) == path
+#     def verify(self, ts, alleles=tskit.ALLELES_01):
+#         G = ts.genotype_matrix(alleles=alleles)
+#         computed_log_proba = False
+#         for h, rho, mu in self.example_parameters(ts, alleles):
+#             F_unscaled = ls_forward_matrix_unscaled(h, alleles, G, rho, mu)
+#             F, S = ls_forward_matrix(h, alleles, G, rho, mu)
+#             column = np.atleast_2d(np.cumprod(S)).T
+#             F_scaled = F * column
+#             self.assertAllClose(F_scaled, F_unscaled)
+#             log_proba1 = forward_matrix_log_proba(F, S)
+#             psum = np.sum(F_unscaled[-1])
+#             # If the computed probability is close to zero, there's no point in
+#             # computing.
+#             if psum > 1e-20:
+#                 computed_log_proba = True
+#                 log_proba2 = np.log(psum)
+#                 self.assertAlmostEqual(log_proba1, log_proba2)
+#         assert computed_log_proba
 
-    def test_n2_m6_exact(self):
-        G = np.array(
-            [
-                # fmt: off
-                [1, 0],
-                [1, 0],
-                [1, 0],
-                [0, 1],
-                [0, 1],
-                [0, 1],
-                # fmt: on
-            ]
-        )
-        self.verify_exact_match(G, [1, 1, 1, 1, 1, 1], [0, 0, 0, 1, 1, 1])
-        self.verify_exact_match(G, [0, 0, 0, 0, 0, 0], [1, 1, 1, 0, 0, 0])
-        self.verify_exact_match(G, [0, 0, 0, 1, 1, 1], [1, 1, 1, 1, 1, 1])
-        self.verify_exact_match(G, [0, 0, 0, 1, 1, 0], [1, 1, 1, 1, 1, 0])
-        self.verify_exact_match(G, [0, 0, 0, 0, 1, 0], [1, 1, 1, 0, 1, 0])
 
-    def test_n3_m6_exact(self):
-        G = np.array(
-            [
-                # fmt: off
-                [1, 0, 1],
-                [1, 0, 0],
-                [1, 0, 1],
-                [0, 1, 0],
-                [0, 1, 1],
-                [0, 1, 0],
-                # fmt: on
-            ]
-        )
-        self.verify_exact_match(G, [1, 1, 1, 1, 1, 1], [0, 0, 0, 1, 1, 1])
-        self.verify_exact_match(G, [0, 0, 0, 0, 0, 0], [1, 1, 1, 0, 0, 0])
-        self.verify_exact_match(G, [0, 0, 0, 1, 1, 1], [1, 1, 1, 1, 1, 1])
-        self.verify_exact_match(G, [1, 0, 1, 0, 1, 0], [2, 2, 2, 2, 2, 2])
+# class TestForwardTree(ForwardAlgorithmBase):
+#     """
+#     Tests that the tree algorithm computes the same forward matrix as the
+#     simple method.
+#     """
 
-    def test_n3_m6(self):
-        G = np.array(
-            [
-                # fmt: off
-                [1, 0, 1],
-                [1, 0, 0],
-                [1, 0, 1],
-                [0, 1, 0],
-                [0, 1, 1],
-                [0, 1, 0],
-                # fmt: on
-            ]
-        )
+#     def verify(self, ts, alleles=tskit.ALLELES_01):
+#         G = ts.genotype_matrix(alleles=alleles)
+#         for h, rho, mu in self.example_parameters(ts, alleles):
+#             F, S = ls_forward_matrix(h, alleles, G, rho, mu)
+#             cm1 = ls_forward_tree(h, alleles, ts, rho, mu, use_lib=True)
+#             cm2 = ls_forward_tree(h, alleles, ts, rho, mu, use_lib=False)
+#             self.assertCompressedMatricesEqual(cm1, cm2)
+#             Ft = cm1.decode()
+#             self.assertAllClose(S, cm1.normalisation_factor)
+#             self.assertAllClose(F, Ft)
 
-        m, n = G.shape
-        rho = np.zeros(m) + 1e-2
-        mu = np.zeros(m)
-        rho[0] = 0
-        alleles = [["0", "1"] for _ in range(m)]
-        h = np.ones(m, dtype=int)
-        path1 = ls_viterbi_naive(h, alleles, G, rho, mu)
 
-        # Add in mutation at a very low rate.
-        mu[:] = 1e-8
-        path2 = ls_viterbi_naive(h, alleles, G, rho, mu)
-        path3 = ls_viterbi_vectorised(h, alleles, G, rho, mu)
-        assert np.array_equal(path1, path2)
-        assert np.array_equal(path2, path3)
+# class TestAllPaths(unittest.TestCase):
+#     """
+#     Tests that we compute the correct forward probablities if we sum over all
+#     possible paths through the genotype matrix.
+#     """
+
+#     def verify(self, G, h):
+#         m, n = G.shape
+#         rho = np.zeros(m) + 0.1
+#         mu = np.zeros(m) + 0.01
+#         rho[0] = 0
+#         proba = 0
+#         for path in itertools.product(range(n), repeat=m):
+#             proba += ls_path_probability(h, path, G, rho, mu)
+
+#         alleles = [["0", "1"] for _ in range(m)]
+#         F = ls_forward_matrix_unscaled(h, alleles, G, rho, mu)
+#         forward_proba = np.sum(F[-1])
+#         self.assertAlmostEqual(proba, forward_proba)
+
+#     def test_n3_m4(self):
+#         G = np.array(
+#             [
+#                 # fmt: off
+#                 [1, 0, 0],
+#                 [0, 0, 1],
+#                 [1, 0, 1],
+#                 [0, 1, 1],
+#                 # fmt: on
+#             ]
+#         )
+#         self.verify(G, [0, 0, 0, 0])
+#         self.verify(G, [1, 1, 1, 1])
+#         self.verify(G, [1, 1, 0, 0])
+
+#     def test_n4_m5(self):
+#         G = np.array(
+#             [
+#                 # fmt: off
+#                 [1, 0, 0, 0],
+#                 [0, 0, 1, 1],
+#                 [1, 0, 1, 1],
+#                 [0, 1, 1, 0],
+#                 # fmt: on
+#             ]
+#         )
+#         self.verify(G, [0, 0, 0, 0, 0])
+#         self.verify(G, [1, 1, 1, 1, 1])
+#         self.verify(G, [1, 1, 0, 0, 0])
+
+#     def test_n5_m5(self):
+#         G = np.zeros((5, 5), dtype=int)
+#         np.fill_diagonal(G, 1)
+#         self.verify(G, [0, 0, 0, 0, 0])
+#         self.verify(G, [1, 1, 1, 1, 1])
+#         self.verify(G, [1, 1, 0, 0, 0])
+
+
+# class TestBasicViterbi:
+#     """
+#     Very simple tests of the Viterbi algorithm.
+#     """
+
+#     def verify_exact_match(self, G, h, path):
+#         m, n = G.shape
+#         rho = np.zeros(m) + 1e-9
+#         mu = np.zeros(m)  # Set mu to zero exact match
+#         rho[0] = 0
+#         alleles = [["0", "1"] for _ in range(m)]
+#         path1 = ls_viterbi_naive(h, alleles, G, rho, mu)
+#         path2 = ls_viterbi_vectorised(h, alleles, G, rho, mu)
+#         assert list(path1) == path
+#         assert list(path2) == path
+
+#     def test_n2_m6_exact(self):
+#         G = np.array(
+#             [
+#                 # fmt: off
+#                 [1, 0],
+#                 [1, 0],
+#                 [1, 0],
+#                 [0, 1],
+#                 [0, 1],
+#                 [0, 1],
+#                 # fmt: on
+#             ]
+#         )
+#         self.verify_exact_match(G, [1, 1, 1, 1, 1, 1], [0, 0, 0, 1, 1, 1])
+#         self.verify_exact_match(G, [0, 0, 0, 0, 0, 0], [1, 1, 1, 0, 0, 0])
+#         self.verify_exact_match(G, [0, 0, 0, 1, 1, 1], [1, 1, 1, 1, 1, 1])
+#         self.verify_exact_match(G, [0, 0, 0, 1, 1, 0], [1, 1, 1, 1, 1, 0])
+#         self.verify_exact_match(G, [0, 0, 0, 0, 1, 0], [1, 1, 1, 0, 1, 0])
+
+#     def test_n3_m6_exact(self):
+#         G = np.array(
+#             [
+#                 # fmt: off
+#                 [1, 0, 1],
+#                 [1, 0, 0],
+#                 [1, 0, 1],
+#                 [0, 1, 0],
+#                 [0, 1, 1],
+#                 [0, 1, 0],
+#                 # fmt: on
+#             ]
+#         )
+#         self.verify_exact_match(G, [1, 1, 1, 1, 1, 1], [0, 0, 0, 1, 1, 1])
+#         self.verify_exact_match(G, [0, 0, 0, 0, 0, 0], [1, 1, 1, 0, 0, 0])
+#         self.verify_exact_match(G, [0, 0, 0, 1, 1, 1], [1, 1, 1, 1, 1, 1])
+#         self.verify_exact_match(G, [1, 0, 1, 0, 1, 0], [2, 2, 2, 2, 2, 2])
+
+#     def test_n3_m6(self):
+#         G = np.array(
+#             [
+#                 # fmt: off
+#                 [1, 0, 1],
+#                 [1, 0, 0],
+#                 [1, 0, 1],
+#                 [0, 1, 0],
+#                 [0, 1, 1],
+#                 [0, 1, 0],
+#                 # fmt: on
+#             ]
+#         )
+
+#         m, n = G.shape
+#         rho = np.zeros(m) + 1e-2
+#         mu = np.zeros(m)
+#         rho[0] = 0
+#         alleles = [["0", "1"] for _ in range(m)]
+#         h = np.ones(m, dtype=int)
+#         path1 = ls_viterbi_naive(h, alleles, G, rho, mu)
+
+#         # Add in mutation at a very low rate.
+#         mu[:] = 1e-8
+#         path2 = ls_viterbi_naive(h, alleles, G, rho, mu)
+#         path3 = ls_viterbi_vectorised(h, alleles, G, rho, mu)
+#         assert np.array_equal(path1, path2)
+#         assert np.array_equal(path2, path3)
 
 
 
