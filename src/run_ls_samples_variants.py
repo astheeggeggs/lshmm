@@ -1,12 +1,14 @@
-import numpy as np
-import numba as nb
 import time
+
 import msprime
-from forward_backward.fb_haploid_samples_variants import *
+import numba as nb
+import numpy as np
+
 from forward_backward.fb_diploid_samples_variants import *
-from viterbi.vit_haploid_samples_variants import *
-from viterbi.vit_diploid_samples_variants import *
+from forward_backward.fb_haploid_samples_variants import *
 from simulate.sim_samples_variants import *
+from viterbi.vit_diploid_samples_variants import *
+from viterbi.vit_haploid_samples_variants import *
 
 n = 10
 
@@ -20,7 +22,7 @@ tic = time.perf_counter()
 F, c, ll = forwards_ls_hap(n, m, H, s, e, r, norm=False)
 B = backwards_ls_hap(n, m, H, s, e, c, r)
 print(f"log-likelihood: {ll}")
-print(np.log10(np.sum(F*B, 0)))
+print(np.log10(np.sum(F * B, 0)))
 toc = time.perf_counter()
 print(f"forwards backwards in {toc - tic:0.4f} seconds")
 
@@ -32,16 +34,16 @@ F, c, ll = forwards_ls_hap(n, m, H, s, e, r)
 B = backwards_ls_hap(n, m, H, s, e, c, r)
 ll = np.sum(np.log10(c))
 print(f"log-likelihood: {ll}")
-print(np.sum(F*B, 0))
+print(np.sum(F * B, 0))
 toc = time.perf_counter()
 print(f"forwards backwards in {toc - tic:0.4f} seconds")
 
 print(f"\nnaive viterbi numba...")
 V, P, ll = forwards_viterbi_hap_naive(n, m, H, s, e, r)
-path = backwards_viterbi_hap(m, V[:, m-1], P)
+path = backwards_viterbi_hap(m, V[:, m - 1], P)
 tic = time.perf_counter()
 V, P, ll = forwards_viterbi_hap_naive(n, m, H, s, e, r)
-path = backwards_viterbi_hap(m, V[:, m-1], P)
+path = backwards_viterbi_hap(m, V[:, m - 1], P)
 print(f"log-likelihood: {ll}")
 toc = time.perf_counter()
 print(f"took {toc - tic:0.4f} seconds")
@@ -68,10 +70,10 @@ print(f"took {toc - tic:0.4f} seconds")
 
 print(f"\nnaive vector viterbi...")
 V, P, ll = forwards_viterbi_hap_naive_vec(n, m, H, s, e, r)
-path = backwards_viterbi_hap(m, V[:, m-1], P)
+path = backwards_viterbi_hap(m, V[:, m - 1], P)
 tic = time.perf_counter()
 V, P, ll = forwards_viterbi_hap_naive_vec(n, m, H, s, e, r)
-path = backwards_viterbi_hap(m, V[:, m-1], P)
+path = backwards_viterbi_hap(m, V[:, m - 1], P)
 print(f"log-likelihood: {ll}")
 toc = time.perf_counter()
 print(f"took {toc - tic:0.4f} seconds")
@@ -89,7 +91,7 @@ print(f"took {toc - tic:0.4f} seconds")
 
 # Diploid Li and Stephens
 # Yes, I know there's a factor of two that we can squeeze out of this.
-n=50
+n = 50
 H, G, s, r, mu, e, m = rand_for_testing_dip_better(n, length=5e5)
 
 print(f"\nDiploid")
@@ -125,11 +127,11 @@ print(f"took {toc - tic:0.4f} seconds")
 
 print(f"\nnaive viterbi...")
 V, P, ll = forwards_viterbi_dip_naive(n, m, G, s, e, r)
-path = backwards_viterbi_dip(n, m, V[:,:, m-1], P)
+path = backwards_viterbi_dip(n, m, V[:, :, m - 1], P)
 tic = time.perf_counter()
 V, P, ll = forwards_viterbi_dip_naive(n, m, G, s, e, r)
 print(f"log-likelihood: {ll}")
-path = backwards_viterbi_dip(n, m, V[:,:, m-1], P)
+path = backwards_viterbi_dip(n, m, V[:, :, m - 1], P)
 toc = time.perf_counter()
 phased_path = get_phased_path(n, path)
 print(f"took {toc - tic:0.4f} seconds")
@@ -164,11 +166,11 @@ print(f"path log-likelihood: {path_ll}")
 
 print(f"\nvectorised naive viterbi...")
 V, P, ll = forwards_viterbi_dip_naive_vec(n, m, G, s, e, r)
-path = backwards_viterbi_dip(n, m, V[:,:,m-1], P)
+path = backwards_viterbi_dip(n, m, V[:, :, m - 1], P)
 tic = time.perf_counter()
 V, P, ll = forwards_viterbi_dip_naive_vec(n, m, G, s, e, r)
 print(f"log-likelihood: {ll}")
-path = backwards_viterbi_dip(n, m, V[:,:,m-1], P)
+path = backwards_viterbi_dip(n, m, V[:, :, m - 1], P)
 toc = time.perf_counter()
 phased_path = get_phased_path(n, path)
 print(f"took {toc - tic:0.4f} seconds")
@@ -179,10 +181,9 @@ print(f"\nfully vectorised naive viterbi...")
 tic = time.perf_counter()
 V, P, ll = forwards_viterbi_dip_naive_full_vec(n, m, G, s, e, r)
 print(f"log-likelihood: {ll}")
-path = backwards_viterbi_dip(n, m, V[:,:,m-1], P)
+path = backwards_viterbi_dip(n, m, V[:, :, m - 1], P)
 toc = time.perf_counter()
 phased_path = get_phased_path(n, path)
 print(f"took {toc - tic:0.4f} seconds")
 path_ll = path_ll_dip(n, m, G, phased_path, s, e, r)
 print(f"path log-likelihood: {path_ll}")
-
