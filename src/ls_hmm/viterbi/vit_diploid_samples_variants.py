@@ -1,3 +1,4 @@
+"""Collection of functions to run Viterbi algorithms on dipoid genotype data, where the data is structured as samples x variants."""
 import numba as nb
 import numpy as np
 
@@ -5,6 +6,7 @@ import numpy as np
 # https://github.com/numba/numba/issues/1269
 @nb.njit
 def np_apply_along_axis(func1d, axis, arr):
+    """Create numpy-like functions for max, sum etc."""
     assert arr.ndim == 2
     assert axis in [0, 1]
     if axis == 0:
@@ -20,22 +22,25 @@ def np_apply_along_axis(func1d, axis, arr):
 
 @nb.njit
 def np_amax(array, axis):
+    """Numba implementation of numpy vectorised maximum."""
     return np_apply_along_axis(np.amax, axis, array)
 
 
 @nb.njit
 def np_sum(array, axis):
+    """Numba implementation of numpy vectorised sum."""
     return np_apply_along_axis(np.sum, axis, array)
 
 
 @nb.njit
 def np_argmax(array, axis):
+    """Numba implementation of numpy vectorised argmax."""
     return np_apply_along_axis(np.argmax, axis, array)
 
 
 @nb.jit
 def forwards_viterbi_dip_naive(n, m, G, s, e, r):
-
+    """Naive implementation of LS diploid Viterbi algorithm."""
     # Initialise
     V = np.zeros((n, n, m))
     P = np.zeros((n, n, m)).astype(np.int64)
@@ -81,7 +86,7 @@ def forwards_viterbi_dip_naive(n, m, G, s, e, r):
 
 @nb.jit
 def forwards_viterbi_dip_naive_low_mem(n, m, G, s, e, r):
-
+    """Naive implementation of LS diploid Viterbi algorithm, with reduced memory."""
     # Initialise
     V = np.zeros((n, n))
     P = np.zeros((n, n, m)).astype(np.int64)
@@ -129,7 +134,7 @@ def forwards_viterbi_dip_naive_low_mem(n, m, G, s, e, r):
 
 @nb.jit
 def forwards_viterbi_dip_low_mem(n, m, G, s, e, r):
-
+    """LS diploid Viterbi algorithm, with reduced memory."""
     # Initialise
     V = np.zeros((n, n))
     P = np.zeros((n, n, m)).astype(np.int64)
@@ -204,7 +209,7 @@ def forwards_viterbi_dip_low_mem(n, m, G, s, e, r):
 
 @nb.jit
 def forwards_viterbi_dip_naive_vec(n, m, G, s, e, r):
-
+    """Vectorised LS diploid Viterbi algorithm using numpy."""
     # Initialise
     V = np.zeros((n, n, m))
     P = np.zeros((n, n, m)).astype(np.int64)
@@ -245,7 +250,7 @@ def forwards_viterbi_dip_naive_vec(n, m, G, s, e, r):
 
 
 def forwards_viterbi_dip_naive_full_vec(n, m, G, s, e, r):
-
+    """Fully vectorised naive LS diploid Viterbi algorithm using numpy."""
     char_both = np.eye(n * n).ravel().reshape((n, n, n, n))
     char_col = np.tile(np.sum(np.eye(n * n).reshape((n, n, n, n)), 3), (n, 1, 1, 1))
     char_row = np.copy(char_col.T)
@@ -287,10 +292,7 @@ def forwards_viterbi_dip_naive_full_vec(n, m, G, s, e, r):
 
 @nb.jit
 def backwards_viterbi_dip(n, m, V_last, P):
-    """
-    Backwards pass to determine the most likely path
-    """
-
+    """Run a backwards pass to determine the most likely path."""
     # Initialisation
     path = np.zeros(m).astype(np.int64)
     path[m - 1] = np.argmax(V_last)
@@ -303,17 +305,13 @@ def backwards_viterbi_dip(n, m, V_last, P):
 
 
 def get_phased_path(n, path):
-    # Obtain the phased path
+    """Obtain the phased path."""
     return np.unravel_index(path, (n, n))
 
 
 @nb.jit
 def path_ll_dip(n, m, G, phased_path, s, e, r):
-    """
-    Simple evaluation of the log likelihood of a path through the reference panel resulting
-    in the observed sequence.
-    """
-
+    """Evaluate log-likelihood path through a reference panel which results in sequence s."""
     index = (
         4 * np.int64(np.equal(G[phased_path[0][0], phased_path[1][0], 0], s[0, 0]))
         + 2 * np.int64(G[phased_path[0][0], phased_path[1][0], 0] == 1)

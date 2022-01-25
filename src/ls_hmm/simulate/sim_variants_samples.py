@@ -1,3 +1,4 @@
+"""Collection of functions to simulate haplotype and phased genotype data, where the data is structured as variants x samples."""
 import msprime
 import numba as nb
 import numpy as np
@@ -13,11 +14,10 @@ REF_HET_OBS_HOM = 2
 
 def rand_for_testing_hap(n, m, mean_r=1e-5, mean_mu=1e-5, seed=42):
     """
-    Create a simple random haplotype matrix with no LD, a random haplotype
-    vector to use as an observation, set a recombination probability vector,
-    and up and random mutation vector for the emissions.
-    """
+    Simulate a haplotype matrix, sequence, and parameters for testing.
 
+    Here we run a naive simulation of a haplotype matrix with no LD, a random haplotype vector to use as an observation, set a recombination probability vector, and random mutation vector for the emissions.
+    """
     np.random.seed(seed)
     # sites x samples
     H = np.random.randint(2, size=(m, n))
@@ -41,7 +41,11 @@ def rand_for_testing_hap(n, m, mean_r=1e-5, mean_mu=1e-5, seed=42):
 
 
 def rand_for_testing_hap_better(n, length=100000, mean_r=1e-5, mean_mu=1e-5, seed=42):
+    """
+    Simulate a haplotype matrix, sequence, and parameters for testing using msprime.
 
+    Create a simulated haplotype matrix using msprime, by passing a genome length, mutation rate, and recombination rate across the region. We then generate a set of recombination probabilities and mutation rates for emitted sequences based on this haplotype matrix.
+    """
     # Simulate
     ts = msprime.simulate(
         n + 1,
@@ -76,12 +80,10 @@ def rand_for_testing_hap_better(n, length=100000, mean_r=1e-5, mean_mu=1e-5, see
 
 def rand_for_testing_dip(n, m, mean_r=1e-5, mean_mu=1e-5, seed=42):
     """
-    Create a simple random haplotype matrix with no LD, use this to define
-    all possible pairs of haplotypes, G, a random unphased genotype vector
-    to use as an observation, set a recombination probability vector, and
-    random mutation vector for the emissions.
-    """
+    Simulate a phased-genotype matrix, sequence, and parameters for testing.
 
+    Here we run a naive simulation of a haplotype matrix with no LD, a random haplotype vector to use as an observation, set a recombination probability vector, and random mutation vector for the emissions.
+    """
     np.random.seed(seed)
     # Set up random genetic data
     H = np.random.randint(2, size=(m, n))
@@ -110,7 +112,11 @@ def rand_for_testing_dip(n, m, mean_r=1e-5, mean_mu=1e-5, seed=42):
 
 
 def rand_for_testing_dip_better(n, length=100000, mean_r=1e-5, mean_mu=1e-5, seed=42):
+    """
+    Simulate a phased genotype matrix, sequence, and parameters for testing using msprime.
 
+    Create a simulated phased haplotype matrix using msprime, by passing a genome length, mutation rate, and recombination rate across the region. We then generate a set of recombination probabilities and mutation rates for emitted sequences based on this phased haplotype matrix.
+    """
     # Simulate
     ts = msprime.simulate(
         n + 2,

@@ -1,3 +1,4 @@
+"""Collection of functions to run forwards and backwards algorithms on haploid genotype data, where the data is structured as variants x samples."""
 import numba as nb
 import numpy as np
 
@@ -39,10 +40,7 @@ import numpy as np
 
 @nb.jit
 def forwards_ls_hap(n, m, H, s, e, r, norm=True):
-    """
-    Simple matrix based method for LS forward algorithm using numpy vectorisation.
-    """
-
+    """Matrix based haploid LS forward algorithm using numpy vectorisation."""
     # Initialise
     F = np.zeros((m, n))
     r_n = r / n
@@ -108,10 +106,7 @@ def forwards_ls_hap(n, m, H, s, e, r, norm=True):
 
 @nb.jit
 def backwards_ls_hap(n, m, H, s, e, c, r):
-    """
-    Simple matrix based method for LS backwards algorithm using numpy vectorisation.
-    """
-
+    """Matrix based haploid LS backward algorithm using numpy vectorisation."""
     # Initialise
     B = np.zeros((m, n))
     for i in range(n):

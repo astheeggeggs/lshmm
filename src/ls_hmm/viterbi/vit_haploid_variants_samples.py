@@ -1,3 +1,4 @@
+"""Collection of functions to run Viterbi algorithms on haploid genotype data, where the data is structured as variants x samples."""
 import numba as nb
 import numpy as np
 
@@ -20,11 +21,7 @@ import numpy as np
 
 @nb.jit
 def viterbi_naive_init(n, m, H, s, e, r):
-    """
-    Initialisation portion of initial naive implementation of LS viterbi to avoid
-    lots of code duplication
-    """
-
+    """Initialise naive implementation of LS viterbi."""
     V = np.zeros((m, n))
     P = np.zeros((m, n)).astype(np.int64)
     r_n = r / n
@@ -51,11 +48,7 @@ def viterbi_naive_init(n, m, H, s, e, r):
 
 @nb.jit
 def viterbi_init(n, m, H, s, e, r):
-    """
-    Initialisation portion of initial naive, but more space memory efficient implementation
-    of LS viterbi to avoid lots of code duplication
-    """
-
+    """Initialise naive, but more space memory efficient implementation of LS viterbi."""
     V_previous = np.zeros(n)
     V = np.zeros(n)
     P = np.zeros((m, n)).astype(np.int64)
@@ -96,10 +89,7 @@ def viterbi_init(n, m, H, s, e, r):
 
 @nb.jit
 def forwards_viterbi_hap_naive(n, m, H, s, e, r):
-    """
-    Simple naive LS forward Viterbi algorithm.
-    """
-
+    """Naive implementation of LS haploid Viterbi algorithm."""
     # Initialise
     V, P, r_n = viterbi_naive_init(n, m, H, s, e, r)
 
@@ -147,11 +137,7 @@ def forwards_viterbi_hap_naive(n, m, H, s, e, r):
 
 @nb.jit
 def forwards_viterbi_hap_naive_vec(n, m, H, s, e, r):
-    """
-    Simple matrix based method naive LS forward Viterbi algorithm. Vectorised things
-     - I jumped the gun!
-    """
-
+    """Naive matrix based implementation of LS haploid forward Viterbi algorithm using numpy."""
     # Initialise
     V, P, r_n = viterbi_naive_init(n, m, H, s, e, r)
 
@@ -198,10 +184,7 @@ def forwards_viterbi_hap_naive_vec(n, m, H, s, e, r):
 
 @nb.jit
 def forwards_viterbi_hap_naive_low_mem(n, m, H, s, e, r):
-    """
-    Simple naive LS forward Viterbi algorithm. More memory efficient.
-    """
-
+    """Naive implementation of LS haploid Viterbi algorithm, with reduced memory."""
     # Initialise
     V, V_previous, P, r_n = viterbi_init(n, m, H, s, e, r)
 
@@ -258,11 +241,7 @@ def forwards_viterbi_hap_naive_low_mem(n, m, H, s, e, r):
 
 @nb.jit
 def forwards_viterbi_hap_naive_low_mem_rescaling(n, m, H, s, e, r):
-    """
-    Simple naive LS forward Viterbi algorithm. More memory efficient, and with
-    a rescaling to avoid underflow problems
-    """
-
+    """Naive implementation of LS haploid Viterbi algorithm, with reduced memory and rescaling."""
     # Initialise
     V, V_previous, P, r_n = viterbi_init(n, m, H, s, e, r)
     c = np.ones(m)
@@ -320,11 +299,7 @@ def forwards_viterbi_hap_naive_low_mem_rescaling(n, m, H, s, e, r):
 
 @nb.jit
 def forwards_viterbi_hap_low_mem_rescaling(n, m, H, s, e, r):
-    """
-    Simple LS forward Viterbi algorithm. Smaller memory footprint and rescaling,
-    and considers the structure of the Markov process.
-    """
-
+    """LS haploid Viterbi algorithm, with reduced memory and exploits the Markov process structure."""
     # Initialise
     V, V_previous, P, r_n = viterbi_init(n, m, H, s, e, r)
     c = np.ones(m)
@@ -380,11 +355,7 @@ def forwards_viterbi_hap_low_mem_rescaling(n, m, H, s, e, r):
 
 @nb.jit
 def forwards_viterbi_hap_lower_mem_rescaling(n, m, H, s, e, r):
-    """
-    Simple LS forward Viterbi algorithm. Even smaller memory footprint and rescaling,
-    and considers the structure of the Markov process.
-    """
-
+    """LS haploid Viterbi algorithm with even smaller memory footprint and exploits the Markov process structure."""
     # Initialise
     V = np.zeros(n)
     for i in range(n):
@@ -413,10 +384,7 @@ def forwards_viterbi_hap_lower_mem_rescaling(n, m, H, s, e, r):
 # Speedier version, variants x samples
 @nb.jit
 def backwards_viterbi_hap(m, V_last, P):
-    """
-    Backwards pass to determine the most likely path
-    """
-
+    """Run a backwards pass to determine the most likely path."""
     # Initialise
     path = np.zeros(m).astype(np.int64)
     path[m - 1] = np.argmax(V_last)

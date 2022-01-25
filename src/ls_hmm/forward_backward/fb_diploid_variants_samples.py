@@ -1,3 +1,4 @@
+"""Collection of functions to run forwards and backwards algorithms on haploid genotype data, where the data is structured as variants x samples."""
 import numba as nb
 import numpy as np
 
@@ -10,6 +11,7 @@ REF_HET_OBS_HOM = 2
 # https://github.com/numba/numba/issues/1269
 @nb.njit
 def np_apply_along_axis(func1d, axis, arr):
+    """Create numpy-like functions for max, sum etc."""
     assert arr.ndim == 2
     assert axis in [0, 1]
     if axis == 0:
@@ -25,24 +27,24 @@ def np_apply_along_axis(func1d, axis, arr):
 
 @nb.njit
 def np_amax(array, axis):
+    """Numba implementation of numpy vectorised maximum."""
     return np_apply_along_axis(np.amax, axis, array)
 
 
 @nb.njit
 def np_sum(array, axis):
+    """Numba implementation of numpy vectorised sum."""
     return np_apply_along_axis(np.sum, axis, array)
 
 
 @nb.njit
 def np_argmax(array, axis):
+    """Numba implementation of numpy vectorised argmax."""
     return np_apply_along_axis(np.argmax, axis, array)
 
 
 def forwards_ls_dip(n, m, G, s, e, r):
-    """
-    Simple matrix based method for diploid LS forward algorithm using numpy vectorisation.
-    """
-
+    """Matrix based diploid LS forward algorithm using numpy vectorisation."""
     # Initialise the forward tensor
     F = np.zeros((m, n, n))
     F[0, :, :] = 1 / (n ** 2)
@@ -87,10 +89,7 @@ def forwards_ls_dip(n, m, G, s, e, r):
 
 
 def backwards_ls_dip(n, m, G, s, e, c, r):
-    """
-    Simple matrix based method for diploid LS backward algorithm using numpy vectorisation.
-    """
-
+    """Matrix based diploid LS backward algorithm using numpy vectorisation."""
     # Initialise the backward tensor
     B = np.zeros((m, n, n))
 
@@ -207,11 +206,7 @@ def backwards_ls_dip(n, m, G, s, e, c, r):
 
 @nb.njit
 def forward_ls_dip_starting_point(n, m, G, s, e, r):
-    """
-    Unbelievably naive implementation of LS diploid forwards. Just to get something down
-    that works.
-    """
-
+    """Naive implementation of LS diploid forwards algorithm."""
     # Initialise the forward tensor
     F = np.zeros((m, n, n))
     r_n = r / n
@@ -360,11 +355,7 @@ def forward_ls_dip_starting_point(n, m, G, s, e, r):
 
 @nb.njit
 def backward_ls_dip_starting_point(n, m, G, s, e, r):
-    """
-    Unbelievably naive implementation of LS diploid backwards. Just to get something down
-    that works.
-    """
-
+    """Naive implementation of LS diploid backwards algorithm."""
     # Backwards
     B = np.zeros((m, n, n))
 
@@ -502,10 +493,7 @@ def backward_ls_dip_starting_point(n, m, G, s, e, r):
 
 @nb.njit
 def forward_ls_dip_loop(n, m, G, s, e, r):
-    """
-    LS diploid forwards with lots of loops.
-    """
-
+    """LS diploid forwards algoritm without vectorisation."""
     # Initialise the forward tensor
     F = np.zeros((m, n, n))
     r_n = r / n
@@ -624,10 +612,7 @@ def forward_ls_dip_loop(n, m, G, s, e, r):
 
 @nb.njit
 def backward_ls_dip_loop(n, m, G, s, e, r):
-    """
-    LS diploid backwards with lots of loops.
-    """
-
+    """LS diploid backwards algoritm without vectorisation."""
     # Initialise the backward tensor
     B = np.zeros((m, n, n))
     B[m - 1, :, :] = 1

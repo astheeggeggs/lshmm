@@ -1,14 +1,11 @@
+"""Collection of functions to run Viterbi algorithms on haploid genotype data, where the data is structured as samples x variants."""
 import numba as nb
 import numpy as np
 
 
 @nb.jit
 def viterbi_naive_init(n, m, H, s, e, r):
-    """
-    Initialisation portion of initial naive implementation of LS viterbi to avoid
-    lots of code duplication
-    """
-
+    """Initialise naive implementation of LS viterbi."""
     V = np.zeros((n, m))
     P = np.zeros((n, m)).astype(np.int64)
     V[:, 0] = 1 / n * e[np.equal(H[:, 0], s[0, 0]).astype(np.int64), 0]
@@ -20,11 +17,7 @@ def viterbi_naive_init(n, m, H, s, e, r):
 
 @nb.jit
 def viterbi_init(n, m, H, s, e, r):
-    """
-    Initialisation portion of initial naive, but more space memory efficient implementation
-    of LS viterbi to avoid lots of code duplication
-    """
-
+    """Initialise naive, but more space memory efficient implementation of LS viterbi."""
     V_previous = 1 / n * e[np.equal(H[:, 0], s[0, 0]).astype(np.int64), 0]
     V = np.zeros(n)
     P = np.zeros((n, m)).astype(np.int64)
@@ -36,10 +29,7 @@ def viterbi_init(n, m, H, s, e, r):
 
 @nb.jit
 def forwards_viterbi_hap_naive(n, m, H, s, e, r):
-    """
-    Simple naive LS forward Viterbi algorithm.
-    """
-
+    """Naive implementation of LS haploid Viterbi algorithm."""
     # Initialise
     V, P, r_n = viterbi_naive_init(n, m, H, s, e, r)
 
@@ -63,11 +53,7 @@ def forwards_viterbi_hap_naive(n, m, H, s, e, r):
 
 @nb.jit
 def forwards_viterbi_hap_naive_vec(n, m, H, s, e, r):
-    """
-    Simple matrix based method naive LS forward Viterbi algorithm. Vectorised things
-     - I jumped the gun!
-    """
-
+    """Naive matrix based implementation of LS haploid forward Viterbi algorithm using numpy."""
     # Initialise
     V, P, r_n = viterbi_naive_init(n, m, H, s, e, r)
 
@@ -86,11 +72,7 @@ def forwards_viterbi_hap_naive_vec(n, m, H, s, e, r):
 
 
 def forwards_viterbi_hap_naive_full_vec(n, m, H, s, e, r):
-    """
-    Simple matrix based method naive LS forward Viterbi algorithm. Vectorised things
-     even more - I jumped the gun!
-    """
-
+    """Fully vectorised naive implementation of LS haploid forward Viterbi algorithm using numpy."""
     # Initialise
     V, P, r_n = viterbi_naive_init(n, m, H, s, e, r)
 
@@ -108,10 +90,7 @@ def forwards_viterbi_hap_naive_full_vec(n, m, H, s, e, r):
 
 @nb.jit
 def forwards_viterbi_hap_naive_low_mem(n, m, H, s, e, r):
-    """
-    Simple naive LS forward Viterbi algorithm. More memory efficient.
-    """
-
+    """Naive implementation of LS haploid Viterbi algorithm, with reduced memory."""
     # Initialise
     V, V_previous, P, r_n = viterbi_init(n, m, H, s, e, r)
 
@@ -136,11 +115,7 @@ def forwards_viterbi_hap_naive_low_mem(n, m, H, s, e, r):
 
 @nb.jit
 def forwards_viterbi_hap_naive_low_mem_rescaling(n, m, H, s, e, r):
-    """
-    Simple naive LS forward Viterbi algorithm. More memory efficient, and with
-    a rescaling to avoid underflow problems
-    """
-
+    """Naive implementation of LS haploid Viterbi algorithm, with reduced memory and rescaling."""
     # Initialise
     V, V_previous, P, r_n = viterbi_init(n, m, H, s, e, r)
     c = np.ones(m)
@@ -169,11 +144,7 @@ def forwards_viterbi_hap_naive_low_mem_rescaling(n, m, H, s, e, r):
 
 @nb.jit
 def forwards_viterbi_hap_low_mem_rescaling(n, m, H, s, e, r):
-    """
-    Simple LS forward Viterbi algorithm. Smaller memory footprint and rescaling,
-    and considers the structure of the Markov process.
-    """
-
+    """LS haploid Viterbi algorithm, with reduced memory and exploits the Markov process structure."""
     # Initialise
     V, V_previous, P, r_n = viterbi_init(n, m, H, s, e, r)
     c = np.ones(m)
@@ -199,11 +170,7 @@ def forwards_viterbi_hap_low_mem_rescaling(n, m, H, s, e, r):
 
 @nb.jit
 def forwards_viterbi_hap_lower_mem_rescaling(n, m, H, s, e, r):
-    """
-    Simple LS forward Viterbi algorithm. Even smaller memory footprint and rescaling,
-    and considers the structure of the Markov process.
-    """
-
+    """LS haploid Viterbi algorithm with even smaller memory footprint and exploits the Markov process structure."""
     # Initialise
     V = 1 / n * e[np.equal(H[:, 0], s[0, 0]).astype(np.int64), 0]
     P = np.zeros((n, m)).astype(np.int64)
@@ -230,10 +197,7 @@ def forwards_viterbi_hap_lower_mem_rescaling(n, m, H, s, e, r):
 
 @nb.jit
 def backwards_viterbi_hap(m, V_last, P):
-    """
-    Backwards pass to determine the most likely path
-    """
-
+    """Run a backwards pass to determine the most likely path."""
     # Initialise
     path = np.zeros(m).astype(np.int64)
     path[m - 1] = np.argmax(V_last)
