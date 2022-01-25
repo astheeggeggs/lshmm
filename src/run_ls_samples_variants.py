@@ -3,7 +3,6 @@ import time
 import msprime
 import numba as nb
 import numpy as np
-
 from forward_backward.fb_diploid_samples_variants import *
 from forward_backward.fb_haploid_samples_variants import *
 from simulate.sim_samples_variants import *
