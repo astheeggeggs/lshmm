@@ -1,0 +1,5 @@
+black==21.9b0 # This should be kept in sync with the version in .pre-commit-config.yaml
+isort==5.9.3 # This should be kept in sync with the version in .pre-commit-config.yaml
+pydocstyle[toml]==6.1.1 # This should be kept in sync with the version in .pre-commit-config.yaml
+pylint
+pytest

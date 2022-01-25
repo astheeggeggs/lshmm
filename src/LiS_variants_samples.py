@@ -2,6 +2,12 @@ import numpy as np
 import numba as nb
 import time
 
+EQUAL_BOTH_HOM = 4
+UNEQUAL_BOTH_HOM = 0
+BOTH_HET = 7
+REF_HOM_OBS_HET = 1
+REF_HET_OBS_HOM= 2
+
 # https://github.com/numba/numba/issues/1269
 @nb.njit
 def np_apply_along_axis(func1d, axis, arr):
@@ -35,34 +41,6 @@ def np_argmax(array, axis):
 # DEV: make sure matrices are structured so the outer most loop corresponds to the first dimension etc.
 
 # Speedier version, variants x samples
-def rand_for_testing_hap(n, m, mean_r=1e-5, mean_mu=1e-5):
-    '''
-    Create a simple random haplotype matrix with no LD, a random haplotype
-    vector to use as an observation, set a recombination probability vector,
-    and up and random mutation vector for the emissions.
-    '''
-
-    # sites x samples
-    H = np.random.randint(2, size = (m,n))
-
-    # Recombination probability
-    r = mean_r * np.ones(m) * ((np.random.rand(m) + 0.5)/2)
-    r[0] = 0
-
-    # Error probability
-    mu = mean_mu * np.ones(m) * ((np.random.rand(m) + 0.5)/2)
-
-    # New sequence
-    s = np.random.randint(2, size = (1, m))
-
-    # Define the emission probability matrix
-    e  = np.zeros((m,2))
-    e[:,0] = mu
-    e[:,1] = 1 - mu
-
-    return H, s, r, mu, e
-
-# Speedier version, variants x samples
 def forwards_ls_hap(n, m, H, s, e, r):
     '''
     Simple matrix based method for LS forward algorithm using numpy vectorisation.
@@ -72,8 +50,9 @@ def forwards_ls_hap(n, m, H, s, e, r):
     F = np.zeros((m,n))
     c = np.ones(m)
     F[0,:] = 1/n * e[0, np.equal(H[0, :], s[0,0]).astype(np.int64)]
-    c[0] = np.sum(F[0,:])
-    F[0,:] *= 1/c[0]
+    if norm:
+        c[0] = np.sum(F[0,:])
+        F[0,:] *= 1/c[0]
     r_n = r/n
 
     # Forwards pass
@@ -81,7 +60,8 @@ def forwards_ls_hap(n, m, H, s, e, r):
         # F[l,:] = F[l-1,:] * (1 - r[l]) + np.sum(F[l-1,:]) * r_n[l]  # Don't need to multiply by F[l-1,:] as we've normalised.
         F[l,:] = F[l-1,:] * (1 - r[l]) + r_n[l]
         F[l,:] *= e[l, np.equal(H[l,:], s[0,l]).astype(np.int64)]
-        c[l] = np.sum(F[l,:])
+        if norm:
+            c[l] = np.sum(F[l,:])
         F[l,:] *= 1/c[l]
 
     ll = np.sum(np.log10(c))
@@ -386,39 +366,6 @@ def backwards_viterbi_hap(m, V_last, P):
     return(path)
 
 # Diploid Li and Stephens
-
-def rand_for_testing_dip(n, m, mean_r=1e-5, mean_mu=1e-5):
-    '''
-    Create a simple random haplotype matrix with no LD, use this to define
-    all possible pairs of haplotypes, G, a random unphased genotype vector 
-    to use as an observation, set a recombination probability vector, and 
-    random mutation vector for the emissions.
-    '''
-
-    # Set up random genetic data
-    H = np.random.randint(2, size = (m,n))
-    G = np.zeros((m, n, n))
-    for i in range(m):
-        G[i,:,:] = np.add.outer(H[i,:], H[i,:])
-
-    # Recombination probability
-    r = mean_r * np.ones(m) * ((np.random.rand(m) + 0.5)/2)
-    r[0] = 0
-
-    # Error probability
-    mu = mean_mu * np.ones(m) * ((np.random.rand(m) + 0.5)/2)
-
-    # New sequence
-    s = np.random.randint(2, size = (1, m)) + np.random.randint(2, size = (1, m))
-
-    e  = np.zeros((m,8))
-    e[:,EQUAL_BOTH_HOM] = (1 - mu) **2
-    e[:,UNEQUAL_BOTH_HOM] = mu**2
-    e[:,BOTH_HET] = (1-mu)
-    e[:,REF_HOM_OBS_HET] = 2 * mu * (1 - mu)
-    e[:,REF_HET_OBS_HOM] = mu * (1 - mu)
-
-    return H, G, s, r, mu, e
 
 @nb.jit
 def path_ll_dip(G, phased_path, s, e):
@@ -1060,9 +1007,8 @@ def get_phased_path(n, path):
     return np.unravel_index(path, (n,n))
 
 n = 10
-m = 100
 
-H, s, r, mu, e = rand_for_testing_hap(n, m)
+H, s, r, mu, e, m = rand_for_testing_hap_better(n, length=1e6)
 
 tic = time.perf_counter()
 F, c, ll = forwards_ls_hap(n, m, H, s, e, r)
@@ -1110,13 +1056,7 @@ print(f"naive vector viterbi in {toc - tic:0.4f} seconds")
 # Diploid Li and Stephens
 # Yes, I know there's a factor of two that we can squeeze out of this.
 
-EQUAL_BOTH_HOM = 4
-UNEQUAL_BOTH_HOM = 0
-BOTH_HET = 7
-REF_HOM_OBS_HET = 1
-REF_HET_OBS_HOM= 2
-
-H, G, s, r, mu, e = rand_for_testing_dip(n, m)
+H, G, s, r, mu, e, m = rand_for_testing_dip_better(n, length=5e5)
 
 tic = time.perf_counter()
 F, c, ll = forwards_ls_dip(n, m, G, s, e)
