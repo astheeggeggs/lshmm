@@ -36,7 +36,6 @@ def test(session):
 @nox.session
 def build_docs(session):
     session.install("-r", "docs/requirements.docs.txt")
-    session.install("wheel", "hail")
     session.install(".")
 
     session.cd("docs")
