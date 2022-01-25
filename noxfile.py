@@ -19,7 +19,6 @@ def pydocstyle(session):
 @nox.session
 def lint(session):
     session.install("-r", "requirements.dev.txt")
-    session.install("wheel", "hail")
     session.install(".")
 
     session.run("pylint", "src/ls_hmm")
@@ -29,7 +28,6 @@ def lint(session):
 @nox.session
 def test(session):
     session.install("-r", "requirements.dev.txt")
-    session.install("wheel", "hail")
     session.install(".")
 
     session.run("pytest")
