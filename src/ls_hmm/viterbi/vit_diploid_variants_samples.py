@@ -506,8 +506,10 @@ def forwards_viterbi_dip_naive_full_vec(n, m, G, s, e, r):
 
 
 @nb.jit
-def backwards_viterbi_dip(n, m, V_last, P):
+def backwards_viterbi_dip(m, V_last, P):
     """Run a backwards pass to determine the most likely path."""
+    assert V_last.ndim == 2
+    assert V_last.shape[0] == V_last.shape[1]
     # Initialisation
     path = np.zeros(m).astype(np.int64)
     path[m - 1] = np.argmax(V_last)

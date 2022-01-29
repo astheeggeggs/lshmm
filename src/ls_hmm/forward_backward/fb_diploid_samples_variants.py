@@ -106,9 +106,8 @@ def forwards_ls_dip(n, m, G, s, e, r, norm=True):
             F[:, :, l] += (r_n[l]) ** 2 * np.sum(F[:, :, l - 1])
 
             # One changes
-            sum_j1 = np_sum(F[:, :, l - 1], 0).repeat(n).reshape((-1, n)).T
-            sum_j2 = np_sum(F[:, :, l - 1], 1).repeat(n).reshape((-1, n))
-            F[:, :, l] += ((1 - r[l]) * r_n[l]) * (sum_j1 + sum_j2)
+            sum_j = np_sum(F[:, :, l - 1], 0).repeat(n).reshape((-1, n)).T
+            F[:, :, l] += ((1 - r[l]) * r_n[l]) * (sum_j + sum_j.T)
 
             # Emission
             F[:, :, l] *= e[index.ravel(), l].reshape(n, n)
@@ -137,20 +136,21 @@ def backwards_ls_dip(n, m, G, s, e, c, r):
             + np.int64(s[0, l + 1] == 1)
         ).ravel()
 
-        # No change in both
+        # Both change
         B[:, :, l] = r_n[l + 1] ** 2 * np.sum(
             e[index, l + 1].reshape(n, n) * B[:, :, l + 1]
         )
 
-        # Both change
+        # No change in both
         B[:, :, l] += (
             (1 - r[l + 1]) ** 2 * B[:, :, l + 1] * e[index, l + 1].reshape(n, n)
         )
 
-        # One changes
-        # sum_j1 = np_sum(B[:,:,l+1], 0).repeat(n).reshape((-1, n)).T
-        # sum_j2 = np_sum(B[:,:,l+1], 1).repeat(n).reshape((-1, n))
-        sum_j = np_sum(B[:, :, l + 1], 0).repeat(n).reshape((-1, n))
+        sum_j = (
+            np_sum(B[:, :, l + 1] * e[index, l + 1].reshape(n, n), 0)
+            .repeat(n)
+            .reshape((-1, n))
+        )
         B[:, :, l] += ((1 - r[l + 1]) * r_n[l + 1]) * (sum_j + sum_j.T)
         B[:, :, l] *= 1 / c[l + 1]
 

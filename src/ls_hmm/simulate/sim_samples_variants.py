@@ -1,6 +1,5 @@
 """Collection of functions to simulate haplotype and phased genotype data, where the data is structured as samples x variants."""
 import msprime
-import numba as nb
 import numpy as np
 
 EQUAL_BOTH_HOM = 4

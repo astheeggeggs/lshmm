@@ -160,7 +160,7 @@ def forwards_viterbi_hap_low_mem_rescaling(n, m, H, s, e, r):
             if V[i] < r_n[j]:
                 V[i] = r_n[j]
                 P[i, j] = argmax
-            V[i] *= e[np.equal(H[i, j], s[0, j]).astype(np.int64), j]
+            V[i] *= e[np.int64(np.equal(H[i, j], s[0, j])), j]
         V_previous = np.copy(V)
 
     ll = np.sum(np.log10(c)) + np.log10(np.max(V))
@@ -199,6 +199,7 @@ def forwards_viterbi_hap_lower_mem_rescaling(n, m, H, s, e, r):
 def backwards_viterbi_hap(m, V_last, P):
     """Run a backwards pass to determine the most likely path."""
     # Initialise
+    assert len(V_last.shape) == 1
     path = np.zeros(m).astype(np.int64)
     path[m - 1] = np.argmax(V_last)
 
@@ -206,3 +207,27 @@ def backwards_viterbi_hap(m, V_last, P):
         path[j] = P[path[j + 1], j + 1]
 
     return path
+
+
+@nb.jit
+def path_ll_hap(n, m, H, path, s, e, r):
+    """Evaluate log-likelihood path through a reference panel which results in sequence s."""
+    index = np.int64(np.equal(H[path[0], 0], s[0, 0]))
+    log_prob_path = np.log10((1 / n) * e[index, 0])
+    old = path[0]
+    r_n = r / n
+
+    for l in range(1, m):
+        index = np.int64(np.equal(H[path[l], l], s[0, l]))
+        current = path[l]
+        same = old == current
+
+        if same:
+            log_prob_path += np.log10((1 - r[l]) + r_n[l])
+        else:
+            log_prob_path += np.log10(r_n[l])
+
+        log_prob_path += np.log10(e[index, l])
+        old = current
+
+    return log_prob_path
