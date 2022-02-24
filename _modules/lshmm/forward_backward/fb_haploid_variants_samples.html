@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>lshmm.forward_backward.fb_haploid_variants_samples &mdash; lshmm latest documentation</title>
+      <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="../../../_static/css/theme.css" type="text/css" />
+      <link rel="stylesheet" href="../../../_static/theme_overrides.css" type="text/css" />
+  <!--[if lt IE 9]>
+    <script src="../../../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script data-url_root="../../../" id="documentation_options" src="../../../_static/documentation_options.js"></script>
+        <script src="../../../_static/jquery.js"></script>
+        <script src="../../../_static/underscore.js"></script>
+        <script src="../../../_static/doctools.js"></script>
+    <script src="../../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+            <a href="../../../index.html" class="icon icon-home"> lshmm
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../api_reference/index.html">API Reference</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../index.html">lshmm</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../../index.html" class="icon icon-home"></a> &raquo;</li>
+          <li><a href="../../index.html">Module code</a> &raquo;</li>
+      <li>lshmm.forward_backward.fb_haploid_variants_samples</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for lshmm.forward_backward.fb_haploid_variants_samples</h1><div class="highlight"><pre>
+<span></span><span class="sd">&quot;&quot;&quot;Collection of functions to run forwards and backwards algorithms on haploid genotype data, where the data is structured as variants x samples.&quot;&quot;&quot;</span>
+<span class="kn">import</span> <span class="nn">numba</span> <span class="k">as</span> <span class="nn">nb</span>
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+
+<span class="c1"># def forwards_ls_hap(n, m, H, s, e, r, norm=True):</span>
+<span class="c1">#     &#39;&#39;&#39;</span>
+<span class="c1">#     Simple matrix based method for LS forward algorithm using numpy vectorisation.</span>
+<span class="c1">#     &#39;&#39;&#39;</span>
+
+<span class="c1">#     # Initialise</span>
+<span class="c1">#     F = np.zeros((m,n))</span>
+<span class="c1">#     c = np.ones(m)</span>
+<span class="c1">#     F[0,:] = 1/n * e[0, np.equal(H[0, :], s[0,0]).astype(np.int64)]</span>
+<span class="c1">#     r_n = r/n</span>
+
+<span class="c1">#     if norm:</span>
+
+<span class="c1">#         c[0] = np.sum(F[0,:])</span>
+<span class="c1">#         F[0,:] *= 1/c[0]</span>
+
+<span class="c1">#         # Forwards pass</span>
+<span class="c1">#         for l in range(1,m):</span>
+<span class="c1">#             F[l,:] = F[l-1,:] * (1 - r[l]) + r_n[l]  # Don&#39;t need to multiply by r_n[l] F[:,l-1] as we&#39;ve normalised.</span>
+<span class="c1">#             F[l,:] *= e[l,np.equal(H[l,:], s[0,l]).astype(np.int64)]</span>
+<span class="c1">#             c[l] = np.sum(F[l,:])</span>
+<span class="c1">#             F[l,:] *= 1/c[l]</span>
+
+<span class="c1">#         ll = np.sum(np.log10(c))</span>
+
+<span class="c1">#     else:</span>
+<span class="c1">#         # Forwards pass</span>
+<span class="c1">#         for l in range(1,m):</span>
+<span class="c1">#             F[l,:] = F[l-1,:] * (1 - r[l]) + np.sum(F[l-1,:]) * r_n[l]</span>
+<span class="c1">#             F[l,:] *= e[l, np.equal(H[l,:], s[0,l]).astype(np.int64)]</span>
+
+<span class="c1">#         ll = np.log10(np.sum(F[m-1,:]))</span>
+
+<span class="c1">#     return F, c, ll</span>
+
+
+<div class="viewcode-block" id="forwards_ls_hap"><a class="viewcode-back" href="../../../api_reference/forward_backward/fb_haploid_variants_samples.html#lshmm.forward_backward.fb_haploid_variants_samples.forwards_ls_hap">[docs]</a><span class="nd">@nb</span><span class="o">.</span><span class="n">jit</span>
+<span class="k">def</span> <span class="nf">forwards_ls_hap</span><span class="p">(</span><span class="n">n</span><span class="p">,</span> <span class="n">m</span><span class="p">,</span> <span class="n">H</span><span class="p">,</span> <span class="n">s</span><span class="p">,</span> <span class="n">e</span><span class="p">,</span> <span class="n">r</span><span class="p">,</span> <span class="n">norm</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Matrix based haploid LS forward algorithm using numpy vectorisation.&quot;&quot;&quot;</span>
+    <span class="c1"># Initialise</span>
+    <span class="n">F</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="n">m</span><span class="p">,</span> <span class="n">n</span><span class="p">))</span>
+    <span class="n">r_n</span> <span class="o">=</span> <span class="n">r</span> <span class="o">/</span> <span class="n">n</span>
+
+    <span class="k">if</span> <span class="n">norm</span><span class="p">:</span>
+
+        <span class="n">c</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">m</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">n</span><span class="p">):</span>
+            <span class="n">F</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="mi">1</span> <span class="o">/</span> <span class="n">n</span> <span class="o">*</span> <span class="n">e</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">int64</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">equal</span><span class="p">(</span><span class="n">H</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="n">i</span><span class="p">],</span> <span class="n">s</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">]))]</span>
+            <span class="n">c</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">+=</span> <span class="n">F</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="n">i</span><span class="p">]</span>
+
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">n</span><span class="p">):</span>
+            <span class="n">F</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="n">i</span><span class="p">]</span> <span class="o">*=</span> <span class="mi">1</span> <span class="o">/</span> <span class="n">c</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+
+        <span class="c1"># Forwards pass</span>
+        <span class="k">for</span> <span class="n">l</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="n">m</span><span class="p">):</span>
+            <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">n</span><span class="p">):</span>
+                <span class="n">F</span><span class="p">[</span><span class="n">l</span><span class="p">,</span> <span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">F</span><span class="p">[</span><span class="n">l</span> <span class="o">-</span> <span class="mi">1</span><span class="p">,</span> <span class="n">i</span><span class="p">]</span> <span class="o">*</span> <span class="p">(</span><span class="mi">1</span> <span class="o">-</span> <span class="n">r</span><span class="p">[</span><span class="n">l</span><span class="p">])</span> <span class="o">+</span> <span class="n">r_n</span><span class="p">[</span><span class="n">l</span><span class="p">]</span>
+                <span class="n">F</span><span class="p">[</span><span class="n">l</span><span class="p">,</span> <span class="n">i</span><span class="p">]</span> <span class="o">*=</span> <span class="n">e</span><span class="p">[</span><span class="n">l</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">int64</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">equal</span><span class="p">(</span><span class="n">H</span><span class="p">[</span><span class="n">l</span><span class="p">,</span> <span class="n">i</span><span class="p">],</span> <span class="n">s</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="n">l</span><span class="p">]))]</span>
+                <span class="n">c</span><span class="p">[</span><span class="n">l</span><span class="p">]</span> <span class="o">+=</span> <span class="n">F</span><span class="p">[</span><span class="n">l</span><span class="p">,</span> <span class="n">i</span><span class="p">]</span>
+
+            <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">n</span><span class="p">):</span>
+                <span class="n">F</span><span class="p">[</span><span class="n">l</span><span class="p">,</span> <span class="n">i</span><span class="p">]</span> <span class="o">*=</span> <span class="mi">1</span> <span class="o">/</span> <span class="n">c</span><span class="p">[</span><span class="n">l</span><span class="p">]</span>
+
+        <span class="n">ll</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">log10</span><span class="p">(</span><span class="n">c</span><span class="p">))</span>
+
+    <span class="k">else</span><span class="p">:</span>
+
+        <span class="n">c</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">ones</span><span class="p">(</span><span class="n">m</span><span class="p">)</span>
+
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">n</span><span class="p">):</span>
+            <span class="n">F</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="mi">1</span> <span class="o">/</span> <span class="n">n</span> <span class="o">*</span> <span class="n">e</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">int64</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">equal</span><span class="p">(</span><span class="n">H</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="n">i</span><span class="p">],</span> <span class="n">s</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">]))]</span>
+
+        <span class="c1"># Forwards pass</span>
+        <span class="k">for</span> <span class="n">l</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="n">m</span><span class="p">):</span>
+            <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">n</span><span class="p">):</span>
+                <span class="n">F</span><span class="p">[</span><span class="n">l</span><span class="p">,</span> <span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">F</span><span class="p">[</span><span class="n">l</span> <span class="o">-</span> <span class="mi">1</span><span class="p">,</span> <span class="n">i</span><span class="p">]</span> <span class="o">*</span> <span class="p">(</span><span class="mi">1</span> <span class="o">-</span> <span class="n">r</span><span class="p">[</span><span class="n">l</span><span class="p">])</span> <span class="o">+</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">F</span><span class="p">[</span><span class="n">l</span> <span class="o">-</span> <span class="mi">1</span><span class="p">,</span> <span class="p">:])</span> <span class="o">*</span> <span class="n">r_n</span><span class="p">[</span><span class="n">l</span><span class="p">]</span>
+                <span class="n">F</span><span class="p">[</span><span class="n">l</span><span class="p">,</span> <span class="n">i</span><span class="p">]</span> <span class="o">*=</span> <span class="n">e</span><span class="p">[</span><span class="n">l</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">int64</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">equal</span><span class="p">(</span><span class="n">H</span><span class="p">[</span><span class="n">l</span><span class="p">,</span> <span class="n">i</span><span class="p">],</span> <span class="n">s</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="n">l</span><span class="p">]))]</span>
+
+        <span class="n">ll</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">log10</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">F</span><span class="p">[</span><span class="n">m</span> <span class="o">-</span> <span class="mi">1</span><span class="p">,</span> <span class="p">:]))</span>
+
+    <span class="k">return</span> <span class="n">F</span><span class="p">,</span> <span class="n">c</span><span class="p">,</span> <span class="n">ll</span></div>
+
+
+<span class="c1"># def backwards_ls_hap(n, m, H, s, e, c, r):</span>
+<span class="c1">#     &#39;&#39;&#39;</span>
+<span class="c1">#     Simple matrix based method for LS backwards algorithm using numpy vectorisation.</span>
+<span class="c1">#     &#39;&#39;&#39;</span>
+
+<span class="c1">#     # Initialise</span>
+<span class="c1">#     B = np.zeros((m,n))</span>
+<span class="c1">#     B[m-1,:] = 1</span>
+<span class="c1">#     r_n = r/n</span>
+
+<span class="c1">#     # Backwards pass</span>
+<span class="c1">#     for l in range(m-2, -1, -1):</span>
+<span class="c1">#         B[l,:] = r_n[l+1] * np.sum(e[l+1, np.equal(H[l+1,:], s[0,l+1]).astype(np.int64)] * B[l+1,:])</span>
+<span class="c1">#         B[l,:] += (1 - r[l+1]) * e[l+1, np.equal(H[l+1,:], s[0,l+1]).astype(np.int64)] * B[l+1,:]</span>
+<span class="c1">#         B[l,:] *= 1/c[l+1]</span>
+
+<span class="c1">#     return B</span>
+
+
+<div class="viewcode-block" id="backwards_ls_hap"><a class="viewcode-back" href="../../../api_reference/forward_backward/fb_haploid_variants_samples.html#lshmm.forward_backward.fb_haploid_variants_samples.backwards_ls_hap">[docs]</a><span class="nd">@nb</span><span class="o">.</span><span class="n">jit</span>
+<span class="k">def</span> <span class="nf">backwards_ls_hap</span><span class="p">(</span><span class="n">n</span><span class="p">,</span> <span class="n">m</span><span class="p">,</span> <span class="n">H</span><span class="p">,</span> <span class="n">s</span><span class="p">,</span> <span class="n">e</span><span class="p">,</span> <span class="n">c</span><span class="p">,</span> <span class="n">r</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Matrix based haploid LS backward algorithm using numpy vectorisation.&quot;&quot;&quot;</span>
+    <span class="c1"># Initialise</span>
+    <span class="n">B</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="n">m</span><span class="p">,</span> <span class="n">n</span><span class="p">))</span>
+    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">n</span><span class="p">):</span>
+        <span class="n">B</span><span class="p">[</span><span class="n">m</span> <span class="o">-</span> <span class="mi">1</span><span class="p">,</span> <span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="mi">1</span>
+    <span class="n">r_n</span> <span class="o">=</span> <span class="n">r</span> <span class="o">/</span> <span class="n">n</span>
+
+    <span class="c1"># Backwards pass</span>
+    <span class="k">for</span> <span class="n">l</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">m</span> <span class="o">-</span> <span class="mi">2</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">):</span>
+        <span class="n">tmp_B</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">n</span><span class="p">)</span>
+        <span class="n">tmp_B_sum</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">n</span><span class="p">):</span>
+            <span class="n">tmp_B</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span>
+                <span class="n">e</span><span class="p">[</span><span class="n">l</span> <span class="o">+</span> <span class="mi">1</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">int64</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">equal</span><span class="p">(</span><span class="n">H</span><span class="p">[</span><span class="n">l</span> <span class="o">+</span> <span class="mi">1</span><span class="p">,</span> <span class="n">i</span><span class="p">],</span> <span class="n">s</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="n">l</span> <span class="o">+</span> <span class="mi">1</span><span class="p">]))]</span> <span class="o">*</span> <span class="n">B</span><span class="p">[</span><span class="n">l</span> <span class="o">+</span> <span class="mi">1</span><span class="p">,</span> <span class="n">i</span><span class="p">]</span>
+            <span class="p">)</span>
+            <span class="n">tmp_B_sum</span> <span class="o">+=</span> <span class="n">tmp_B</span><span class="p">[</span><span class="n">i</span><span class="p">]</span>
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">n</span><span class="p">):</span>
+            <span class="n">B</span><span class="p">[</span><span class="n">l</span><span class="p">,</span> <span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">r_n</span><span class="p">[</span><span class="n">l</span> <span class="o">+</span> <span class="mi">1</span><span class="p">]</span> <span class="o">*</span> <span class="n">tmp_B_sum</span>
+            <span class="n">B</span><span class="p">[</span><span class="n">l</span><span class="p">,</span> <span class="n">i</span><span class="p">]</span> <span class="o">+=</span> <span class="p">(</span><span class="mi">1</span> <span class="o">-</span> <span class="n">r</span><span class="p">[</span><span class="n">l</span> <span class="o">+</span> <span class="mi">1</span><span class="p">])</span> <span class="o">*</span> <span class="n">tmp_B</span><span class="p">[</span><span class="n">i</span><span class="p">]</span>
+            <span class="n">B</span><span class="p">[</span><span class="n">l</span><span class="p">,</span> <span class="n">i</span><span class="p">]</span> <span class="o">*=</span> <span class="mi">1</span> <span class="o">/</span> <span class="n">c</span><span class="p">[</span><span class="n">l</span> <span class="o">+</span> <span class="mi">1</span><span class="p">]</span>
+
+    <span class="k">return</span> <span class="n">B</span></div>
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p></p>
+  </div>
+
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

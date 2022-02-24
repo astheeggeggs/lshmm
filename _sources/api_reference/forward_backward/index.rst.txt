@@ -1,0 +1,14 @@
+lshmm.forward_backward
+======================
+
+
+
+.. toctree::
+    :maxdepth: 2
+
+    fb_diploid_samples_variants <fb_diploid_samples_variants>
+    fb_diploid_variants_samples <fb_diploid_variants_samples>
+    fb_diploid_variants_samples_tree <fb_diploid_variants_samples_tree>
+    fb_haploid_samples_variants <fb_haploid_samples_variants>
+    fb_haploid_variants_samples <fb_haploid_variants_samples>
+    fb_haploid_variants_samples_tree <fb_haploid_variants_samples_tree>

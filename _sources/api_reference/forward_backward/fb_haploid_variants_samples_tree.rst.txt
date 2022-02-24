@@ -1,0 +1,8 @@
+lshmm.forward_backward.fb_haploid_variants_samples_tree
+=======================================================
+
+Collection of functions to run forwards and backwards algorithms on haploid genotype data encoded with tree sequences.
+
+.. gnomad_automodulesummary:: lshmm.forward_backward.fb_haploid_variants_samples_tree
+
+.. automodule:: lshmm.forward_backward.fb_haploid_variants_samples_tree

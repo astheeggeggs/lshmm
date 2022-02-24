@@ -1,0 +1,8 @@
+lshmm.forward_backward.fb_diploid_variants_samples_tree
+=======================================================
+
+WIP: Collection of functions to run forwards and backwards algorithms on diploid genotype data encoded with tree sequences.
+
+.. gnomad_automodulesummary:: lshmm.forward_backward.fb_diploid_variants_samples_tree
+
+.. automodule:: lshmm.forward_backward.fb_diploid_variants_samples_tree

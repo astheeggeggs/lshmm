@@ -1,0 +1,12 @@
+lshmm.viterbi
+=============
+
+
+
+.. toctree::
+    :maxdepth: 2
+
+    vit_diploid_samples_variants <vit_diploid_samples_variants>
+    vit_diploid_variants_samples <vit_diploid_variants_samples>
+    vit_haploid_samples_variants <vit_haploid_samples_variants>
+    vit_haploid_variants_samples <vit_haploid_variants_samples>

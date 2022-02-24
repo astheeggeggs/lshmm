@@ -1,0 +1,513 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>lshmm.viterbi.vit_haploid_variants_samples &mdash; lshmm latest documentation</title>
+      <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="../../../_static/css/theme.css" type="text/css" />
+      <link rel="stylesheet" href="../../../_static/theme_overrides.css" type="text/css" />
+  <!--[if lt IE 9]>
+    <script src="../../../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script data-url_root="../../../" id="documentation_options" src="../../../_static/documentation_options.js"></script>
+        <script src="../../../_static/jquery.js"></script>
+        <script src="../../../_static/underscore.js"></script>
+        <script src="../../../_static/doctools.js"></script>
+    <script src="../../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+            <a href="../../../index.html" class="icon icon-home"> lshmm
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../api_reference/index.html">API Reference</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../index.html">lshmm</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../../index.html" class="icon icon-home"></a> &raquo;</li>
+          <li><a href="../../index.html">Module code</a> &raquo;</li>
+      <li>lshmm.viterbi.vit_haploid_variants_samples</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for lshmm.viterbi.vit_haploid_variants_samples</h1><div class="highlight"><pre>
+<span></span><span class="sd">&quot;&quot;&quot;Collection of functions to run Viterbi algorithms on haploid genotype data, where the data is structured as variants x samples.&quot;&quot;&quot;</span>
+<span class="kn">import</span> <span class="nn">numba</span> <span class="k">as</span> <span class="nn">nb</span>
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+
+<span class="c1"># Speedier version, variants x samples</span>
+
+<span class="c1"># def viterbi_naive_init(n, m, H, s, e, r):</span>
+<span class="c1">#     &#39;&#39;&#39;</span>
+<span class="c1">#     Initialisation portion of initial naive implementation of LS viterbi to avoid</span>
+<span class="c1">#     lots of code duplication</span>
+<span class="c1">#     &#39;&#39;&#39;</span>
+
+<span class="c1">#     V = np.zeros((m,n))</span>
+<span class="c1">#     P = np.zeros((m,n)).astype(np.int64)</span>
+<span class="c1">#     V[0,:] = 1/n * e[0,np.equal(H[0,:], s[0,0]).astype(np.int64)]</span>
+<span class="c1">#     P[0,:] = 0 # Reminder</span>
+<span class="c1">#     r_n = r/n</span>
+
+<span class="c1">#     return V, P, r_n</span>
+
+
+<div class="viewcode-block" id="viterbi_naive_init"><a class="viewcode-back" href="../../../api_reference/viterbi/vit_haploid_variants_samples.html#lshmm.viterbi.vit_haploid_variants_samples.viterbi_naive_init">[docs]</a><span class="nd">@nb</span><span class="o">.</span><span class="n">jit</span>
+<span class="k">def</span> <span class="nf">viterbi_naive_init</span><span class="p">(</span><span class="n">n</span><span class="p">,</span> <span class="n">m</span><span class="p">,</span> <span class="n">H</span><span class="p">,</span> <span class="n">s</span><span class="p">,</span> <span class="n">e</span><span class="p">,</span> <span class="n">r</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Initialise naive implementation of LS viterbi.&quot;&quot;&quot;</span>
+    <span class="n">V</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="n">m</span><span class="p">,</span> <span class="n">n</span><span class="p">))</span>
+    <span class="n">P</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="n">m</span><span class="p">,</span> <span class="n">n</span><span class="p">))</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">int64</span><span class="p">)</span>
+    <span class="n">r_n</span> <span class="o">=</span> <span class="n">r</span> <span class="o">/</span> <span class="n">n</span>
+    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">n</span><span class="p">):</span>
+        <span class="n">V</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="mi">1</span> <span class="o">/</span> <span class="n">n</span> <span class="o">*</span> <span class="n">e</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">int64</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">equal</span><span class="p">(</span><span class="n">H</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="n">i</span><span class="p">],</span> <span class="n">s</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">]))]</span>
+
+    <span class="k">return</span> <span class="n">V</span><span class="p">,</span> <span class="n">P</span><span class="p">,</span> <span class="n">r_n</span></div>
+
+
+<span class="c1"># def viterbi_init(n, m, H, s, e, r):</span>
+<span class="c1">#     &#39;&#39;&#39;</span>
+<span class="c1">#     Initialisation portion of initial naive, but more space memory efficient implementation</span>
+<span class="c1">#     of LS viterbi to avoid lots of code duplication</span>
+<span class="c1">#     &#39;&#39;&#39;</span>
+
+<span class="c1">#     V_previous = 1/n * e[0,np.equal(H[0,:], s[0,0]).astype(np.int64)]</span>
+<span class="c1">#     V = np.zeros(n)</span>
+<span class="c1">#     P = np.zeros((m,n)).astype(np.int64)</span>
+<span class="c1">#     P[0,:] = 0 # Reminder</span>
+<span class="c1">#     r_n = r/n</span>
+
+<span class="c1">#     return V, V_previous, P, r_n</span>
+
+
+<div class="viewcode-block" id="viterbi_init"><a class="viewcode-back" href="../../../api_reference/viterbi/vit_haploid_variants_samples.html#lshmm.viterbi.vit_haploid_variants_samples.viterbi_init">[docs]</a><span class="nd">@nb</span><span class="o">.</span><span class="n">jit</span>
+<span class="k">def</span> <span class="nf">viterbi_init</span><span class="p">(</span><span class="n">n</span><span class="p">,</span> <span class="n">m</span><span class="p">,</span> <span class="n">H</span><span class="p">,</span> <span class="n">s</span><span class="p">,</span> <span class="n">e</span><span class="p">,</span> <span class="n">r</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Initialise naive, but more space memory efficient implementation of LS viterbi.&quot;&quot;&quot;</span>
+    <span class="n">V_previous</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">n</span><span class="p">)</span>
+    <span class="n">V</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">n</span><span class="p">)</span>
+    <span class="n">P</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="n">m</span><span class="p">,</span> <span class="n">n</span><span class="p">))</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">int64</span><span class="p">)</span>
+    <span class="n">r_n</span> <span class="o">=</span> <span class="n">r</span> <span class="o">/</span> <span class="n">n</span>
+
+    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">n</span><span class="p">):</span>
+        <span class="n">V_previous</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="mi">1</span> <span class="o">/</span> <span class="n">n</span> <span class="o">*</span> <span class="n">e</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">int64</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">equal</span><span class="p">(</span><span class="n">H</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="n">i</span><span class="p">],</span> <span class="n">s</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">]))]</span>
+
+    <span class="k">return</span> <span class="n">V</span><span class="p">,</span> <span class="n">V_previous</span><span class="p">,</span> <span class="n">P</span><span class="p">,</span> <span class="n">r_n</span></div>
+
+
+<span class="c1"># def forwards_viterbi_hap_naive(n, m, H, s, e, r):</span>
+<span class="c1">#     &#39;&#39;&#39;</span>
+<span class="c1">#     Simple naive LS forward Viterbi algorithm.</span>
+<span class="c1">#     &#39;&#39;&#39;</span>
+
+<span class="c1">#     # Initialise</span>
+<span class="c1">#     V, P, r_n = viterbi_naive_init(n, m, H, s, e, r)</span>
+
+<span class="c1">#     for j in range(1,m):</span>
+<span class="c1">#         for i in range(n):</span>
+<span class="c1">#             # Get the vector to maximise over</span>
+<span class="c1">#             v = np.zeros(n)</span>
+<span class="c1">#             for k in range(n):</span>
+<span class="c1">#                 # v[k] = e[j,np.equal(H[j,i], s[0,j]).astype(np.int64)] * V[j-1,k]</span>
+<span class="c1">#                 v[k] = e[j,np.int64(np.equal(H[j,i], s[0,j]))] * V[j-1,k]</span>
+<span class="c1">#                 if k == i:</span>
+<span class="c1">#                     v[k] *= 1 - r[j] + r_n[j]</span>
+<span class="c1">#                 else:</span>
+<span class="c1">#                     v[k] *= r_n[j]</span>
+<span class="c1">#             P[j,i] = np.argmax(v)</span>
+<span class="c1">#             V[j,i] = v[P[j,i]]</span>
+
+<span class="c1">#     ll = np.log10(np.amax(V[m-1,:]))</span>
+
+<span class="c1">#     return V, P, ll</span>
+
+
+<div class="viewcode-block" id="forwards_viterbi_hap_naive"><a class="viewcode-back" href="../../../api_reference/viterbi/vit_haploid_variants_samples.html#lshmm.viterbi.vit_haploid_variants_samples.forwards_viterbi_hap_naive">[docs]</a><span class="nd">@nb</span><span class="o">.</span><span class="n">jit</span>
+<span class="k">def</span> <span class="nf">forwards_viterbi_hap_naive</span><span class="p">(</span><span class="n">n</span><span class="p">,</span> <span class="n">m</span><span class="p">,</span> <span class="n">H</span><span class="p">,</span> <span class="n">s</span><span class="p">,</span> <span class="n">e</span><span class="p">,</span> <span class="n">r</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Naive implementation of LS haploid Viterbi algorithm.&quot;&quot;&quot;</span>
+    <span class="c1"># Initialise</span>
+    <span class="n">V</span><span class="p">,</span> <span class="n">P</span><span class="p">,</span> <span class="n">r_n</span> <span class="o">=</span> <span class="n">viterbi_naive_init</span><span class="p">(</span><span class="n">n</span><span class="p">,</span> <span class="n">m</span><span class="p">,</span> <span class="n">H</span><span class="p">,</span> <span class="n">s</span><span class="p">,</span> <span class="n">e</span><span class="p">,</span> <span class="n">r</span><span class="p">)</span>
+
+    <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="n">m</span><span class="p">):</span>
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">n</span><span class="p">):</span>
+            <span class="c1"># Get the vector to maximise over</span>
+            <span class="n">v</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">n</span><span class="p">)</span>
+            <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">n</span><span class="p">):</span>
+                <span class="c1"># v[k] = e[j,np.equal(H[j,i], s[0,j]).astype(np.int64)] * V[j-1,k]</span>
+                <span class="n">v</span><span class="p">[</span><span class="n">k</span><span class="p">]</span> <span class="o">=</span> <span class="n">e</span><span class="p">[</span><span class="n">j</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">int64</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">equal</span><span class="p">(</span><span class="n">H</span><span class="p">[</span><span class="n">j</span><span class="p">,</span> <span class="n">i</span><span class="p">],</span> <span class="n">s</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="n">j</span><span class="p">]))]</span> <span class="o">*</span> <span class="n">V</span><span class="p">[</span><span class="n">j</span> <span class="o">-</span> <span class="mi">1</span><span class="p">,</span> <span class="n">k</span><span class="p">]</span>
+                <span class="k">if</span> <span class="n">k</span> <span class="o">==</span> <span class="n">i</span><span class="p">:</span>
+                    <span class="n">v</span><span class="p">[</span><span class="n">k</span><span class="p">]</span> <span class="o">*=</span> <span class="mi">1</span> <span class="o">-</span> <span class="n">r</span><span class="p">[</span><span class="n">j</span><span class="p">]</span> <span class="o">+</span> <span class="n">r_n</span><span class="p">[</span><span class="n">j</span><span class="p">]</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">v</span><span class="p">[</span><span class="n">k</span><span class="p">]</span> <span class="o">*=</span> <span class="n">r_n</span><span class="p">[</span><span class="n">j</span><span class="p">]</span>
+            <span class="n">P</span><span class="p">[</span><span class="n">j</span><span class="p">,</span> <span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">argmax</span><span class="p">(</span><span class="n">v</span><span class="p">)</span>
+            <span class="n">V</span><span class="p">[</span><span class="n">j</span><span class="p">,</span> <span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">v</span><span class="p">[</span><span class="n">P</span><span class="p">[</span><span class="n">j</span><span class="p">,</span> <span class="n">i</span><span class="p">]]</span>
+
+    <span class="n">ll</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">log10</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">amax</span><span class="p">(</span><span class="n">V</span><span class="p">[</span><span class="n">m</span> <span class="o">-</span> <span class="mi">1</span><span class="p">,</span> <span class="p">:]))</span>
+
+    <span class="k">return</span> <span class="n">V</span><span class="p">,</span> <span class="n">P</span><span class="p">,</span> <span class="n">ll</span></div>
+
+
+<span class="c1"># def forwards_viterbi_hap_naive_vec(n, m, H, s, e, r):</span>
+<span class="c1">#     &#39;&#39;&#39;</span>
+<span class="c1">#     Simple matrix based method naive LS forward Viterbi algorithm. Vectorised things</span>
+<span class="c1">#      - I jumped the gun!</span>
+<span class="c1">#     &#39;&#39;&#39;</span>
+
+<span class="c1">#     # Initialise</span>
+<span class="c1">#     V, P, r_n = viterbi_naive_init(n, m, H, s, e, r)</span>
+
+<span class="c1">#     for j in range(1,m):</span>
+<span class="c1">#         v_tmp = V[j-1,:] * r_n[j]</span>
+<span class="c1">#         for i in range(n):</span>
+<span class="c1">#             v = np.copy(v_tmp)</span>
+<span class="c1">#             v[i] += V[j-1,i] * (1 - r[j])</span>
+<span class="c1">#             v *= e[j,np.int64(np.equal(H[j,i], s[0,j]))]</span>
+<span class="c1">#             P[j,i] = np.argmax(v)</span>
+<span class="c1">#             V[j,i] = v[P[j,i]]</span>
+
+<span class="c1">#     ll = np.log10(np.amax(V[m-1,:]))</span>
+
+<span class="c1">#     return V, P, ll</span>
+
+
+<div class="viewcode-block" id="forwards_viterbi_hap_naive_vec"><a class="viewcode-back" href="../../../api_reference/viterbi/vit_haploid_variants_samples.html#lshmm.viterbi.vit_haploid_variants_samples.forwards_viterbi_hap_naive_vec">[docs]</a><span class="nd">@nb</span><span class="o">.</span><span class="n">jit</span>
+<span class="k">def</span> <span class="nf">forwards_viterbi_hap_naive_vec</span><span class="p">(</span><span class="n">n</span><span class="p">,</span> <span class="n">m</span><span class="p">,</span> <span class="n">H</span><span class="p">,</span> <span class="n">s</span><span class="p">,</span> <span class="n">e</span><span class="p">,</span> <span class="n">r</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Naive matrix based implementation of LS haploid forward Viterbi algorithm using numpy.&quot;&quot;&quot;</span>
+    <span class="c1"># Initialise</span>
+    <span class="n">V</span><span class="p">,</span> <span class="n">P</span><span class="p">,</span> <span class="n">r_n</span> <span class="o">=</span> <span class="n">viterbi_naive_init</span><span class="p">(</span><span class="n">n</span><span class="p">,</span> <span class="n">m</span><span class="p">,</span> <span class="n">H</span><span class="p">,</span> <span class="n">s</span><span class="p">,</span> <span class="n">e</span><span class="p">,</span> <span class="n">r</span><span class="p">)</span>
+
+    <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="n">m</span><span class="p">):</span>
+        <span class="n">v_tmp</span> <span class="o">=</span> <span class="n">V</span><span class="p">[</span><span class="n">j</span> <span class="o">-</span> <span class="mi">1</span><span class="p">,</span> <span class="p">:]</span> <span class="o">*</span> <span class="n">r_n</span><span class="p">[</span><span class="n">j</span><span class="p">]</span>
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">n</span><span class="p">):</span>
+            <span class="n">v</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">copy</span><span class="p">(</span><span class="n">v_tmp</span><span class="p">)</span>
+            <span class="n">v</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">+=</span> <span class="n">V</span><span class="p">[</span><span class="n">j</span> <span class="o">-</span> <span class="mi">1</span><span class="p">,</span> <span class="n">i</span><span class="p">]</span> <span class="o">*</span> <span class="p">(</span><span class="mi">1</span> <span class="o">-</span> <span class="n">r</span><span class="p">[</span><span class="n">j</span><span class="p">])</span>
+            <span class="n">v</span> <span class="o">*=</span> <span class="n">e</span><span class="p">[</span><span class="n">j</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">int64</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">equal</span><span class="p">(</span><span class="n">H</span><span class="p">[</span><span class="n">j</span><span class="p">,</span> <span class="n">i</span><span class="p">],</span> <span class="n">s</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="n">j</span><span class="p">]))]</span>
+            <span class="n">P</span><span class="p">[</span><span class="n">j</span><span class="p">,</span> <span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">argmax</span><span class="p">(</span><span class="n">v</span><span class="p">)</span>
+            <span class="n">V</span><span class="p">[</span><span class="n">j</span><span class="p">,</span> <span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">v</span><span class="p">[</span><span class="n">P</span><span class="p">[</span><span class="n">j</span><span class="p">,</span> <span class="n">i</span><span class="p">]]</span>
+
+    <span class="n">ll</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">log10</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">amax</span><span class="p">(</span><span class="n">V</span><span class="p">[</span><span class="n">m</span> <span class="o">-</span> <span class="mi">1</span><span class="p">,</span> <span class="p">:]))</span>
+
+    <span class="k">return</span> <span class="n">V</span><span class="p">,</span> <span class="n">P</span><span class="p">,</span> <span class="n">ll</span></div>
+
+
+<span class="c1"># def forwards_viterbi_hap_naive_low_mem(n, m, H, s, e, r):</span>
+<span class="c1">#     &#39;&#39;&#39;</span>
+<span class="c1">#     Simple naive LS forward Viterbi algorithm. More memory efficient.</span>
+<span class="c1">#     &#39;&#39;&#39;</span>
+
+<span class="c1">#     # Initialise</span>
+<span class="c1">#     V, V_previous, P, r_n = viterbi_init(n, m, H, s, e, r)</span>
+
+<span class="c1">#     for j in range(1,m):</span>
+<span class="c1">#         for i in range(n):</span>
+<span class="c1">#             # Get the vector to maximise over</span>
+<span class="c1">#             v = np.zeros(n)</span>
+<span class="c1">#             for k in range(n):</span>
+<span class="c1">#                 v[k] = e[j,np.int64(np.equal(H[j,i], s[0,j]))] * V_previous[k]</span>
+<span class="c1">#                 if k == i:</span>
+<span class="c1">#                     v[k] *= 1 - r[j] + r_n[j]</span>
+<span class="c1">#                 else:</span>
+<span class="c1">#                     v[k] *= r_n[j]</span>
+<span class="c1">#             P[j,i] = np.argmax(v)</span>
+<span class="c1">#             V[i] = v[P[j,i]]</span>
+<span class="c1">#         V_previous = np.copy(V)</span>
+
+<span class="c1">#     ll = np.log10(np.amax(V))</span>
+
+<span class="c1">#     return V, P, ll</span>
+
+
+<div class="viewcode-block" id="forwards_viterbi_hap_naive_low_mem"><a class="viewcode-back" href="../../../api_reference/viterbi/vit_haploid_variants_samples.html#lshmm.viterbi.vit_haploid_variants_samples.forwards_viterbi_hap_naive_low_mem">[docs]</a><span class="nd">@nb</span><span class="o">.</span><span class="n">jit</span>
+<span class="k">def</span> <span class="nf">forwards_viterbi_hap_naive_low_mem</span><span class="p">(</span><span class="n">n</span><span class="p">,</span> <span class="n">m</span><span class="p">,</span> <span class="n">H</span><span class="p">,</span> <span class="n">s</span><span class="p">,</span> <span class="n">e</span><span class="p">,</span> <span class="n">r</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Naive implementation of LS haploid Viterbi algorithm, with reduced memory.&quot;&quot;&quot;</span>
+    <span class="c1"># Initialise</span>
+    <span class="n">V</span><span class="p">,</span> <span class="n">V_previous</span><span class="p">,</span> <span class="n">P</span><span class="p">,</span> <span class="n">r_n</span> <span class="o">=</span> <span class="n">viterbi_init</span><span class="p">(</span><span class="n">n</span><span class="p">,</span> <span class="n">m</span><span class="p">,</span> <span class="n">H</span><span class="p">,</span> <span class="n">s</span><span class="p">,</span> <span class="n">e</span><span class="p">,</span> <span class="n">r</span><span class="p">)</span>
+
+    <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="n">m</span><span class="p">):</span>
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">n</span><span class="p">):</span>
+            <span class="c1"># Get the vector to maximise over</span>
+            <span class="n">v</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">n</span><span class="p">)</span>
+            <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">n</span><span class="p">):</span>
+                <span class="n">v</span><span class="p">[</span><span class="n">k</span><span class="p">]</span> <span class="o">=</span> <span class="n">e</span><span class="p">[</span><span class="n">j</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">int64</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">equal</span><span class="p">(</span><span class="n">H</span><span class="p">[</span><span class="n">j</span><span class="p">,</span> <span class="n">i</span><span class="p">],</span> <span class="n">s</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="n">j</span><span class="p">]))]</span> <span class="o">*</span> <span class="n">V_previous</span><span class="p">[</span><span class="n">k</span><span class="p">]</span>
+                <span class="k">if</span> <span class="n">k</span> <span class="o">==</span> <span class="n">i</span><span class="p">:</span>
+                    <span class="n">v</span><span class="p">[</span><span class="n">k</span><span class="p">]</span> <span class="o">*=</span> <span class="mi">1</span> <span class="o">-</span> <span class="n">r</span><span class="p">[</span><span class="n">j</span><span class="p">]</span> <span class="o">+</span> <span class="n">r_n</span><span class="p">[</span><span class="n">j</span><span class="p">]</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">v</span><span class="p">[</span><span class="n">k</span><span class="p">]</span> <span class="o">*=</span> <span class="n">r_n</span><span class="p">[</span><span class="n">j</span><span class="p">]</span>
+            <span class="n">P</span><span class="p">[</span><span class="n">j</span><span class="p">,</span> <span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">argmax</span><span class="p">(</span><span class="n">v</span><span class="p">)</span>
+            <span class="n">V</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">v</span><span class="p">[</span><span class="n">P</span><span class="p">[</span><span class="n">j</span><span class="p">,</span> <span class="n">i</span><span class="p">]]</span>
+        <span class="n">V_previous</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">copy</span><span class="p">(</span><span class="n">V</span><span class="p">)</span>
+
+    <span class="n">ll</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">log10</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">amax</span><span class="p">(</span><span class="n">V</span><span class="p">))</span>
+
+    <span class="k">return</span> <span class="n">V</span><span class="p">,</span> <span class="n">P</span><span class="p">,</span> <span class="n">ll</span></div>
+
+
+<span class="c1"># def forwards_viterbi_hap_naive_low_mem_rescaling(n, m, H, s, e, r):</span>
+<span class="c1">#     &#39;&#39;&#39;</span>
+<span class="c1">#     Simple naive LS forward Viterbi algorithm. More memory efficient, and with</span>
+<span class="c1">#     a rescaling to avoid underflow problems</span>
+<span class="c1">#     &#39;&#39;&#39;</span>
+
+<span class="c1">#     # Initialise</span>
+<span class="c1">#     V, V_previous, P, r_n = viterbi_init(n, m, H, s, e, r)</span>
+<span class="c1">#     c = np.ones(m)</span>
+
+<span class="c1">#     for j in range(1,m):</span>
+<span class="c1">#         c[j] =  np.amax(V_previous)</span>
+<span class="c1">#         V_previous *= 1/c[j]</span>
+<span class="c1">#         for i in range(n):</span>
+<span class="c1">#             # Get the vector to maximise over</span>
+<span class="c1">#             v = np.zeros(n)</span>
+<span class="c1">#             for k in range(n):</span>
+<span class="c1">#                 v[k] = e[j,np.int64(np.equal(H[j,i], s[0,j]))] * V_previous[k]</span>
+<span class="c1">#                 if k == i:</span>
+<span class="c1">#                     v[k] *= 1 - r[j] + r_n[j]</span>
+<span class="c1">#                 else:</span>
+<span class="c1">#                     v[k] *= r_n[j]</span>
+<span class="c1">#             P[j,i] = np.argmax(v)</span>
+<span class="c1">#             V[i] = v[P[j,i]]</span>
+
+<span class="c1">#         V_previous = np.copy(V)</span>
+
+<span class="c1">#     ll = np.sum(np.log10(c)) + np.log10(np.amax(V))</span>
+
+<span class="c1">#     return V, P, ll</span>
+
+
+<div class="viewcode-block" id="forwards_viterbi_hap_naive_low_mem_rescaling"><a class="viewcode-back" href="../../../api_reference/viterbi/vit_haploid_variants_samples.html#lshmm.viterbi.vit_haploid_variants_samples.forwards_viterbi_hap_naive_low_mem_rescaling">[docs]</a><span class="nd">@nb</span><span class="o">.</span><span class="n">jit</span>
+<span class="k">def</span> <span class="nf">forwards_viterbi_hap_naive_low_mem_rescaling</span><span class="p">(</span><span class="n">n</span><span class="p">,</span> <span class="n">m</span><span class="p">,</span> <span class="n">H</span><span class="p">,</span> <span class="n">s</span><span class="p">,</span> <span class="n">e</span><span class="p">,</span> <span class="n">r</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Naive implementation of LS haploid Viterbi algorithm, with reduced memory and rescaling.&quot;&quot;&quot;</span>
+    <span class="c1"># Initialise</span>
+    <span class="n">V</span><span class="p">,</span> <span class="n">V_previous</span><span class="p">,</span> <span class="n">P</span><span class="p">,</span> <span class="n">r_n</span> <span class="o">=</span> <span class="n">viterbi_init</span><span class="p">(</span><span class="n">n</span><span class="p">,</span> <span class="n">m</span><span class="p">,</span> <span class="n">H</span><span class="p">,</span> <span class="n">s</span><span class="p">,</span> <span class="n">e</span><span class="p">,</span> <span class="n">r</span><span class="p">)</span>
+    <span class="n">c</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">ones</span><span class="p">(</span><span class="n">m</span><span class="p">)</span>
+
+    <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="n">m</span><span class="p">):</span>
+        <span class="n">c</span><span class="p">[</span><span class="n">j</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">amax</span><span class="p">(</span><span class="n">V_previous</span><span class="p">)</span>
+        <span class="n">V_previous</span> <span class="o">*=</span> <span class="mi">1</span> <span class="o">/</span> <span class="n">c</span><span class="p">[</span><span class="n">j</span><span class="p">]</span>
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">n</span><span class="p">):</span>
+            <span class="c1"># Get the vector to maximise over</span>
+            <span class="n">v</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">n</span><span class="p">)</span>
+            <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">n</span><span class="p">):</span>
+                <span class="n">v</span><span class="p">[</span><span class="n">k</span><span class="p">]</span> <span class="o">=</span> <span class="n">e</span><span class="p">[</span><span class="n">j</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">int64</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">equal</span><span class="p">(</span><span class="n">H</span><span class="p">[</span><span class="n">j</span><span class="p">,</span> <span class="n">i</span><span class="p">],</span> <span class="n">s</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="n">j</span><span class="p">]))]</span> <span class="o">*</span> <span class="n">V_previous</span><span class="p">[</span><span class="n">k</span><span class="p">]</span>
+                <span class="k">if</span> <span class="n">k</span> <span class="o">==</span> <span class="n">i</span><span class="p">:</span>
+                    <span class="n">v</span><span class="p">[</span><span class="n">k</span><span class="p">]</span> <span class="o">*=</span> <span class="mi">1</span> <span class="o">-</span> <span class="n">r</span><span class="p">[</span><span class="n">j</span><span class="p">]</span> <span class="o">+</span> <span class="n">r_n</span><span class="p">[</span><span class="n">j</span><span class="p">]</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">v</span><span class="p">[</span><span class="n">k</span><span class="p">]</span> <span class="o">*=</span> <span class="n">r_n</span><span class="p">[</span><span class="n">j</span><span class="p">]</span>
+            <span class="n">P</span><span class="p">[</span><span class="n">j</span><span class="p">,</span> <span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">argmax</span><span class="p">(</span><span class="n">v</span><span class="p">)</span>
+            <span class="n">V</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">v</span><span class="p">[</span><span class="n">P</span><span class="p">[</span><span class="n">j</span><span class="p">,</span> <span class="n">i</span><span class="p">]]</span>
+
+        <span class="n">V_previous</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">copy</span><span class="p">(</span><span class="n">V</span><span class="p">)</span>
+
+    <span class="n">ll</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">log10</span><span class="p">(</span><span class="n">c</span><span class="p">))</span> <span class="o">+</span> <span class="n">np</span><span class="o">.</span><span class="n">log10</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">amax</span><span class="p">(</span><span class="n">V</span><span class="p">))</span>
+
+    <span class="k">return</span> <span class="n">V</span><span class="p">,</span> <span class="n">P</span><span class="p">,</span> <span class="n">ll</span></div>
+
+
+<span class="c1"># def forwards_viterbi_hap_low_mem_rescaling(n, m, H, s, e, r):</span>
+<span class="c1">#     &#39;&#39;&#39;</span>
+<span class="c1">#     Simple LS forward Viterbi algorithm. Smaller memory footprint and rescaling,</span>
+<span class="c1">#     and considers the structure of the Markov process.</span>
+<span class="c1">#     &#39;&#39;&#39;</span>
+
+<span class="c1">#     # Initialise</span>
+<span class="c1">#     V, V_previous, P, r_n = viterbi_init(n, m, H, s, e, r)</span>
+<span class="c1">#     c = np.ones(m)</span>
+
+<span class="c1">#     for j in range(1,m):</span>
+<span class="c1">#         argmax = np.argmax(V_previous)</span>
+<span class="c1">#         c[j] =  V_previous[argmax]</span>
+<span class="c1">#         V_previous *= 1/c[j]</span>
+<span class="c1">#         V = np.zeros(n)</span>
+<span class="c1">#         for i in range(n):</span>
+<span class="c1">#             V[i] = V_previous[i] * (1 - r[j] + r_n[j])</span>
+<span class="c1">#             P[j,i] = i</span>
+<span class="c1">#             if V[i] &lt; r_n[j]:</span>
+<span class="c1">#                 V[i] = r_n[j]</span>
+<span class="c1">#                 P[j,i] = argmax</span>
+<span class="c1">#             V[i] *= e[j,np.equal(H[j,i], s[0,j]).astype(np.int64)]</span>
+<span class="c1">#         V_previous = np.copy(V)</span>
+
+<span class="c1">#     ll = np.sum(np.log10(c)) + np.log10(np.max(V))</span>
+
+<span class="c1">#     return V, P, ll</span>
+
+
+<div class="viewcode-block" id="forwards_viterbi_hap_low_mem_rescaling"><a class="viewcode-back" href="../../../api_reference/viterbi/vit_haploid_variants_samples.html#lshmm.viterbi.vit_haploid_variants_samples.forwards_viterbi_hap_low_mem_rescaling">[docs]</a><span class="nd">@nb</span><span class="o">.</span><span class="n">jit</span>
+<span class="k">def</span> <span class="nf">forwards_viterbi_hap_low_mem_rescaling</span><span class="p">(</span><span class="n">n</span><span class="p">,</span> <span class="n">m</span><span class="p">,</span> <span class="n">H</span><span class="p">,</span> <span class="n">s</span><span class="p">,</span> <span class="n">e</span><span class="p">,</span> <span class="n">r</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;LS haploid Viterbi algorithm, with reduced memory and exploits the Markov process structure.&quot;&quot;&quot;</span>
+    <span class="c1"># Initialise</span>
+    <span class="n">V</span><span class="p">,</span> <span class="n">V_previous</span><span class="p">,</span> <span class="n">P</span><span class="p">,</span> <span class="n">r_n</span> <span class="o">=</span> <span class="n">viterbi_init</span><span class="p">(</span><span class="n">n</span><span class="p">,</span> <span class="n">m</span><span class="p">,</span> <span class="n">H</span><span class="p">,</span> <span class="n">s</span><span class="p">,</span> <span class="n">e</span><span class="p">,</span> <span class="n">r</span><span class="p">)</span>
+    <span class="n">c</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">ones</span><span class="p">(</span><span class="n">m</span><span class="p">)</span>
+
+    <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="n">m</span><span class="p">):</span>
+        <span class="n">argmax</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">argmax</span><span class="p">(</span><span class="n">V_previous</span><span class="p">)</span>
+        <span class="n">c</span><span class="p">[</span><span class="n">j</span><span class="p">]</span> <span class="o">=</span> <span class="n">V_previous</span><span class="p">[</span><span class="n">argmax</span><span class="p">]</span>
+        <span class="n">V_previous</span> <span class="o">*=</span> <span class="mi">1</span> <span class="o">/</span> <span class="n">c</span><span class="p">[</span><span class="n">j</span><span class="p">]</span>
+        <span class="n">V</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">n</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">n</span><span class="p">):</span>
+            <span class="n">V</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">V_previous</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">*</span> <span class="p">(</span><span class="mi">1</span> <span class="o">-</span> <span class="n">r</span><span class="p">[</span><span class="n">j</span><span class="p">]</span> <span class="o">+</span> <span class="n">r_n</span><span class="p">[</span><span class="n">j</span><span class="p">])</span>
+            <span class="n">P</span><span class="p">[</span><span class="n">j</span><span class="p">,</span> <span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">i</span>
+            <span class="k">if</span> <span class="n">V</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">&lt;</span> <span class="n">r_n</span><span class="p">[</span><span class="n">j</span><span class="p">]:</span>
+                <span class="n">V</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">r_n</span><span class="p">[</span><span class="n">j</span><span class="p">]</span>
+                <span class="n">P</span><span class="p">[</span><span class="n">j</span><span class="p">,</span> <span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">argmax</span>
+            <span class="n">V</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">*=</span> <span class="n">e</span><span class="p">[</span><span class="n">j</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">int64</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">equal</span><span class="p">(</span><span class="n">H</span><span class="p">[</span><span class="n">j</span><span class="p">,</span> <span class="n">i</span><span class="p">],</span> <span class="n">s</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="n">j</span><span class="p">]))]</span>
+        <span class="n">V_previous</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">copy</span><span class="p">(</span><span class="n">V</span><span class="p">)</span>
+
+    <span class="n">ll</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">log10</span><span class="p">(</span><span class="n">c</span><span class="p">))</span> <span class="o">+</span> <span class="n">np</span><span class="o">.</span><span class="n">log10</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">max</span><span class="p">(</span><span class="n">V</span><span class="p">))</span>
+
+    <span class="k">return</span> <span class="n">V</span><span class="p">,</span> <span class="n">P</span><span class="p">,</span> <span class="n">ll</span></div>
+
+
+<span class="c1"># def forwards_viterbi_hap_lower_mem_rescaling(n, m, H, s, e, r):</span>
+<span class="c1">#     &#39;&#39;&#39;</span>
+<span class="c1">#     Simple LS forward Viterbi algorithm. Even smaller memory footprint and rescaling,</span>
+<span class="c1">#     and considers the structure of the Markov process.</span>
+<span class="c1">#     &#39;&#39;&#39;</span>
+
+<span class="c1">#     # Initialise</span>
+<span class="c1">#     V = 1/n * e[0, np.equal(H[0,:], s[0,0]).astype(np.int64)]</span>
+<span class="c1">#     P = np.zeros((m,n)).astype(np.int64)</span>
+<span class="c1">#     # P[0,:] = 0</span>
+<span class="c1">#     r_n = r/n</span>
+<span class="c1">#     c = np.ones(m)</span>
+
+<span class="c1">#     for j in range(1,m):</span>
+<span class="c1">#         argmax = np.argmax(V)</span>
+<span class="c1">#         c[j] =  V[argmax]</span>
+<span class="c1">#         V *= 1/c[j]</span>
+<span class="c1">#         for i in range(n):</span>
+<span class="c1">#             V[i] = V[i] * (1 - r[j] + r_n[j])</span>
+<span class="c1">#             P[j,i] = i</span>
+<span class="c1">#             if V[i] &lt; r_n[j]:</span>
+<span class="c1">#                 V[i] = r_n[j]</span>
+<span class="c1">#                 P[j,i] = argmax</span>
+<span class="c1">#             V[i] *= e[j,np.int64(np.equal(H[j,i], s[0,j]))]</span>
+
+<span class="c1">#     ll = np.sum(np.log10(c)) + np.log10(np.max(V))</span>
+
+<span class="c1">#     return V, P, ll</span>
+
+
+<div class="viewcode-block" id="forwards_viterbi_hap_lower_mem_rescaling"><a class="viewcode-back" href="../../../api_reference/viterbi/vit_haploid_variants_samples.html#lshmm.viterbi.vit_haploid_variants_samples.forwards_viterbi_hap_lower_mem_rescaling">[docs]</a><span class="nd">@nb</span><span class="o">.</span><span class="n">jit</span>
+<span class="k">def</span> <span class="nf">forwards_viterbi_hap_lower_mem_rescaling</span><span class="p">(</span><span class="n">n</span><span class="p">,</span> <span class="n">m</span><span class="p">,</span> <span class="n">H</span><span class="p">,</span> <span class="n">s</span><span class="p">,</span> <span class="n">e</span><span class="p">,</span> <span class="n">r</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;LS haploid Viterbi algorithm with even smaller memory footprint and exploits the Markov process structure.&quot;&quot;&quot;</span>
+    <span class="c1"># Initialise</span>
+    <span class="n">V</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">n</span><span class="p">)</span>
+    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">n</span><span class="p">):</span>
+        <span class="n">V</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="mi">1</span> <span class="o">/</span> <span class="n">n</span> <span class="o">*</span> <span class="n">e</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">int64</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">equal</span><span class="p">(</span><span class="n">H</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="n">i</span><span class="p">],</span> <span class="n">s</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">]))]</span>
+    <span class="n">P</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="n">m</span><span class="p">,</span> <span class="n">n</span><span class="p">))</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">int64</span><span class="p">)</span>
+    <span class="n">r_n</span> <span class="o">=</span> <span class="n">r</span> <span class="o">/</span> <span class="n">n</span>
+    <span class="n">c</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">ones</span><span class="p">(</span><span class="n">m</span><span class="p">)</span>
+
+    <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="n">m</span><span class="p">):</span>
+        <span class="n">argmax</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">argmax</span><span class="p">(</span><span class="n">V</span><span class="p">)</span>
+        <span class="n">c</span><span class="p">[</span><span class="n">j</span><span class="p">]</span> <span class="o">=</span> <span class="n">V</span><span class="p">[</span><span class="n">argmax</span><span class="p">]</span>
+        <span class="n">V</span> <span class="o">*=</span> <span class="mi">1</span> <span class="o">/</span> <span class="n">c</span><span class="p">[</span><span class="n">j</span><span class="p">]</span>
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">n</span><span class="p">):</span>
+            <span class="n">V</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">V</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">*</span> <span class="p">(</span><span class="mi">1</span> <span class="o">-</span> <span class="n">r</span><span class="p">[</span><span class="n">j</span><span class="p">]</span> <span class="o">+</span> <span class="n">r_n</span><span class="p">[</span><span class="n">j</span><span class="p">])</span>
+            <span class="n">P</span><span class="p">[</span><span class="n">j</span><span class="p">,</span> <span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">i</span>
+            <span class="k">if</span> <span class="n">V</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">&lt;</span> <span class="n">r_n</span><span class="p">[</span><span class="n">j</span><span class="p">]:</span>
+                <span class="n">V</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">r_n</span><span class="p">[</span><span class="n">j</span><span class="p">]</span>
+                <span class="n">P</span><span class="p">[</span><span class="n">j</span><span class="p">,</span> <span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">argmax</span>
+            <span class="n">V</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">*=</span> <span class="n">e</span><span class="p">[</span><span class="n">j</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">int64</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">equal</span><span class="p">(</span><span class="n">H</span><span class="p">[</span><span class="n">j</span><span class="p">,</span> <span class="n">i</span><span class="p">],</span> <span class="n">s</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="n">j</span><span class="p">]))]</span>
+
+    <span class="n">ll</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">log10</span><span class="p">(</span><span class="n">c</span><span class="p">))</span> <span class="o">+</span> <span class="n">np</span><span class="o">.</span><span class="n">log10</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">max</span><span class="p">(</span><span class="n">V</span><span class="p">))</span>
+
+    <span class="k">return</span> <span class="n">V</span><span class="p">,</span> <span class="n">P</span><span class="p">,</span> <span class="n">ll</span></div>
+
+
+<span class="c1"># Speedier version, variants x samples</span>
+<div class="viewcode-block" id="backwards_viterbi_hap"><a class="viewcode-back" href="../../../api_reference/viterbi/vit_haploid_variants_samples.html#lshmm.viterbi.vit_haploid_variants_samples.backwards_viterbi_hap">[docs]</a><span class="nd">@nb</span><span class="o">.</span><span class="n">jit</span>
+<span class="k">def</span> <span class="nf">backwards_viterbi_hap</span><span class="p">(</span><span class="n">m</span><span class="p">,</span> <span class="n">V_last</span><span class="p">,</span> <span class="n">P</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Run a backwards pass to determine the most likely path.&quot;&quot;&quot;</span>
+    <span class="c1"># Initialise</span>
+    <span class="k">assert</span> <span class="nb">len</span><span class="p">(</span><span class="n">V_last</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span> <span class="o">==</span> <span class="mi">1</span>
+    <span class="n">path</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">m</span><span class="p">)</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">int64</span><span class="p">)</span>
+    <span class="n">path</span><span class="p">[</span><span class="n">m</span> <span class="o">-</span> <span class="mi">1</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">argmax</span><span class="p">(</span><span class="n">V_last</span><span class="p">)</span>
+
+    <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">m</span> <span class="o">-</span> <span class="mi">2</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">):</span>
+        <span class="n">path</span><span class="p">[</span><span class="n">j</span><span class="p">]</span> <span class="o">=</span> <span class="n">P</span><span class="p">[</span><span class="n">j</span> <span class="o">+</span> <span class="mi">1</span><span class="p">,</span> <span class="n">path</span><span class="p">[</span><span class="n">j</span> <span class="o">+</span> <span class="mi">1</span><span class="p">]]</span>
+
+    <span class="k">return</span> <span class="n">path</span></div>
+
+
+<div class="viewcode-block" id="path_ll_hap"><a class="viewcode-back" href="../../../api_reference/viterbi/vit_haploid_variants_samples.html#lshmm.viterbi.vit_haploid_variants_samples.path_ll_hap">[docs]</a><span class="nd">@nb</span><span class="o">.</span><span class="n">jit</span>
+<span class="k">def</span> <span class="nf">path_ll_hap</span><span class="p">(</span><span class="n">n</span><span class="p">,</span> <span class="n">m</span><span class="p">,</span> <span class="n">H</span><span class="p">,</span> <span class="n">path</span><span class="p">,</span> <span class="n">s</span><span class="p">,</span> <span class="n">e</span><span class="p">,</span> <span class="n">r</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Evaluate log-likelihood path through a reference panel which results in sequence s.&quot;&quot;&quot;</span>
+    <span class="n">index</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">int64</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">equal</span><span class="p">(</span><span class="n">H</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="n">path</span><span class="p">[</span><span class="mi">0</span><span class="p">]],</span> <span class="n">s</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">]))</span>
+    <span class="n">log_prob_path</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">log10</span><span class="p">((</span><span class="mi">1</span> <span class="o">/</span> <span class="n">n</span><span class="p">)</span> <span class="o">*</span> <span class="n">e</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="n">index</span><span class="p">])</span>
+    <span class="n">old</span> <span class="o">=</span> <span class="n">path</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+    <span class="n">r_n</span> <span class="o">=</span> <span class="n">r</span> <span class="o">/</span> <span class="n">n</span>
+
+    <span class="k">for</span> <span class="n">l</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="n">m</span><span class="p">):</span>
+        <span class="n">index</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">int64</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">equal</span><span class="p">(</span><span class="n">H</span><span class="p">[</span><span class="n">l</span><span class="p">,</span> <span class="n">path</span><span class="p">[</span><span class="n">l</span><span class="p">]],</span> <span class="n">s</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="n">l</span><span class="p">]))</span>
+        <span class="n">current</span> <span class="o">=</span> <span class="n">path</span><span class="p">[</span><span class="n">l</span><span class="p">]</span>
+        <span class="n">same</span> <span class="o">=</span> <span class="n">old</span> <span class="o">==</span> <span class="n">current</span>
+
+        <span class="k">if</span> <span class="n">same</span><span class="p">:</span>
+            <span class="n">log_prob_path</span> <span class="o">+=</span> <span class="n">np</span><span class="o">.</span><span class="n">log10</span><span class="p">((</span><span class="mi">1</span> <span class="o">-</span> <span class="n">r</span><span class="p">[</span><span class="n">l</span><span class="p">])</span> <span class="o">+</span> <span class="n">r_n</span><span class="p">[</span><span class="n">l</span><span class="p">])</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">log_prob_path</span> <span class="o">+=</span> <span class="n">np</span><span class="o">.</span><span class="n">log10</span><span class="p">(</span><span class="n">r_n</span><span class="p">[</span><span class="n">l</span><span class="p">])</span>
+
+        <span class="n">log_prob_path</span> <span class="o">+=</span> <span class="n">np</span><span class="o">.</span><span class="n">log10</span><span class="p">(</span><span class="n">e</span><span class="p">[</span><span class="n">l</span><span class="p">,</span> <span class="n">index</span><span class="p">])</span>
+        <span class="n">old</span> <span class="o">=</span> <span class="n">current</span>
+
+    <span class="k">return</span> <span class="n">log_prob_path</span></div>
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p></p>
+  </div>
+
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

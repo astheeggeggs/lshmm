@@ -1,0 +1,531 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>lshmm.forward_backward.fb_diploid_variants_samples_tree &mdash; lshmm latest documentation</title>
+      <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="../../../_static/css/theme.css" type="text/css" />
+      <link rel="stylesheet" href="../../../_static/theme_overrides.css" type="text/css" />
+  <!--[if lt IE 9]>
+    <script src="../../../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script data-url_root="../../../" id="documentation_options" src="../../../_static/documentation_options.js"></script>
+        <script src="../../../_static/jquery.js"></script>
+        <script src="../../../_static/underscore.js"></script>
+        <script src="../../../_static/doctools.js"></script>
+    <script src="../../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+            <a href="../../../index.html" class="icon icon-home"> lshmm
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../api_reference/index.html">API Reference</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../index.html">lshmm</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../../index.html" class="icon icon-home"></a> &raquo;</li>
+          <li><a href="../../index.html">Module code</a> &raquo;</li>
+      <li>lshmm.forward_backward.fb_diploid_variants_samples_tree</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for lshmm.forward_backward.fb_diploid_variants_samples_tree</h1><div class="highlight"><pre>
+<span></span><span class="sd">&quot;&quot;&quot;WIP: Collection of functions to run forwards and backwards algorithms on diploid genotype data encoded with tree sequences.&quot;&quot;&quot;</span>
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="kn">import</span> <span class="nn">tskit</span>
+
+<span class="n">EQUAL_BOTH_HOM</span> <span class="o">=</span> <span class="mi">4</span>
+<span class="n">UNEQUAL_BOTH_HOM</span> <span class="o">=</span> <span class="mi">0</span>
+<span class="n">BOTH_HET</span> <span class="o">=</span> <span class="mi">7</span>
+<span class="n">REF_HOM_OBS_HET</span> <span class="o">=</span> <span class="mi">1</span>
+<span class="n">REF_HET_OBS_HOM</span> <span class="o">=</span> <span class="mi">2</span>
+
+
+<div class="viewcode-block" id="ValueTransition"><a class="viewcode-back" href="../../../api_reference/forward_backward/fb_diploid_variants_samples_tree.html#lshmm.forward_backward.fb_diploid_variants_samples_tree.ValueTransition">[docs]</a><span class="k">class</span> <span class="nc">ValueTransition</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;Simple struct holding value transition values.&quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">tree_1_node</span><span class="o">=-</span><span class="mi">1</span><span class="p">,</span> <span class="n">tree_2_node</span><span class="o">=-</span><span class="mi">1</span><span class="p">,</span> <span class="n">value</span><span class="o">=-</span><span class="mi">1</span><span class="p">,</span> <span class="n">value_index</span><span class="o">=-</span><span class="mi">1</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">tree_1_node</span> <span class="o">=</span> <span class="n">tree_1_node</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">tree_2_node</span> <span class="o">=</span> <span class="n">tree_2_node</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">value</span> <span class="o">=</span> <span class="n">value</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">value_index</span> <span class="o">=</span> <span class="n">value_index</span>
+
+<div class="viewcode-block" id="ValueTransition.copy"><a class="viewcode-back" href="../../../api_reference/forward_backward/fb_diploid_variants_samples_tree.html#lshmm.forward_backward.fb_diploid_variants_samples_tree.ValueTransition.copy">[docs]</a>    <span class="k">def</span> <span class="nf">copy</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Copy the value transition.&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="n">ValueTransition</span><span class="p">(</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">tree_1_node</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">tree_2_node</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">value</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">value_index</span>
+        <span class="p">)</span></div>
+
+    <span class="k">def</span> <span class="fm">__repr__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="nb">repr</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="vm">__dict__</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="fm">__str__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="nb">repr</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="LsHmmAlgorithm"><a class="viewcode-back" href="../../../api_reference/forward_backward/fb_diploid_variants_samples_tree.html#lshmm.forward_backward.fb_diploid_variants_samples_tree.LsHmmAlgorithm">[docs]</a><span class="k">class</span> <span class="nc">LsHmmAlgorithm</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;Abstract superclass of Li and Stephens HMM algorithm.&quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ts</span><span class="p">,</span> <span class="n">r</span><span class="p">,</span> <span class="n">mu</span><span class="p">,</span> <span class="n">precision</span><span class="o">=</span><span class="mi">10</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">ts</span> <span class="o">=</span> <span class="n">ts</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">mu</span> <span class="o">=</span> <span class="n">mu</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">r</span> <span class="o">=</span> <span class="n">r</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">precision</span> <span class="o">=</span> <span class="n">precision</span>
+        <span class="c1"># The array of ValueTransitions.</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">T</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="c1"># indexes in to the T array for each node.</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">T_index</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">ts</span><span class="o">.</span><span class="n">num_nodes</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">int</span><span class="p">)</span> <span class="o">-</span> <span class="mi">1</span>
+        <span class="c1"># The number of nodes underneath each element in the T array.</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">N</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">ts</span><span class="o">.</span><span class="n">num_nodes</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">int</span><span class="p">)</span>
+        <span class="c1"># Efficiently compute the allelic state at a site</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">allelic_state</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">ts</span><span class="o">.</span><span class="n">num_nodes</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">int</span><span class="p">)</span> <span class="o">-</span> <span class="mi">1</span>
+        <span class="c1"># Diffs so we can can update T and T_index between trees.</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">edge_diffs</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">ts</span><span class="o">.</span><span class="n">edge_diffs</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">parent</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">ts</span><span class="o">.</span><span class="n">num_nodes</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">int</span><span class="p">)</span> <span class="o">-</span> <span class="mi">1</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">tree</span> <span class="o">=</span> <span class="n">tskit</span><span class="o">.</span><span class="n">Tree</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">ts</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">output</span> <span class="o">=</span> <span class="kc">None</span>
+
+<div class="viewcode-block" id="LsHmmAlgorithm.check_integrity"><a class="viewcode-back" href="../../../api_reference/forward_backward/fb_diploid_variants_samples_tree.html#lshmm.forward_backward.fb_diploid_variants_samples_tree.LsHmmAlgorithm.check_integrity">[docs]</a>    <span class="k">def</span> <span class="nf">check_integrity</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Check the integrity of the algorithm.&quot;&quot;&quot;</span>
+        <span class="n">M</span> <span class="o">=</span> <span class="p">[</span><span class="n">st</span><span class="o">.</span><span class="n">tree_node</span> <span class="k">for</span> <span class="n">st</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">T</span> <span class="k">if</span> <span class="n">st</span><span class="o">.</span><span class="n">tree_node</span> <span class="o">!=</span> <span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+        <span class="k">assert</span> <span class="n">np</span><span class="o">.</span><span class="n">all</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">T_index</span><span class="p">[</span><span class="n">M</span><span class="p">]</span> <span class="o">&gt;=</span> <span class="mi">0</span><span class="p">)</span>
+        <span class="n">index</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">ones_like</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">T_index</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">bool</span><span class="p">)</span>
+        <span class="n">index</span><span class="p">[</span><span class="n">M</span><span class="p">]</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="k">assert</span> <span class="n">np</span><span class="o">.</span><span class="n">all</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">T_index</span><span class="p">[</span><span class="n">index</span><span class="p">]</span> <span class="o">==</span> <span class="o">-</span><span class="mi">1</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">j</span><span class="p">,</span> <span class="n">st</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">T</span><span class="p">):</span>
+            <span class="k">if</span> <span class="n">st</span><span class="o">.</span><span class="n">tree_node</span> <span class="o">!=</span> <span class="o">-</span><span class="mi">1</span><span class="p">:</span>
+                <span class="k">assert</span> <span class="n">j</span> <span class="o">==</span> <span class="bp">self</span><span class="o">.</span><span class="n">T_index</span><span class="p">[</span><span class="n">st</span><span class="o">.</span><span class="n">tree_node</span><span class="p">]</span></div>
+
+<div class="viewcode-block" id="LsHmmAlgorithm.compress"><a class="viewcode-back" href="../../../api_reference/forward_backward/fb_diploid_variants_samples_tree.html#lshmm.forward_backward.fb_diploid_variants_samples_tree.LsHmmAlgorithm.compress">[docs]</a>    <span class="k">def</span> <span class="nf">compress</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Compress the values in the tree.&quot;&quot;&quot;</span>
+        <span class="n">tree</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">tree</span>
+        <span class="n">T</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">T</span>
+        <span class="n">T_index</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">T_index</span>
+
+        <span class="n">values</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">unique</span><span class="p">(</span><span class="nb">list</span><span class="p">(</span><span class="n">st</span><span class="o">.</span><span class="n">value</span> <span class="k">if</span> <span class="n">st</span><span class="o">.</span><span class="n">tree_node</span> <span class="o">!=</span> <span class="o">-</span><span class="mi">1</span> <span class="k">else</span> <span class="mf">1e200</span> <span class="k">for</span> <span class="n">st</span> <span class="ow">in</span> <span class="n">T</span><span class="p">))</span>
+        <span class="k">for</span> <span class="n">st</span> <span class="ow">in</span> <span class="n">T</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">st</span><span class="o">.</span><span class="n">tree_node</span> <span class="o">!=</span> <span class="o">-</span><span class="mi">1</span><span class="p">:</span>
+                <span class="n">st</span><span class="o">.</span><span class="n">value_index</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">searchsorted</span><span class="p">(</span><span class="n">values</span><span class="p">,</span> <span class="n">st</span><span class="o">.</span><span class="n">value</span><span class="p">)</span>
+
+        <span class="n">child</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">values</span><span class="p">),</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">int</span><span class="p">)</span>
+        <span class="n">num_values</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">values</span><span class="p">)</span>
+        <span class="n">value_count</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">num_values</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">int</span><span class="p">)</span>
+
+        <span class="k">def</span> <span class="nf">compute</span><span class="p">(</span><span class="n">u</span><span class="p">,</span> <span class="n">parent_state</span><span class="p">):</span>
+            <span class="n">value_count</span><span class="p">[:]</span> <span class="o">=</span> <span class="mi">0</span>
+            <span class="k">for</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">tree</span><span class="o">.</span><span class="n">children</span><span class="p">(</span><span class="n">u</span><span class="p">):</span>
+                <span class="n">child</span><span class="p">[:]</span> <span class="o">=</span> <span class="n">optimal_set</span><span class="p">[</span><span class="n">v</span><span class="p">]</span>
+                <span class="c1"># If the set for a given child is empty, then we know it inherits</span>
+                <span class="c1"># directly from the parent state and must be a singleton set.</span>
+                <span class="k">if</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">child</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+                    <span class="n">child</span><span class="p">[</span><span class="n">parent_state</span><span class="p">]</span> <span class="o">=</span> <span class="mi">1</span>
+                <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">num_values</span><span class="p">):</span>
+                    <span class="n">value_count</span><span class="p">[</span><span class="n">j</span><span class="p">]</span> <span class="o">+=</span> <span class="n">child</span><span class="p">[</span><span class="n">j</span><span class="p">]</span>
+            <span class="n">max_value_count</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">max</span><span class="p">(</span><span class="n">value_count</span><span class="p">)</span>
+            <span class="n">optimal_set</span><span class="p">[</span><span class="n">u</span><span class="p">,</span> <span class="p">:]</span> <span class="o">=</span> <span class="mi">0</span>
+            <span class="n">optimal_set</span><span class="p">[</span><span class="n">u</span><span class="p">,</span> <span class="n">value_count</span> <span class="o">==</span> <span class="n">max_value_count</span><span class="p">]</span> <span class="o">=</span> <span class="mi">1</span>
+
+        <span class="n">optimal_set</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="n">tree</span><span class="o">.</span><span class="n">tree_sequence</span><span class="o">.</span><span class="n">num_nodes</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">values</span><span class="p">)),</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">int</span><span class="p">)</span>
+        <span class="n">t_node_time</span> <span class="o">=</span> <span class="p">[</span>
+            <span class="o">-</span><span class="mi">1</span> <span class="k">if</span> <span class="n">st</span><span class="o">.</span><span class="n">tree_node</span> <span class="o">==</span> <span class="o">-</span><span class="mi">1</span> <span class="k">else</span> <span class="n">tree</span><span class="o">.</span><span class="n">time</span><span class="p">(</span><span class="n">st</span><span class="o">.</span><span class="n">tree_node</span><span class="p">)</span> <span class="k">for</span> <span class="n">st</span> <span class="ow">in</span> <span class="n">T</span>
+        <span class="p">]</span>
+        <span class="n">order</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">argsort</span><span class="p">(</span><span class="n">t_node_time</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="n">order</span><span class="p">:</span>
+            <span class="n">st</span> <span class="o">=</span> <span class="n">T</span><span class="p">[</span><span class="n">j</span><span class="p">]</span>
+            <span class="n">u</span> <span class="o">=</span> <span class="n">st</span><span class="o">.</span><span class="n">tree_node</span>
+            <span class="k">if</span> <span class="n">u</span> <span class="o">!=</span> <span class="o">-</span><span class="mi">1</span><span class="p">:</span>
+                <span class="c1"># Compute the value at this node</span>
+                <span class="n">state</span> <span class="o">=</span> <span class="n">st</span><span class="o">.</span><span class="n">value_index</span>
+                <span class="k">if</span> <span class="n">tree</span><span class="o">.</span><span class="n">is_internal</span><span class="p">(</span><span class="n">u</span><span class="p">):</span>
+                    <span class="n">compute</span><span class="p">(</span><span class="n">u</span><span class="p">,</span> <span class="n">state</span><span class="p">)</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="c1"># A[u, state] = 1</span>
+                    <span class="n">optimal_set</span><span class="p">[</span><span class="n">u</span><span class="p">,</span> <span class="n">state</span><span class="p">]</span> <span class="o">=</span> <span class="mi">1</span>
+                <span class="c1"># Find parent state</span>
+                <span class="n">v</span> <span class="o">=</span> <span class="n">tree</span><span class="o">.</span><span class="n">parent</span><span class="p">(</span><span class="n">u</span><span class="p">)</span>
+                <span class="k">if</span> <span class="n">v</span> <span class="o">!=</span> <span class="o">-</span><span class="mi">1</span><span class="p">:</span>
+                    <span class="k">while</span> <span class="n">T_index</span><span class="p">[</span><span class="n">v</span><span class="p">]</span> <span class="o">==</span> <span class="o">-</span><span class="mi">1</span><span class="p">:</span>
+                        <span class="n">v</span> <span class="o">=</span> <span class="n">tree</span><span class="o">.</span><span class="n">parent</span><span class="p">(</span><span class="n">v</span><span class="p">)</span>
+                    <span class="n">parent_state</span> <span class="o">=</span> <span class="n">T</span><span class="p">[</span><span class="n">T_index</span><span class="p">[</span><span class="n">v</span><span class="p">]]</span><span class="o">.</span><span class="n">value_index</span>
+                    <span class="n">v</span> <span class="o">=</span> <span class="n">tree</span><span class="o">.</span><span class="n">parent</span><span class="p">(</span><span class="n">u</span><span class="p">)</span>
+                    <span class="k">while</span> <span class="n">T_index</span><span class="p">[</span><span class="n">v</span><span class="p">]</span> <span class="o">==</span> <span class="o">-</span><span class="mi">1</span><span class="p">:</span>
+                        <span class="n">compute</span><span class="p">(</span><span class="n">v</span><span class="p">,</span> <span class="n">parent_state</span><span class="p">)</span>
+                        <span class="n">v</span> <span class="o">=</span> <span class="n">tree</span><span class="o">.</span><span class="n">parent</span><span class="p">(</span><span class="n">v</span><span class="p">)</span>
+
+        <span class="n">T_old</span> <span class="o">=</span> <span class="p">[</span><span class="n">st</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span> <span class="k">for</span> <span class="n">st</span> <span class="ow">in</span> <span class="n">T</span><span class="p">]</span>
+        <span class="n">T</span><span class="o">.</span><span class="n">clear</span><span class="p">()</span>
+        <span class="n">T_parent</span> <span class="o">=</span> <span class="p">[]</span>
+
+        <span class="n">old_state</span> <span class="o">=</span> <span class="n">T_old</span><span class="p">[</span><span class="n">T_index</span><span class="p">[</span><span class="n">tree</span><span class="o">.</span><span class="n">root</span><span class="p">]]</span><span class="o">.</span><span class="n">value_index</span>
+        <span class="n">new_state</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">argmax</span><span class="p">(</span><span class="n">optimal_set</span><span class="p">[</span><span class="n">tree</span><span class="o">.</span><span class="n">root</span><span class="p">])</span>
+
+        <span class="n">T</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">ValueTransition</span><span class="p">(</span><span class="n">tree_node</span><span class="o">=</span><span class="n">tree</span><span class="o">.</span><span class="n">root</span><span class="p">,</span> <span class="n">value</span><span class="o">=</span><span class="n">values</span><span class="p">[</span><span class="n">new_state</span><span class="p">]))</span>
+        <span class="n">T_parent</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span>
+        <span class="n">stack</span> <span class="o">=</span> <span class="p">[(</span><span class="n">tree</span><span class="o">.</span><span class="n">root</span><span class="p">,</span> <span class="n">old_state</span><span class="p">,</span> <span class="n">new_state</span><span class="p">,</span> <span class="mi">0</span><span class="p">)]</span>
+        <span class="k">while</span> <span class="nb">len</span><span class="p">(</span><span class="n">stack</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="n">u</span><span class="p">,</span> <span class="n">old_state</span><span class="p">,</span> <span class="n">new_state</span><span class="p">,</span> <span class="n">t_parent</span> <span class="o">=</span> <span class="n">stack</span><span class="o">.</span><span class="n">pop</span><span class="p">()</span>
+            <span class="k">for</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">tree</span><span class="o">.</span><span class="n">children</span><span class="p">(</span><span class="n">u</span><span class="p">):</span>
+                <span class="n">old_child_state</span> <span class="o">=</span> <span class="n">old_state</span>
+                <span class="k">if</span> <span class="n">T_index</span><span class="p">[</span><span class="n">v</span><span class="p">]</span> <span class="o">!=</span> <span class="o">-</span><span class="mi">1</span><span class="p">:</span>
+                    <span class="n">old_child_state</span> <span class="o">=</span> <span class="n">T_old</span><span class="p">[</span><span class="n">T_index</span><span class="p">[</span><span class="n">v</span><span class="p">]]</span><span class="o">.</span><span class="n">value_index</span>
+                <span class="k">if</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">optimal_set</span><span class="p">[</span><span class="n">v</span><span class="p">])</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+                    <span class="n">new_child_state</span> <span class="o">=</span> <span class="n">new_state</span>
+                    <span class="n">child_t_parent</span> <span class="o">=</span> <span class="n">t_parent</span>
+
+                    <span class="k">if</span> <span class="n">optimal_set</span><span class="p">[</span><span class="n">v</span><span class="p">,</span> <span class="n">new_state</span><span class="p">]</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+                        <span class="n">new_child_state</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">argmax</span><span class="p">(</span><span class="n">optimal_set</span><span class="p">[</span><span class="n">v</span><span class="p">])</span>
+                        <span class="n">child_t_parent</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">T</span><span class="p">)</span>
+                        <span class="n">T_parent</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">t_parent</span><span class="p">)</span>
+                        <span class="n">T</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
+                            <span class="n">ValueTransition</span><span class="p">(</span><span class="n">tree_node</span><span class="o">=</span><span class="n">v</span><span class="p">,</span> <span class="n">value</span><span class="o">=</span><span class="n">values</span><span class="p">[</span><span class="n">new_child_state</span><span class="p">])</span>
+                        <span class="p">)</span>
+                    <span class="n">stack</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="n">v</span><span class="p">,</span> <span class="n">old_child_state</span><span class="p">,</span> <span class="n">new_child_state</span><span class="p">,</span> <span class="n">child_t_parent</span><span class="p">))</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="k">if</span> <span class="n">old_child_state</span> <span class="o">!=</span> <span class="n">new_state</span><span class="p">:</span>
+                        <span class="n">T_parent</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">t_parent</span><span class="p">)</span>
+                        <span class="n">T</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
+                            <span class="n">ValueTransition</span><span class="p">(</span><span class="n">tree_node</span><span class="o">=</span><span class="n">v</span><span class="p">,</span> <span class="n">value</span><span class="o">=</span><span class="n">values</span><span class="p">[</span><span class="n">old_child_state</span><span class="p">])</span>
+                        <span class="p">)</span>
+
+        <span class="k">for</span> <span class="n">st</span> <span class="ow">in</span> <span class="n">T_old</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">st</span><span class="o">.</span><span class="n">tree_node</span> <span class="o">!=</span> <span class="o">-</span><span class="mi">1</span><span class="p">:</span>
+                <span class="n">T_index</span><span class="p">[</span><span class="n">st</span><span class="o">.</span><span class="n">tree_node</span><span class="p">]</span> <span class="o">=</span> <span class="o">-</span><span class="mi">1</span>
+        <span class="k">for</span> <span class="n">j</span><span class="p">,</span> <span class="n">st</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">T</span><span class="p">):</span>
+            <span class="n">T_index</span><span class="p">[</span><span class="n">st</span><span class="o">.</span><span class="n">tree_node</span><span class="p">]</span> <span class="o">=</span> <span class="n">j</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">N</span><span class="p">[</span><span class="n">j</span><span class="p">]</span> <span class="o">=</span> <span class="n">tree</span><span class="o">.</span><span class="n">num_samples</span><span class="p">(</span><span class="n">st</span><span class="o">.</span><span class="n">tree_node</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">T</span><span class="p">)):</span>
+            <span class="k">if</span> <span class="n">T_parent</span><span class="p">[</span><span class="n">j</span><span class="p">]</span> <span class="o">!=</span> <span class="o">-</span><span class="mi">1</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">N</span><span class="p">[</span><span class="n">T_parent</span><span class="p">[</span><span class="n">j</span><span class="p">]]</span> <span class="o">-=</span> <span class="bp">self</span><span class="o">.</span><span class="n">N</span><span class="p">[</span><span class="n">j</span><span class="p">]</span></div>
+
+<div class="viewcode-block" id="LsHmmAlgorithm.update_tree"><a class="viewcode-back" href="../../../api_reference/forward_backward/fb_diploid_variants_samples_tree.html#lshmm.forward_backward.fb_diploid_variants_samples_tree.LsHmmAlgorithm.update_tree">[docs]</a>    <span class="k">def</span> <span class="nf">update_tree</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Update the internal data structures to move on to the next tree.&quot;&quot;&quot;</span>
+        <span class="n">parent</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">parent</span>
+        <span class="n">T_index</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">T_index</span>
+        <span class="n">T</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">T</span>
+        <span class="n">_</span><span class="p">,</span> <span class="n">edges_out</span><span class="p">,</span> <span class="n">edges_in</span> <span class="o">=</span> <span class="nb">next</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">edge_diffs</span><span class="p">)</span>
+
+        <span class="k">for</span> <span class="n">edge</span> <span class="ow">in</span> <span class="n">edges_out</span><span class="p">:</span>
+            <span class="n">u</span> <span class="o">=</span> <span class="n">edge</span><span class="o">.</span><span class="n">child</span>
+            <span class="k">if</span> <span class="n">T_index</span><span class="p">[</span><span class="n">u</span><span class="p">]</span> <span class="o">==</span> <span class="o">-</span><span class="mi">1</span><span class="p">:</span>
+                <span class="c1"># Make sure the subtree we&#39;re detaching has an T_index-value at the root.</span>
+                <span class="k">while</span> <span class="n">T_index</span><span class="p">[</span><span class="n">u</span><span class="p">]</span> <span class="o">==</span> <span class="o">-</span><span class="mi">1</span><span class="p">:</span>
+                    <span class="n">u</span> <span class="o">=</span> <span class="n">parent</span><span class="p">[</span><span class="n">u</span><span class="p">]</span>
+                    <span class="k">assert</span> <span class="n">u</span> <span class="o">!=</span> <span class="o">-</span><span class="mi">1</span>
+                <span class="n">T_index</span><span class="p">[</span><span class="n">edge</span><span class="o">.</span><span class="n">child</span><span class="p">]</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">T</span><span class="p">)</span>
+                <span class="n">T</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
+                    <span class="n">ValueTransition</span><span class="p">(</span><span class="n">tree_node</span><span class="o">=</span><span class="n">edge</span><span class="o">.</span><span class="n">child</span><span class="p">,</span> <span class="n">value</span><span class="o">=</span><span class="n">T</span><span class="p">[</span><span class="n">T_index</span><span class="p">[</span><span class="n">u</span><span class="p">]]</span><span class="o">.</span><span class="n">value</span><span class="p">)</span>
+                <span class="p">)</span>
+            <span class="n">parent</span><span class="p">[</span><span class="n">edge</span><span class="o">.</span><span class="n">child</span><span class="p">]</span> <span class="o">=</span> <span class="o">-</span><span class="mi">1</span>
+
+        <span class="k">for</span> <span class="n">edge</span> <span class="ow">in</span> <span class="n">edges_in</span><span class="p">:</span>
+            <span class="n">parent</span><span class="p">[</span><span class="n">edge</span><span class="o">.</span><span class="n">child</span><span class="p">]</span> <span class="o">=</span> <span class="n">edge</span><span class="o">.</span><span class="n">parent</span>
+            <span class="n">u</span> <span class="o">=</span> <span class="n">edge</span><span class="o">.</span><span class="n">parent</span>
+            <span class="k">if</span> <span class="n">parent</span><span class="p">[</span><span class="n">edge</span><span class="o">.</span><span class="n">parent</span><span class="p">]</span> <span class="o">==</span> <span class="o">-</span><span class="mi">1</span><span class="p">:</span>
+                <span class="c1"># Grafting onto a new root.</span>
+                <span class="k">if</span> <span class="n">T_index</span><span class="p">[</span><span class="n">edge</span><span class="o">.</span><span class="n">parent</span><span class="p">]</span> <span class="o">==</span> <span class="o">-</span><span class="mi">1</span><span class="p">:</span>
+                    <span class="n">T_index</span><span class="p">[</span><span class="n">edge</span><span class="o">.</span><span class="n">parent</span><span class="p">]</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">T</span><span class="p">)</span>
+                    <span class="n">T</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
+                        <span class="n">ValueTransition</span><span class="p">(</span>
+                            <span class="n">tree_node</span><span class="o">=</span><span class="n">edge</span><span class="o">.</span><span class="n">parent</span><span class="p">,</span> <span class="n">value</span><span class="o">=</span><span class="n">T</span><span class="p">[</span><span class="n">T_index</span><span class="p">[</span><span class="n">edge</span><span class="o">.</span><span class="n">child</span><span class="p">]]</span><span class="o">.</span><span class="n">value</span>
+                        <span class="p">)</span>
+                    <span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="c1"># Grafting into an existing subtree.</span>
+                <span class="k">while</span> <span class="n">T_index</span><span class="p">[</span><span class="n">u</span><span class="p">]</span> <span class="o">==</span> <span class="o">-</span><span class="mi">1</span><span class="p">:</span>
+                    <span class="n">u</span> <span class="o">=</span> <span class="n">parent</span><span class="p">[</span><span class="n">u</span><span class="p">]</span>
+                    <span class="k">assert</span> <span class="n">u</span> <span class="o">!=</span> <span class="o">-</span><span class="mi">1</span>
+            <span class="k">assert</span> <span class="n">T_index</span><span class="p">[</span><span class="n">u</span><span class="p">]</span> <span class="o">!=</span> <span class="o">-</span><span class="mi">1</span> <span class="ow">and</span> <span class="n">T_index</span><span class="p">[</span><span class="n">edge</span><span class="o">.</span><span class="n">child</span><span class="p">]</span> <span class="o">!=</span> <span class="o">-</span><span class="mi">1</span>
+            <span class="k">if</span> <span class="n">T</span><span class="p">[</span><span class="n">T_index</span><span class="p">[</span><span class="n">u</span><span class="p">]]</span><span class="o">.</span><span class="n">value</span> <span class="o">==</span> <span class="n">T</span><span class="p">[</span><span class="n">T_index</span><span class="p">[</span><span class="n">edge</span><span class="o">.</span><span class="n">child</span><span class="p">]]</span><span class="o">.</span><span class="n">value</span><span class="p">:</span>
+                <span class="n">st</span> <span class="o">=</span> <span class="n">T</span><span class="p">[</span><span class="n">T_index</span><span class="p">[</span><span class="n">edge</span><span class="o">.</span><span class="n">child</span><span class="p">]]</span>
+                <span class="c1"># Mark the lower ValueTransition as unused.</span>
+                <span class="n">st</span><span class="o">.</span><span class="n">value</span> <span class="o">=</span> <span class="o">-</span><span class="mi">1</span>
+                <span class="n">st</span><span class="o">.</span><span class="n">tree_node</span> <span class="o">=</span> <span class="o">-</span><span class="mi">1</span>
+                <span class="n">T_index</span><span class="p">[</span><span class="n">edge</span><span class="o">.</span><span class="n">child</span><span class="p">]</span> <span class="o">=</span> <span class="o">-</span><span class="mi">1</span>
+
+        <span class="c1"># We can have values left over still pointing to old roots. Remove</span>
+        <span class="k">for</span> <span class="n">root</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">tree</span><span class="o">.</span><span class="n">roots</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">T_index</span><span class="p">[</span><span class="n">root</span><span class="p">]</span> <span class="o">!=</span> <span class="o">-</span><span class="mi">1</span><span class="p">:</span>
+                <span class="c1"># Use a special marker here to designate the real roots.</span>
+                <span class="n">T</span><span class="p">[</span><span class="n">T_index</span><span class="p">[</span><span class="n">root</span><span class="p">]]</span><span class="o">.</span><span class="n">value_index</span> <span class="o">=</span> <span class="o">-</span><span class="mi">2</span>
+        <span class="k">for</span> <span class="n">vt</span> <span class="ow">in</span> <span class="n">T</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">vt</span><span class="o">.</span><span class="n">tree_node</span> <span class="o">!=</span> <span class="o">-</span><span class="mi">1</span><span class="p">:</span>
+                <span class="k">if</span> <span class="n">parent</span><span class="p">[</span><span class="n">vt</span><span class="o">.</span><span class="n">tree_node</span><span class="p">]</span> <span class="o">==</span> <span class="o">-</span><span class="mi">1</span> <span class="ow">and</span> <span class="n">vt</span><span class="o">.</span><span class="n">value_index</span> <span class="o">!=</span> <span class="o">-</span><span class="mi">2</span><span class="p">:</span>
+                    <span class="n">T_index</span><span class="p">[</span><span class="n">vt</span><span class="o">.</span><span class="n">tree_node</span><span class="p">]</span> <span class="o">=</span> <span class="o">-</span><span class="mi">1</span>
+                    <span class="n">vt</span><span class="o">.</span><span class="n">tree_node</span> <span class="o">=</span> <span class="o">-</span><span class="mi">1</span>
+                <span class="n">vt</span><span class="o">.</span><span class="n">value_index</span> <span class="o">=</span> <span class="o">-</span><span class="mi">1</span></div>
+
+<div class="viewcode-block" id="LsHmmAlgorithm.update_probabilities"><a class="viewcode-back" href="../../../api_reference/forward_backward/fb_diploid_variants_samples_tree.html#lshmm.forward_backward.fb_diploid_variants_samples_tree.LsHmmAlgorithm.update_probabilities">[docs]</a>    <span class="k">def</span> <span class="nf">update_probabilities</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">site</span><span class="p">,</span> <span class="n">genotype_state</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Update values of probabilities of path ending at a set of nodes.&quot;&quot;&quot;</span>
+        <span class="n">tree</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">tree</span>
+        <span class="n">T_index</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">T_index</span>
+        <span class="n">T</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">T</span>
+        <span class="n">alleles</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;0&quot;</span><span class="p">,</span> <span class="s2">&quot;1&quot;</span><span class="p">]</span>
+        <span class="n">allelic_state</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">allelic_state</span>
+        <span class="c1"># Set the allelic_state for this site.</span>
+        <span class="n">allelic_state</span><span class="p">[</span><span class="n">tree</span><span class="o">.</span><span class="n">root</span><span class="p">]</span> <span class="o">=</span> <span class="n">alleles</span><span class="o">.</span><span class="n">index</span><span class="p">(</span><span class="n">site</span><span class="o">.</span><span class="n">ancestral_state</span><span class="p">)</span>
+
+        <span class="nb">print</span><span class="p">(</span><span class="n">site</span><span class="p">)</span>
+        <span class="nb">print</span><span class="p">(</span><span class="n">site</span><span class="o">.</span><span class="n">mutations</span><span class="p">)</span>
+        <span class="nb">print</span><span class="p">(</span><span class="n">genotype_state</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">mutation</span> <span class="ow">in</span> <span class="n">site</span><span class="o">.</span><span class="n">mutations</span><span class="p">:</span>
+            <span class="n">u</span> <span class="o">=</span> <span class="n">mutation</span><span class="o">.</span><span class="n">node</span>
+            <span class="nb">print</span><span class="p">(</span><span class="n">u</span><span class="p">)</span>
+            <span class="n">allelic_state</span><span class="p">[</span><span class="n">u</span><span class="p">]</span> <span class="o">=</span> <span class="n">alleles</span><span class="o">.</span><span class="n">index</span><span class="p">(</span><span class="n">mutation</span><span class="o">.</span><span class="n">derived_state</span><span class="p">)</span>
+            <span class="nb">print</span><span class="p">(</span><span class="n">allelic_state</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">T_index</span><span class="p">[</span><span class="n">u</span><span class="p">]</span> <span class="o">==</span> <span class="o">-</span><span class="mi">1</span><span class="p">:</span>
+                <span class="k">while</span> <span class="n">T_index</span><span class="p">[</span><span class="n">u</span><span class="p">]</span> <span class="o">==</span> <span class="n">tskit</span><span class="o">.</span><span class="n">NULL</span><span class="p">:</span>
+                    <span class="n">u</span> <span class="o">=</span> <span class="n">tree</span><span class="o">.</span><span class="n">parent</span><span class="p">(</span><span class="n">u</span><span class="p">)</span>
+                <span class="n">T_index</span><span class="p">[</span><span class="n">mutation</span><span class="o">.</span><span class="n">node</span><span class="p">]</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">T</span><span class="p">)</span>
+                <span class="n">T</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
+                    <span class="n">ValueTransition</span><span class="p">(</span><span class="n">tree_node</span><span class="o">=</span><span class="n">mutation</span><span class="o">.</span><span class="n">node</span><span class="p">,</span> <span class="n">value</span><span class="o">=</span><span class="n">T</span><span class="p">[</span><span class="n">T_index</span><span class="p">[</span><span class="n">u</span><span class="p">]]</span><span class="o">.</span><span class="n">value</span><span class="p">)</span>
+                <span class="p">)</span>
+
+        <span class="k">for</span> <span class="n">st</span> <span class="ow">in</span> <span class="n">T</span><span class="p">:</span>
+            <span class="n">blah</span> <span class="o">=</span> <span class="kc">False</span>
+            <span class="n">u</span> <span class="o">=</span> <span class="n">st</span><span class="o">.</span><span class="n">tree_node</span>
+            <span class="k">if</span> <span class="n">u</span> <span class="o">!=</span> <span class="o">-</span><span class="mi">1</span><span class="p">:</span>
+                <span class="c1"># Get the allelic_state at u. TODO we can cache these states to</span>
+                <span class="c1"># avoid some upward traversals.</span>
+                <span class="n">v</span> <span class="o">=</span> <span class="n">u</span>
+                <span class="k">while</span> <span class="n">allelic_state</span><span class="p">[</span><span class="n">v</span><span class="p">]</span> <span class="o">==</span> <span class="o">-</span><span class="mi">1</span><span class="p">:</span>
+                    <span class="n">v</span> <span class="o">=</span> <span class="n">tree</span><span class="o">.</span><span class="n">parent</span><span class="p">(</span><span class="n">v</span><span class="p">)</span>
+                    <span class="k">assert</span> <span class="n">v</span> <span class="o">!=</span> <span class="o">-</span><span class="mi">1</span>
+                <span class="n">match</span> <span class="o">=</span> <span class="p">(</span>
+                    <span class="n">genotype_state</span> <span class="o">==</span> <span class="n">tskit</span><span class="o">.</span><span class="n">MISSING_DATA</span>
+                    <span class="ow">or</span> <span class="n">genotype_state</span> <span class="o">==</span> <span class="n">allelic_state</span><span class="p">[</span><span class="n">v</span><span class="p">]</span>
+                <span class="p">)</span>
+            <span class="n">allelic_state_1</span> <span class="o">=</span> <span class="n">allelic_state</span><span class="p">[</span><span class="n">v</span><span class="p">]</span>
+
+            <span class="k">for</span> <span class="n">st2</span> <span class="ow">in</span> <span class="n">T</span><span class="p">:</span>
+                <span class="n">u</span> <span class="o">=</span> <span class="n">st</span><span class="o">.</span><span class="n">tree_node</span>
+                <span class="k">if</span> <span class="n">u</span> <span class="o">!=</span> <span class="o">-</span><span class="mi">1</span><span class="p">:</span>
+                    <span class="c1"># Get the allelic_state at u. TODO we can cache these states to</span>
+                    <span class="c1"># avoid some upward traversals.</span>
+                    <span class="n">v</span> <span class="o">=</span> <span class="n">u</span>
+                    <span class="k">while</span> <span class="n">allelic_state</span><span class="p">[</span><span class="n">v</span><span class="p">]</span> <span class="o">==</span> <span class="o">-</span><span class="mi">1</span><span class="p">:</span>
+                        <span class="n">v</span> <span class="o">=</span> <span class="n">tree</span><span class="o">.</span><span class="n">parent</span><span class="p">(</span><span class="n">v</span><span class="p">)</span>
+                        <span class="k">assert</span> <span class="n">v</span> <span class="o">!=</span> <span class="o">-</span><span class="mi">1</span>
+                    <span class="n">match</span> <span class="o">=</span> <span class="p">(</span>
+                        <span class="n">genotype_state</span> <span class="o">==</span> <span class="n">tskit</span><span class="o">.</span><span class="n">MISSING_DATA</span>
+                        <span class="ow">or</span> <span class="n">genotype_state</span> <span class="o">==</span> <span class="n">allelic_state</span><span class="p">[</span><span class="n">v</span><span class="p">]</span>
+                    <span class="p">)</span>
+
+                    <span class="n">OBS_HET</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">int64</span><span class="p">(</span><span class="n">genotype_state</span> <span class="o">==</span> <span class="mi">1</span><span class="p">)</span>
+                    <span class="n">MATCHES</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">int64</span><span class="p">(</span>
+                        <span class="n">genotype_state</span> <span class="o">==</span> <span class="n">allelic_state_1</span> <span class="o">+</span> <span class="n">allelic_state</span><span class="p">[</span><span class="n">v</span><span class="p">]</span>
+                    <span class="p">)</span>
+                    <span class="n">REF_HET</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">int64</span><span class="p">(</span><span class="n">allelic_state_1</span> <span class="o">+</span> <span class="n">allelic_state</span><span class="p">[</span><span class="n">v</span><span class="p">])</span>
+
+                    <span class="n">emission_type</span> <span class="o">=</span> <span class="mi">4</span> <span class="o">*</span> <span class="n">MATCHES</span> <span class="o">+</span> <span class="mi">2</span> <span class="o">*</span> <span class="n">REF_HET</span> <span class="o">+</span> <span class="n">OBS_HET</span>
+
+                    <span class="k">if</span> <span class="n">blah</span> <span class="ow">is</span> <span class="kc">False</span><span class="p">:</span>
+                        <span class="n">st</span><span class="o">.</span><span class="n">value</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">compute_next_probability</span><span class="p">(</span>
+                            <span class="n">site</span><span class="o">.</span><span class="n">id</span><span class="p">,</span> <span class="n">st</span><span class="o">.</span><span class="n">value</span><span class="p">,</span> <span class="n">emission_type</span><span class="p">,</span> <span class="n">u</span>
+                        <span class="p">)</span>
+                        <span class="n">blah</span> <span class="o">=</span> <span class="kc">True</span>
+
+        <span class="c1"># Unset the states</span>
+        <span class="n">allelic_state</span><span class="p">[</span><span class="n">tree</span><span class="o">.</span><span class="n">root</span><span class="p">]</span> <span class="o">=</span> <span class="o">-</span><span class="mi">1</span>
+        <span class="k">for</span> <span class="n">mutation</span> <span class="ow">in</span> <span class="n">site</span><span class="o">.</span><span class="n">mutations</span><span class="p">:</span>
+            <span class="n">allelic_state</span><span class="p">[</span><span class="n">mutation</span><span class="o">.</span><span class="n">node</span><span class="p">]</span> <span class="o">=</span> <span class="o">-</span><span class="mi">1</span></div>
+
+<div class="viewcode-block" id="LsHmmAlgorithm.process_site"><a class="viewcode-back" href="../../../api_reference/forward_backward/fb_diploid_variants_samples_tree.html#lshmm.forward_backward.fb_diploid_variants_samples_tree.LsHmmAlgorithm.process_site">[docs]</a>    <span class="k">def</span> <span class="nf">process_site</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">site</span><span class="p">,</span> <span class="n">genotype_state</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Process the next site.&quot;&quot;&quot;</span>
+        <span class="c1"># print(site.id, &quot;num_transitions=&quot;, len(self.T))</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">update_probabilities</span><span class="p">(</span><span class="n">site</span><span class="p">,</span> <span class="n">genotype_state</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">compress</span><span class="p">()</span>
+        <span class="n">s</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">compute_normalisation_factor</span><span class="p">()</span>
+        <span class="k">for</span> <span class="n">st</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">T</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">st</span><span class="o">.</span><span class="n">tree_node</span> <span class="o">!=</span> <span class="n">tskit</span><span class="o">.</span><span class="n">NULL</span><span class="p">:</span>
+                <span class="n">st</span><span class="o">.</span><span class="n">value</span> <span class="o">/=</span> <span class="n">s</span>
+                <span class="n">st</span><span class="o">.</span><span class="n">value</span> <span class="o">=</span> <span class="nb">round</span><span class="p">(</span><span class="n">st</span><span class="o">.</span><span class="n">value</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">precision</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">output</span><span class="o">.</span><span class="n">store_site</span><span class="p">(</span><span class="n">site</span><span class="o">.</span><span class="n">id</span><span class="p">,</span> <span class="n">s</span><span class="p">,</span> <span class="p">[(</span><span class="n">st</span><span class="o">.</span><span class="n">tree_node</span><span class="p">,</span> <span class="n">st</span><span class="o">.</span><span class="n">value</span><span class="p">)</span> <span class="k">for</span> <span class="n">st</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">T</span><span class="p">])</span></div>
+
+<div class="viewcode-block" id="LsHmmAlgorithm.run_forward"><a class="viewcode-back" href="../../../api_reference/forward_backward/fb_diploid_variants_samples_tree.html#lshmm.forward_backward.fb_diploid_variants_samples_tree.LsHmmAlgorithm.run_forward">[docs]</a>    <span class="k">def</span> <span class="nf">run_forward</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">s</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Run the forwards algorithm.&quot;&quot;&quot;</span>
+        <span class="n">n</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">ts</span><span class="o">.</span><span class="n">num_samples</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">tree</span><span class="o">.</span><span class="n">clear</span><span class="p">()</span>
+        <span class="k">for</span> <span class="n">u</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">ts</span><span class="o">.</span><span class="n">samples</span><span class="p">():</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">T_index</span><span class="p">[</span><span class="n">u</span><span class="p">]</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">T</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">T</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">ValueTransition</span><span class="p">(</span><span class="n">tree_node</span><span class="o">=</span><span class="n">u</span><span class="p">,</span> <span class="n">value</span><span class="o">=</span><span class="mi">1</span> <span class="o">/</span> <span class="n">n</span><span class="p">))</span>
+        <span class="k">while</span> <span class="bp">self</span><span class="o">.</span><span class="n">tree</span><span class="o">.</span><span class="n">next</span><span class="p">():</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">update_tree</span><span class="p">()</span>
+            <span class="k">for</span> <span class="n">site</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">tree</span><span class="o">.</span><span class="n">sites</span><span class="p">():</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">process_site</span><span class="p">(</span><span class="n">site</span><span class="p">,</span> <span class="n">s</span><span class="p">[</span><span class="n">site</span><span class="o">.</span><span class="n">id</span><span class="p">])</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">output</span></div>
+
+<div class="viewcode-block" id="LsHmmAlgorithm.compute_normalisation_factor"><a class="viewcode-back" href="../../../api_reference/forward_backward/fb_diploid_variants_samples_tree.html#lshmm.forward_backward.fb_diploid_variants_samples_tree.LsHmmAlgorithm.compute_normalisation_factor">[docs]</a>    <span class="k">def</span> <span class="nf">compute_normalisation_factor</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Compute normalisation term to avoid underflow.</span>
+
+<span class="sd">        Not implemented here, as this must be defined at the forwards/backwards level.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">()</span></div>
+
+<div class="viewcode-block" id="LsHmmAlgorithm.compute_next_probability"><a class="viewcode-back" href="../../../api_reference/forward_backward/fb_diploid_variants_samples_tree.html#lshmm.forward_backward.fb_diploid_variants_samples_tree.LsHmmAlgorithm.compute_next_probability">[docs]</a>    <span class="k">def</span> <span class="nf">compute_next_probability</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">site_id</span><span class="p">,</span> <span class="n">p_last</span><span class="p">,</span> <span class="n">emission_type</span><span class="p">,</span> <span class="n">node</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Compute next probability.</span>
+
+<span class="sd">        Not implemented here, as this must be defined at the forwards/backwards level.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">()</span></div></div>
+
+
+<div class="viewcode-block" id="CompressedMatrix"><a class="viewcode-back" href="../../../api_reference/forward_backward/fb_diploid_variants_samples_tree.html#lshmm.forward_backward.fb_diploid_variants_samples_tree.CompressedMatrix">[docs]</a><span class="k">class</span> <span class="nc">CompressedMatrix</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Class representing a num_samples x num_sites matrix compressed by a tree sequence.</span>
+
+<span class="sd">    Each site is represented by a set of (node, value) pairs,</span>
+<span class="sd">    which act as &quot;mutations&quot;, i.e., any sample that descends</span>
+<span class="sd">    from a particular node will inherit that value (unless any other</span>
+<span class="sd">    values are on the path).</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ts</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">ts</span> <span class="o">=</span> <span class="n">ts</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">num_sites</span> <span class="o">=</span> <span class="n">ts</span><span class="o">.</span><span class="n">num_sites</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">num_samples</span> <span class="o">=</span> <span class="n">ts</span><span class="o">.</span><span class="n">num_samples</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">value_transitions</span> <span class="o">=</span> <span class="p">[</span><span class="kc">None</span> <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">num_sites</span><span class="p">)]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">normalisation_factor</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">num_sites</span><span class="p">)</span>
+
+<div class="viewcode-block" id="CompressedMatrix.store_site"><a class="viewcode-back" href="../../../api_reference/forward_backward/fb_diploid_variants_samples_tree.html#lshmm.forward_backward.fb_diploid_variants_samples_tree.CompressedMatrix.store_site">[docs]</a>    <span class="k">def</span> <span class="nf">store_site</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">site</span><span class="p">,</span> <span class="n">normalisation_factor</span><span class="p">,</span> <span class="n">value_transitions</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Store the site information.</span>
+
+<span class="sd">        Store the normalisation factor and the collection of value transitions</span>
+<span class="sd">        at the site</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">normalisation_factor</span><span class="p">[</span><span class="n">site</span><span class="p">]</span> <span class="o">=</span> <span class="n">normalisation_factor</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">value_transitions</span><span class="p">[</span><span class="n">site</span><span class="p">]</span> <span class="o">=</span> <span class="n">value_transitions</span></div>
+
+    <span class="c1"># Expose the same API as the low-level classes</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">num_transitions</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Determine the number of unique value transitions at each site.&quot;&quot;&quot;</span>
+        <span class="n">a</span> <span class="o">=</span> <span class="p">[</span><span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">value_transitions</span><span class="p">[</span><span class="n">j</span><span class="p">])</span> <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">num_sites</span><span class="p">)]</span>
+        <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">a</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">int32</span><span class="p">)</span>
+
+<div class="viewcode-block" id="CompressedMatrix.get_site"><a class="viewcode-back" href="../../../api_reference/forward_backward/fb_diploid_variants_samples_tree.html#lshmm.forward_backward.fb_diploid_variants_samples_tree.CompressedMatrix.get_site">[docs]</a>    <span class="k">def</span> <span class="nf">get_site</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">site</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Get the value transitions at the site.&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">value_transitions</span><span class="p">[</span><span class="n">site</span><span class="p">]</span></div>
+
+<div class="viewcode-block" id="CompressedMatrix.decode"><a class="viewcode-back" href="../../../api_reference/forward_backward/fb_diploid_variants_samples_tree.html#lshmm.forward_backward.fb_diploid_variants_samples_tree.CompressedMatrix.decode">[docs]</a>    <span class="k">def</span> <span class="nf">decode</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Decode the tree encoding of the values into an explicit matrix.&quot;&quot;&quot;</span>
+        <span class="n">A</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="bp">self</span><span class="o">.</span><span class="n">num_sites</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">num_samples</span><span class="p">))</span>
+        <span class="k">for</span> <span class="n">tree</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">ts</span><span class="o">.</span><span class="n">trees</span><span class="p">():</span>
+            <span class="k">for</span> <span class="n">site</span> <span class="ow">in</span> <span class="n">tree</span><span class="o">.</span><span class="n">sites</span><span class="p">():</span>
+                <span class="n">f</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">value_transitions</span><span class="p">[</span><span class="n">site</span><span class="o">.</span><span class="n">id</span><span class="p">])</span>
+                <span class="k">for</span> <span class="n">j</span><span class="p">,</span> <span class="n">u</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">ts</span><span class="o">.</span><span class="n">samples</span><span class="p">()):</span>
+                    <span class="k">while</span> <span class="n">u</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">f</span><span class="p">:</span>
+                        <span class="n">u</span> <span class="o">=</span> <span class="n">tree</span><span class="o">.</span><span class="n">parent</span><span class="p">(</span><span class="n">u</span><span class="p">)</span>
+                    <span class="n">A</span><span class="p">[</span><span class="n">site</span><span class="o">.</span><span class="n">id</span><span class="p">,</span> <span class="n">j</span><span class="p">]</span> <span class="o">=</span> <span class="n">f</span><span class="p">[</span><span class="n">u</span><span class="p">]</span>
+        <span class="k">return</span> <span class="n">A</span></div></div>
+
+
+<div class="viewcode-block" id="ForwardMatrix"><a class="viewcode-back" href="../../../api_reference/forward_backward/fb_diploid_variants_samples_tree.html#lshmm.forward_backward.fb_diploid_variants_samples_tree.ForwardMatrix">[docs]</a><span class="k">class</span> <span class="nc">ForwardMatrix</span><span class="p">(</span><span class="n">CompressedMatrix</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Class representing a compressed forward matrix.&quot;&quot;&quot;</span></div>
+
+
+<div class="viewcode-block" id="ForwardAlgorithm"><a class="viewcode-back" href="../../../api_reference/forward_backward/fb_diploid_variants_samples_tree.html#lshmm.forward_backward.fb_diploid_variants_samples_tree.ForwardAlgorithm">[docs]</a><span class="k">class</span> <span class="nc">ForwardAlgorithm</span><span class="p">(</span><span class="n">LsHmmAlgorithm</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Runs the Li and Stephens forward algorithm.&quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ts</span><span class="p">,</span> <span class="n">r</span><span class="p">,</span> <span class="n">mu</span><span class="p">,</span> <span class="n">precision</span><span class="o">=</span><span class="mi">10</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">ts</span><span class="p">,</span> <span class="n">r</span><span class="p">,</span> <span class="n">mu</span><span class="p">,</span> <span class="n">precision</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">output</span> <span class="o">=</span> <span class="n">ForwardMatrix</span><span class="p">(</span><span class="n">ts</span><span class="p">)</span>
+
+<div class="viewcode-block" id="ForwardAlgorithm.compute_normalisation_factor"><a class="viewcode-back" href="../../../api_reference/forward_backward/fb_diploid_variants_samples_tree.html#lshmm.forward_backward.fb_diploid_variants_samples_tree.ForwardAlgorithm.compute_normalisation_factor">[docs]</a>    <span class="k">def</span> <span class="nf">compute_normalisation_factor</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Compute normalisation term to avoid underflow.&quot;&quot;&quot;</span>
+        <span class="n">s</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="k">for</span> <span class="n">j</span><span class="p">,</span> <span class="n">st</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">T</span><span class="p">):</span>
+            <span class="k">assert</span> <span class="n">st</span><span class="o">.</span><span class="n">tree_node</span> <span class="o">!=</span> <span class="n">tskit</span><span class="o">.</span><span class="n">NULL</span>
+            <span class="k">assert</span> <span class="bp">self</span><span class="o">.</span><span class="n">N</span><span class="p">[</span><span class="n">j</span><span class="p">]</span> <span class="o">&gt;</span> <span class="mi">0</span>
+            <span class="n">s</span> <span class="o">+=</span> <span class="bp">self</span><span class="o">.</span><span class="n">N</span><span class="p">[</span><span class="n">j</span><span class="p">]</span> <span class="o">*</span> <span class="n">st</span><span class="o">.</span><span class="n">value</span>
+        <span class="k">return</span> <span class="n">s</span></div>
+
+<div class="viewcode-block" id="ForwardAlgorithm.compute_next_probability"><a class="viewcode-back" href="../../../api_reference/forward_backward/fb_diploid_variants_samples_tree.html#lshmm.forward_backward.fb_diploid_variants_samples_tree.ForwardAlgorithm.compute_next_probability">[docs]</a>    <span class="k">def</span> <span class="nf">compute_next_probability</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">site_id</span><span class="p">,</span> <span class="n">p_last</span><span class="p">,</span> <span class="n">emission_type</span><span class="p">,</span> <span class="n">node</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Determine the scaled likelihoods at the next site.&quot;&quot;&quot;</span>
+        <span class="n">mu</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">mu</span><span class="p">[</span><span class="n">site_id</span><span class="p">]</span>
+        <span class="n">r</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">r</span><span class="p">[</span><span class="n">site_id</span><span class="p">]</span>
+
+        <span class="k">if</span> <span class="n">emission_type</span> <span class="o">==</span> <span class="n">EQUAL_BOTH_HOM</span><span class="p">:</span>
+            <span class="n">p_e</span> <span class="o">=</span> <span class="p">(</span><span class="mi">1</span> <span class="o">-</span> <span class="n">mu</span><span class="p">)</span> <span class="o">**</span> <span class="mi">2</span>
+        <span class="k">elif</span> <span class="n">emission_type</span> <span class="o">==</span> <span class="n">UNEQUAL_BOTH_HOM</span><span class="p">:</span>
+            <span class="n">p_e</span> <span class="o">=</span> <span class="n">mu</span> <span class="o">**</span> <span class="mi">2</span>
+        <span class="k">elif</span> <span class="n">emission_type</span> <span class="o">==</span> <span class="n">BOTH_HET</span><span class="p">:</span>
+            <span class="n">p_e</span> <span class="o">=</span> <span class="mi">1</span> <span class="o">-</span> <span class="n">mu</span>
+        <span class="k">elif</span> <span class="n">emission_type</span> <span class="o">==</span> <span class="n">REF_HOM_OBS_HET</span><span class="p">:</span>
+            <span class="n">p_e</span> <span class="o">=</span> <span class="mi">2</span> <span class="o">*</span> <span class="n">mu</span> <span class="o">*</span> <span class="p">(</span><span class="mi">1</span> <span class="o">-</span> <span class="n">mu</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="c1"># REF_HET_OBS_HOM</span>
+            <span class="n">p_e</span> <span class="o">=</span> <span class="n">mu</span> <span class="o">*</span> <span class="p">(</span><span class="mi">1</span> <span class="o">-</span> <span class="n">mu</span><span class="p">)</span>
+
+        <span class="n">n</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">ts</span><span class="o">.</span><span class="n">num_samples</span>
+
+        <span class="n">p_t</span> <span class="o">=</span> <span class="p">((</span><span class="mi">1</span> <span class="o">-</span> <span class="n">r</span><span class="p">)</span> <span class="o">**</span> <span class="mi">2</span><span class="p">)</span> <span class="o">*</span> <span class="n">p_last</span> <span class="o">+</span> <span class="p">(</span><span class="n">r</span> <span class="o">/</span> <span class="n">n</span><span class="p">)</span> <span class="o">**</span> <span class="mi">2</span>
+
+        <span class="k">return</span> <span class="n">p_t</span> <span class="o">*</span> <span class="n">p_e</span></div></div>
+
+
+<div class="viewcode-block" id="ls_forward_tree"><a class="viewcode-back" href="../../../api_reference/forward_backward/fb_diploid_variants_samples_tree.html#lshmm.forward_backward.fb_diploid_variants_samples_tree.ls_forward_tree">[docs]</a><span class="k">def</span> <span class="nf">ls_forward_tree</span><span class="p">(</span><span class="n">s</span><span class="p">,</span> <span class="n">ts</span><span class="p">,</span> <span class="n">r</span><span class="p">,</span> <span class="n">mu</span><span class="p">,</span> <span class="n">precision</span><span class="o">=</span><span class="mi">30</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Forward matrix computation based on a tree sequence.&quot;&quot;&quot;</span>
+    <span class="n">fa</span> <span class="o">=</span> <span class="n">ForwardAlgorithm</span><span class="p">(</span><span class="n">ts</span><span class="p">,</span> <span class="n">r</span><span class="p">,</span> <span class="n">mu</span><span class="p">,</span> <span class="n">precision</span><span class="o">=</span><span class="n">precision</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">fa</span><span class="o">.</span><span class="n">run_forward</span><span class="p">(</span><span class="n">s</span><span class="p">)</span></div>
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p></p>
+  </div>
+
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

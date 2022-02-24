@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>lshmm.viterbi.vit_haploid_variants_samples &mdash; lshmm latest documentation</title>
+      <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="../../_static/css/theme.css" type="text/css" />
+      <link rel="stylesheet" href="../../_static/theme_overrides.css" type="text/css" />
+  <!--[if lt IE 9]>
+    <script src="../../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script data-url_root="../../" id="documentation_options" src="../../_static/documentation_options.js"></script>
+        <script src="../../_static/jquery.js"></script>
+        <script src="../../_static/underscore.js"></script>
+        <script src="../../_static/doctools.js"></script>
+    <script src="../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" />
+    <link rel="prev" title="lshmm.viterbi.vit_haploid_samples_variants" href="vit_haploid_samples_variants.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+            <a href="../../index.html" class="icon icon-home"> lshmm
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul class="current">
+<li class="toctree-l1 current"><a class="reference internal" href="../index.html">API Reference</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="../forward_backward/index.html">forward_backward</a></li>
+<li class="toctree-l2 current"><a class="reference internal" href="index.html">viterbi</a><ul class="current">
+<li class="toctree-l3"><a class="reference internal" href="vit_diploid_samples_variants.html">vit_diploid_samples_variants</a></li>
+<li class="toctree-l3"><a class="reference internal" href="vit_diploid_variants_samples.html">vit_diploid_variants_samples</a></li>
+<li class="toctree-l3"><a class="reference internal" href="vit_haploid_samples_variants.html">vit_haploid_samples_variants</a></li>
+<li class="toctree-l3 current"><a class="current reference internal" href="#">vit_haploid_variants_samples</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../index.html">lshmm</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../index.html" class="icon icon-home"></a> &raquo;</li>
+          <li><a href="../index.html">lshmm</a> &raquo;</li>
+          <li><a href="index.html">lshmm.viterbi</a> &raquo;</li>
+      <li>lshmm.viterbi.vit_haploid_variants_samples</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../../_sources/api_reference/viterbi/vit_haploid_variants_samples.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="lshmm-viterbi-vit-haploid-variants-samples">
+<h1>lshmm.viterbi.vit_haploid_variants_samples<a class="headerlink" href="#lshmm-viterbi-vit-haploid-variants-samples" title="Permalink to this headline"></a></h1>
+<p>Collection of functions to run Viterbi algorithms on haploid genotype data, where the data is structured as variants x samples.</p>
+<table class="longtable docutils align-default">
+<colgroup>
+<col style="width: 10%" />
+<col style="width: 90%" />
+</colgroup>
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="#lshmm.viterbi.vit_haploid_variants_samples.viterbi_naive_init" title="lshmm.viterbi.vit_haploid_variants_samples.viterbi_naive_init"><code class="xref py py-obj docutils literal notranslate"><span class="pre">lshmm.viterbi.vit_haploid_variants_samples.viterbi_naive_init</span></code></a>(n, ...)</p></td>
+<td><p>Initialise naive implementation of LS viterbi.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#lshmm.viterbi.vit_haploid_variants_samples.viterbi_init" title="lshmm.viterbi.vit_haploid_variants_samples.viterbi_init"><code class="xref py py-obj docutils literal notranslate"><span class="pre">lshmm.viterbi.vit_haploid_variants_samples.viterbi_init</span></code></a>(n, ...)</p></td>
+<td><p>Initialise naive, but more space memory efficient implementation of LS viterbi.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#lshmm.viterbi.vit_haploid_variants_samples.forwards_viterbi_hap_naive" title="lshmm.viterbi.vit_haploid_variants_samples.forwards_viterbi_hap_naive"><code class="xref py py-obj docutils literal notranslate"><span class="pre">lshmm.viterbi.vit_haploid_variants_samples.forwards_viterbi_hap_naive</span></code></a>(n, ...)</p></td>
+<td><p>Naive implementation of LS haploid Viterbi algorithm.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#lshmm.viterbi.vit_haploid_variants_samples.forwards_viterbi_hap_naive_vec" title="lshmm.viterbi.vit_haploid_variants_samples.forwards_viterbi_hap_naive_vec"><code class="xref py py-obj docutils literal notranslate"><span class="pre">lshmm.viterbi.vit_haploid_variants_samples.forwards_viterbi_hap_naive_vec</span></code></a>(n, ...)</p></td>
+<td><p>Naive matrix based implementation of LS haploid forward Viterbi algorithm using numpy.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#lshmm.viterbi.vit_haploid_variants_samples.forwards_viterbi_hap_naive_low_mem" title="lshmm.viterbi.vit_haploid_variants_samples.forwards_viterbi_hap_naive_low_mem"><code class="xref py py-obj docutils literal notranslate"><span class="pre">lshmm.viterbi.vit_haploid_variants_samples.forwards_viterbi_hap_naive_low_mem</span></code></a>(n, ...)</p></td>
+<td><p>Naive implementation of LS haploid Viterbi algorithm, with reduced memory.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#lshmm.viterbi.vit_haploid_variants_samples.forwards_viterbi_hap_naive_low_mem_rescaling" title="lshmm.viterbi.vit_haploid_variants_samples.forwards_viterbi_hap_naive_low_mem_rescaling"><code class="xref py py-obj docutils literal notranslate"><span class="pre">lshmm.viterbi.vit_haploid_variants_samples.forwards_viterbi_hap_naive_low_mem_rescaling</span></code></a>(n, ...)</p></td>
+<td><p>Naive implementation of LS haploid Viterbi algorithm, with reduced memory and rescaling.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#lshmm.viterbi.vit_haploid_variants_samples.forwards_viterbi_hap_low_mem_rescaling" title="lshmm.viterbi.vit_haploid_variants_samples.forwards_viterbi_hap_low_mem_rescaling"><code class="xref py py-obj docutils literal notranslate"><span class="pre">lshmm.viterbi.vit_haploid_variants_samples.forwards_viterbi_hap_low_mem_rescaling</span></code></a>(n, ...)</p></td>
+<td><p>LS haploid Viterbi algorithm, with reduced memory and exploits the Markov process structure.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#lshmm.viterbi.vit_haploid_variants_samples.forwards_viterbi_hap_lower_mem_rescaling" title="lshmm.viterbi.vit_haploid_variants_samples.forwards_viterbi_hap_lower_mem_rescaling"><code class="xref py py-obj docutils literal notranslate"><span class="pre">lshmm.viterbi.vit_haploid_variants_samples.forwards_viterbi_hap_lower_mem_rescaling</span></code></a>(n, ...)</p></td>
+<td><p>LS haploid Viterbi algorithm with even smaller memory footprint and exploits the Markov process structure.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#lshmm.viterbi.vit_haploid_variants_samples.backwards_viterbi_hap" title="lshmm.viterbi.vit_haploid_variants_samples.backwards_viterbi_hap"><code class="xref py py-obj docutils literal notranslate"><span class="pre">lshmm.viterbi.vit_haploid_variants_samples.backwards_viterbi_hap</span></code></a>(m, ...)</p></td>
+<td><p>Run a backwards pass to determine the most likely path.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#lshmm.viterbi.vit_haploid_variants_samples.path_ll_hap" title="lshmm.viterbi.vit_haploid_variants_samples.path_ll_hap"><code class="xref py py-obj docutils literal notranslate"><span class="pre">lshmm.viterbi.vit_haploid_variants_samples.path_ll_hap</span></code></a>(n, ...)</p></td>
+<td><p>Evaluate log-likelihood path through a reference panel which results in sequence s.</p></td>
+</tr>
+</tbody>
+</table>
+<span class="target" id="module-lshmm.viterbi.vit_haploid_variants_samples"></span><p>Collection of functions to run Viterbi algorithms on haploid genotype data, where the data is structured as variants x samples.</p>
+<dl class="py function">
+<dt class="sig sig-object py" id="lshmm.viterbi.vit_haploid_variants_samples.viterbi_naive_init">
+<span class="sig-prename descclassname"><span class="pre">lshmm.viterbi.vit_haploid_variants_samples.</span></span><span class="sig-name descname"><span class="pre">viterbi_naive_init</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">n</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">m</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">H</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">s</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">e</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">r</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/lshmm/viterbi/vit_haploid_variants_samples.html#viterbi_naive_init"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#lshmm.viterbi.vit_haploid_variants_samples.viterbi_naive_init" title="Permalink to this definition"></a></dt>
+<dd><p>Initialise naive implementation of LS viterbi.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="lshmm.viterbi.vit_haploid_variants_samples.viterbi_init">
+<span class="sig-prename descclassname"><span class="pre">lshmm.viterbi.vit_haploid_variants_samples.</span></span><span class="sig-name descname"><span class="pre">viterbi_init</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">n</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">m</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">H</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">s</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">e</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">r</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/lshmm/viterbi/vit_haploid_variants_samples.html#viterbi_init"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#lshmm.viterbi.vit_haploid_variants_samples.viterbi_init" title="Permalink to this definition"></a></dt>
+<dd><p>Initialise naive, but more space memory efficient implementation of LS viterbi.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="lshmm.viterbi.vit_haploid_variants_samples.forwards_viterbi_hap_naive">
+<span class="sig-prename descclassname"><span class="pre">lshmm.viterbi.vit_haploid_variants_samples.</span></span><span class="sig-name descname"><span class="pre">forwards_viterbi_hap_naive</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">n</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">m</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">H</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">s</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">e</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">r</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/lshmm/viterbi/vit_haploid_variants_samples.html#forwards_viterbi_hap_naive"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#lshmm.viterbi.vit_haploid_variants_samples.forwards_viterbi_hap_naive" title="Permalink to this definition"></a></dt>
+<dd><p>Naive implementation of LS haploid Viterbi algorithm.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="lshmm.viterbi.vit_haploid_variants_samples.forwards_viterbi_hap_naive_vec">
+<span class="sig-prename descclassname"><span class="pre">lshmm.viterbi.vit_haploid_variants_samples.</span></span><span class="sig-name descname"><span class="pre">forwards_viterbi_hap_naive_vec</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">n</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">m</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">H</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">s</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">e</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">r</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/lshmm/viterbi/vit_haploid_variants_samples.html#forwards_viterbi_hap_naive_vec"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#lshmm.viterbi.vit_haploid_variants_samples.forwards_viterbi_hap_naive_vec" title="Permalink to this definition"></a></dt>
+<dd><p>Naive matrix based implementation of LS haploid forward Viterbi algorithm using numpy.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="lshmm.viterbi.vit_haploid_variants_samples.forwards_viterbi_hap_naive_low_mem">
+<span class="sig-prename descclassname"><span class="pre">lshmm.viterbi.vit_haploid_variants_samples.</span></span><span class="sig-name descname"><span class="pre">forwards_viterbi_hap_naive_low_mem</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">n</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">m</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">H</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">s</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">e</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">r</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/lshmm/viterbi/vit_haploid_variants_samples.html#forwards_viterbi_hap_naive_low_mem"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#lshmm.viterbi.vit_haploid_variants_samples.forwards_viterbi_hap_naive_low_mem" title="Permalink to this definition"></a></dt>
+<dd><p>Naive implementation of LS haploid Viterbi algorithm, with reduced memory.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="lshmm.viterbi.vit_haploid_variants_samples.forwards_viterbi_hap_naive_low_mem_rescaling">
+<span class="sig-prename descclassname"><span class="pre">lshmm.viterbi.vit_haploid_variants_samples.</span></span><span class="sig-name descname"><span class="pre">forwards_viterbi_hap_naive_low_mem_rescaling</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">n</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">m</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">H</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">s</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">e</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">r</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/lshmm/viterbi/vit_haploid_variants_samples.html#forwards_viterbi_hap_naive_low_mem_rescaling"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#lshmm.viterbi.vit_haploid_variants_samples.forwards_viterbi_hap_naive_low_mem_rescaling" title="Permalink to this definition"></a></dt>
+<dd><p>Naive implementation of LS haploid Viterbi algorithm, with reduced memory and rescaling.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="lshmm.viterbi.vit_haploid_variants_samples.forwards_viterbi_hap_low_mem_rescaling">
+<span class="sig-prename descclassname"><span class="pre">lshmm.viterbi.vit_haploid_variants_samples.</span></span><span class="sig-name descname"><span class="pre">forwards_viterbi_hap_low_mem_rescaling</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">n</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">m</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">H</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">s</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">e</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">r</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/lshmm/viterbi/vit_haploid_variants_samples.html#forwards_viterbi_hap_low_mem_rescaling"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#lshmm.viterbi.vit_haploid_variants_samples.forwards_viterbi_hap_low_mem_rescaling" title="Permalink to this definition"></a></dt>
+<dd><p>LS haploid Viterbi algorithm, with reduced memory and exploits the Markov process structure.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="lshmm.viterbi.vit_haploid_variants_samples.forwards_viterbi_hap_lower_mem_rescaling">
+<span class="sig-prename descclassname"><span class="pre">lshmm.viterbi.vit_haploid_variants_samples.</span></span><span class="sig-name descname"><span class="pre">forwards_viterbi_hap_lower_mem_rescaling</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">n</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">m</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">H</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">s</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">e</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">r</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/lshmm/viterbi/vit_haploid_variants_samples.html#forwards_viterbi_hap_lower_mem_rescaling"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#lshmm.viterbi.vit_haploid_variants_samples.forwards_viterbi_hap_lower_mem_rescaling" title="Permalink to this definition"></a></dt>
+<dd><p>LS haploid Viterbi algorithm with even smaller memory footprint and exploits the Markov process structure.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="lshmm.viterbi.vit_haploid_variants_samples.backwards_viterbi_hap">
+<span class="sig-prename descclassname"><span class="pre">lshmm.viterbi.vit_haploid_variants_samples.</span></span><span class="sig-name descname"><span class="pre">backwards_viterbi_hap</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">m</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">V_last</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">P</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/lshmm/viterbi/vit_haploid_variants_samples.html#backwards_viterbi_hap"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#lshmm.viterbi.vit_haploid_variants_samples.backwards_viterbi_hap" title="Permalink to this definition"></a></dt>
+<dd><p>Run a backwards pass to determine the most likely path.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="lshmm.viterbi.vit_haploid_variants_samples.path_ll_hap">
+<span class="sig-prename descclassname"><span class="pre">lshmm.viterbi.vit_haploid_variants_samples.</span></span><span class="sig-name descname"><span class="pre">path_ll_hap</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">n</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">m</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">H</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">path</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">s</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">e</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">r</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/lshmm/viterbi/vit_haploid_variants_samples.html#path_ll_hap"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#lshmm.viterbi.vit_haploid_variants_samples.path_ll_hap" title="Permalink to this definition"></a></dt>
+<dd><p>Evaluate log-likelihood path through a reference panel which results in sequence s.</p>
+</dd></dl>
+
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="vit_haploid_samples_variants.html" class="btn btn-neutral float-left" title="lshmm.viterbi.vit_haploid_samples_variants" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p></p>
+  </div>
+
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

@@ -1,0 +1,8 @@
+lshmm.viterbi.vit_haploid_variants_samples
+==========================================
+
+Collection of functions to run Viterbi algorithms on haploid genotype data, where the data is structured as variants x samples.
+
+.. gnomad_automodulesummary:: lshmm.viterbi.vit_haploid_variants_samples
+
+.. automodule:: lshmm.viterbi.vit_haploid_variants_samples

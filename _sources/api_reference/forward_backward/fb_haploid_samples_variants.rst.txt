@@ -1,0 +1,8 @@
+lshmm.forward_backward.fb_haploid_samples_variants
+==================================================
+
+Collection of functions to run forwards and backwards algorithms on haploid genotype data, where the data is structured as samples x variants.
+
+.. gnomad_automodulesummary:: lshmm.forward_backward.fb_haploid_samples_variants
+
+.. automodule:: lshmm.forward_backward.fb_haploid_samples_variants

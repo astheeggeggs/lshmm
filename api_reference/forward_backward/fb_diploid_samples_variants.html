@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>lshmm.forward_backward.fb_diploid_samples_variants &mdash; lshmm latest documentation</title>
+      <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="../../_static/css/theme.css" type="text/css" />
+      <link rel="stylesheet" href="../../_static/theme_overrides.css" type="text/css" />
+  <!--[if lt IE 9]>
+    <script src="../../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script data-url_root="../../" id="documentation_options" src="../../_static/documentation_options.js"></script>
+        <script src="../../_static/jquery.js"></script>
+        <script src="../../_static/underscore.js"></script>
+        <script src="../../_static/doctools.js"></script>
+    <script src="../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" />
+    <link rel="next" title="lshmm.forward_backward.fb_diploid_variants_samples" href="fb_diploid_variants_samples.html" />
+    <link rel="prev" title="lshmm.forward_backward" href="index.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+            <a href="../../index.html" class="icon icon-home"> lshmm
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul class="current">
+<li class="toctree-l1 current"><a class="reference internal" href="../index.html">API Reference</a><ul class="current">
+<li class="toctree-l2 current"><a class="reference internal" href="index.html">forward_backward</a><ul class="current">
+<li class="toctree-l3 current"><a class="current reference internal" href="#">fb_diploid_samples_variants</a></li>
+<li class="toctree-l3"><a class="reference internal" href="fb_diploid_variants_samples.html">fb_diploid_variants_samples</a></li>
+<li class="toctree-l3"><a class="reference internal" href="fb_diploid_variants_samples_tree.html">fb_diploid_variants_samples_tree</a></li>
+<li class="toctree-l3"><a class="reference internal" href="fb_haploid_samples_variants.html">fb_haploid_samples_variants</a></li>
+<li class="toctree-l3"><a class="reference internal" href="fb_haploid_variants_samples.html">fb_haploid_variants_samples</a></li>
+<li class="toctree-l3"><a class="reference internal" href="fb_haploid_variants_samples_tree.html">fb_haploid_variants_samples_tree</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../viterbi/index.html">viterbi</a></li>
+</ul>
+</li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../index.html">lshmm</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../index.html" class="icon icon-home"></a> &raquo;</li>
+          <li><a href="../index.html">lshmm</a> &raquo;</li>
+          <li><a href="index.html">lshmm.forward_backward</a> &raquo;</li>
+      <li>lshmm.forward_backward.fb_diploid_samples_variants</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../../_sources/api_reference/forward_backward/fb_diploid_samples_variants.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="lshmm-forward-backward-fb-diploid-samples-variants">
+<h1>lshmm.forward_backward.fb_diploid_samples_variants<a class="headerlink" href="#lshmm-forward-backward-fb-diploid-samples-variants" title="Permalink to this headline"></a></h1>
+<p>Collection of functions to run forwards and backwards algorithms on diploid genotype data, where the data is structured as samples x variants.</p>
+<table class="longtable docutils align-default">
+<colgroup>
+<col style="width: 10%" />
+<col style="width: 90%" />
+</colgroup>
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="#lshmm.forward_backward.fb_diploid_samples_variants.np_apply_along_axis" title="lshmm.forward_backward.fb_diploid_samples_variants.np_apply_along_axis"><code class="xref py py-obj docutils literal notranslate"><span class="pre">lshmm.forward_backward.fb_diploid_samples_variants.np_apply_along_axis</span></code></a>(...)</p></td>
+<td><p>Create numpy-like functions for max, sum etc.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#lshmm.forward_backward.fb_diploid_samples_variants.np_amax" title="lshmm.forward_backward.fb_diploid_samples_variants.np_amax"><code class="xref py py-obj docutils literal notranslate"><span class="pre">lshmm.forward_backward.fb_diploid_samples_variants.np_amax</span></code></a>(...)</p></td>
+<td><p>Numba implementation of numpy vectorised maximum.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#lshmm.forward_backward.fb_diploid_samples_variants.np_sum" title="lshmm.forward_backward.fb_diploid_samples_variants.np_sum"><code class="xref py py-obj docutils literal notranslate"><span class="pre">lshmm.forward_backward.fb_diploid_samples_variants.np_sum</span></code></a>(...)</p></td>
+<td><p>Numba implementation of numpy vectorised sum.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#lshmm.forward_backward.fb_diploid_samples_variants.np_argmax" title="lshmm.forward_backward.fb_diploid_samples_variants.np_argmax"><code class="xref py py-obj docutils literal notranslate"><span class="pre">lshmm.forward_backward.fb_diploid_samples_variants.np_argmax</span></code></a>(...)</p></td>
+<td><p>Numba implementation of numpy vectorised argmax.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#lshmm.forward_backward.fb_diploid_samples_variants.forwards_ls_dip" title="lshmm.forward_backward.fb_diploid_samples_variants.forwards_ls_dip"><code class="xref py py-obj docutils literal notranslate"><span class="pre">lshmm.forward_backward.fb_diploid_samples_variants.forwards_ls_dip</span></code></a>(n, ...)</p></td>
+<td><p>Matrix based diploid LS forward algorithm using numpy vectorisation.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#lshmm.forward_backward.fb_diploid_samples_variants.backwards_ls_dip" title="lshmm.forward_backward.fb_diploid_samples_variants.backwards_ls_dip"><code class="xref py py-obj docutils literal notranslate"><span class="pre">lshmm.forward_backward.fb_diploid_samples_variants.backwards_ls_dip</span></code></a>(n, ...)</p></td>
+<td><p>Matrix based diploid LS backward algorithm using numpy vectorisation.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#lshmm.forward_backward.fb_diploid_samples_variants.forward_ls_dip_starting_point" title="lshmm.forward_backward.fb_diploid_samples_variants.forward_ls_dip_starting_point"><code class="xref py py-obj docutils literal notranslate"><span class="pre">lshmm.forward_backward.fb_diploid_samples_variants.forward_ls_dip_starting_point</span></code></a>(n, ...)</p></td>
+<td><p>Naive implementation of LS diploid forwards algorithm.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#lshmm.forward_backward.fb_diploid_samples_variants.backward_ls_dip_starting_point" title="lshmm.forward_backward.fb_diploid_samples_variants.backward_ls_dip_starting_point"><code class="xref py py-obj docutils literal notranslate"><span class="pre">lshmm.forward_backward.fb_diploid_samples_variants.backward_ls_dip_starting_point</span></code></a>(n, ...)</p></td>
+<td><p>Naive implementation of LS diploid backwards algorithm.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#lshmm.forward_backward.fb_diploid_samples_variants.forward_ls_dip_loop" title="lshmm.forward_backward.fb_diploid_samples_variants.forward_ls_dip_loop"><code class="xref py py-obj docutils literal notranslate"><span class="pre">lshmm.forward_backward.fb_diploid_samples_variants.forward_ls_dip_loop</span></code></a>(n, ...)</p></td>
+<td><p>LS diploid forwards algoritm without vectorisation.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#lshmm.forward_backward.fb_diploid_samples_variants.backward_ls_dip_loop" title="lshmm.forward_backward.fb_diploid_samples_variants.backward_ls_dip_loop"><code class="xref py py-obj docutils literal notranslate"><span class="pre">lshmm.forward_backward.fb_diploid_samples_variants.backward_ls_dip_loop</span></code></a>(n, ...)</p></td>
+<td><p>LS diploid backwards algoritm without vectorisation.</p></td>
+</tr>
+</tbody>
+</table>
+<span class="target" id="module-lshmm.forward_backward.fb_diploid_samples_variants"></span><p>Collection of functions to run forwards and backwards algorithms on diploid genotype data, where the data is structured as samples x variants.</p>
+<dl class="py function">
+<dt class="sig sig-object py" id="lshmm.forward_backward.fb_diploid_samples_variants.np_apply_along_axis">
+<span class="sig-prename descclassname"><span class="pre">lshmm.forward_backward.fb_diploid_samples_variants.</span></span><span class="sig-name descname"><span class="pre">np_apply_along_axis</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">func1d</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">axis</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">arr</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/lshmm/forward_backward/fb_diploid_samples_variants.html#np_apply_along_axis"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#lshmm.forward_backward.fb_diploid_samples_variants.np_apply_along_axis" title="Permalink to this definition"></a></dt>
+<dd><p>Create numpy-like functions for max, sum etc.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="lshmm.forward_backward.fb_diploid_samples_variants.np_amax">
+<span class="sig-prename descclassname"><span class="pre">lshmm.forward_backward.fb_diploid_samples_variants.</span></span><span class="sig-name descname"><span class="pre">np_amax</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">array</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">axis</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/lshmm/forward_backward/fb_diploid_samples_variants.html#np_amax"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#lshmm.forward_backward.fb_diploid_samples_variants.np_amax" title="Permalink to this definition"></a></dt>
+<dd><p>Numba implementation of numpy vectorised maximum.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="lshmm.forward_backward.fb_diploid_samples_variants.np_sum">
+<span class="sig-prename descclassname"><span class="pre">lshmm.forward_backward.fb_diploid_samples_variants.</span></span><span class="sig-name descname"><span class="pre">np_sum</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">array</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">axis</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/lshmm/forward_backward/fb_diploid_samples_variants.html#np_sum"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#lshmm.forward_backward.fb_diploid_samples_variants.np_sum" title="Permalink to this definition"></a></dt>
+<dd><p>Numba implementation of numpy vectorised sum.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="lshmm.forward_backward.fb_diploid_samples_variants.np_argmax">
+<span class="sig-prename descclassname"><span class="pre">lshmm.forward_backward.fb_diploid_samples_variants.</span></span><span class="sig-name descname"><span class="pre">np_argmax</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">array</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">axis</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/lshmm/forward_backward/fb_diploid_samples_variants.html#np_argmax"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#lshmm.forward_backward.fb_diploid_samples_variants.np_argmax" title="Permalink to this definition"></a></dt>
+<dd><p>Numba implementation of numpy vectorised argmax.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="lshmm.forward_backward.fb_diploid_samples_variants.forwards_ls_dip">
+<span class="sig-prename descclassname"><span class="pre">lshmm.forward_backward.fb_diploid_samples_variants.</span></span><span class="sig-name descname"><span class="pre">forwards_ls_dip</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">n</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">m</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">G</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">s</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">e</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">r</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">norm</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/lshmm/forward_backward/fb_diploid_samples_variants.html#forwards_ls_dip"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#lshmm.forward_backward.fb_diploid_samples_variants.forwards_ls_dip" title="Permalink to this definition"></a></dt>
+<dd><p>Matrix based diploid LS forward algorithm using numpy vectorisation.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="lshmm.forward_backward.fb_diploid_samples_variants.backwards_ls_dip">
+<span class="sig-prename descclassname"><span class="pre">lshmm.forward_backward.fb_diploid_samples_variants.</span></span><span class="sig-name descname"><span class="pre">backwards_ls_dip</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">n</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">m</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">G</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">s</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">e</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">c</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">r</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/lshmm/forward_backward/fb_diploid_samples_variants.html#backwards_ls_dip"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#lshmm.forward_backward.fb_diploid_samples_variants.backwards_ls_dip" title="Permalink to this definition"></a></dt>
+<dd><p>Matrix based diploid LS backward algorithm using numpy vectorisation.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="lshmm.forward_backward.fb_diploid_samples_variants.forward_ls_dip_starting_point">
+<span class="sig-prename descclassname"><span class="pre">lshmm.forward_backward.fb_diploid_samples_variants.</span></span><span class="sig-name descname"><span class="pre">forward_ls_dip_starting_point</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">n</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">m</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">G</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">s</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">e</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">r</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/lshmm/forward_backward/fb_diploid_samples_variants.html#forward_ls_dip_starting_point"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#lshmm.forward_backward.fb_diploid_samples_variants.forward_ls_dip_starting_point" title="Permalink to this definition"></a></dt>
+<dd><p>Naive implementation of LS diploid forwards algorithm.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="lshmm.forward_backward.fb_diploid_samples_variants.backward_ls_dip_starting_point">
+<span class="sig-prename descclassname"><span class="pre">lshmm.forward_backward.fb_diploid_samples_variants.</span></span><span class="sig-name descname"><span class="pre">backward_ls_dip_starting_point</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">n</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">m</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">G</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">s</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">e</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">r</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/lshmm/forward_backward/fb_diploid_samples_variants.html#backward_ls_dip_starting_point"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#lshmm.forward_backward.fb_diploid_samples_variants.backward_ls_dip_starting_point" title="Permalink to this definition"></a></dt>
+<dd><p>Naive implementation of LS diploid backwards algorithm.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="lshmm.forward_backward.fb_diploid_samples_variants.forward_ls_dip_loop">
+<span class="sig-prename descclassname"><span class="pre">lshmm.forward_backward.fb_diploid_samples_variants.</span></span><span class="sig-name descname"><span class="pre">forward_ls_dip_loop</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">n</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">m</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">G</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">s</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">e</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">r</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">norm</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/lshmm/forward_backward/fb_diploid_samples_variants.html#forward_ls_dip_loop"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#lshmm.forward_backward.fb_diploid_samples_variants.forward_ls_dip_loop" title="Permalink to this definition"></a></dt>
+<dd><p>LS diploid forwards algoritm without vectorisation.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="lshmm.forward_backward.fb_diploid_samples_variants.backward_ls_dip_loop">
+<span class="sig-prename descclassname"><span class="pre">lshmm.forward_backward.fb_diploid_samples_variants.</span></span><span class="sig-name descname"><span class="pre">backward_ls_dip_loop</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">n</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">m</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">G</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">s</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">e</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">c</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">r</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/lshmm/forward_backward/fb_diploid_samples_variants.html#backward_ls_dip_loop"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#lshmm.forward_backward.fb_diploid_samples_variants.backward_ls_dip_loop" title="Permalink to this definition"></a></dt>
+<dd><p>LS diploid backwards algoritm without vectorisation.</p>
+</dd></dl>
+
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="index.html" class="btn btn-neutral float-left" title="lshmm.forward_backward" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="fb_diploid_variants_samples.html" class="btn btn-neutral float-right" title="lshmm.forward_backward.fb_diploid_variants_samples" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p></p>
+  </div>
+
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

@@ -1,0 +1,331 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>lshmm.forward_backward.fb_haploid_variants_samples_tree &mdash; lshmm latest documentation</title>
+      <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="../../_static/css/theme.css" type="text/css" />
+      <link rel="stylesheet" href="../../_static/theme_overrides.css" type="text/css" />
+  <!--[if lt IE 9]>
+    <script src="../../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script data-url_root="../../" id="documentation_options" src="../../_static/documentation_options.js"></script>
+        <script src="../../_static/jquery.js"></script>
+        <script src="../../_static/underscore.js"></script>
+        <script src="../../_static/doctools.js"></script>
+    <script src="../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" />
+    <link rel="next" title="lshmm.viterbi" href="../viterbi/index.html" />
+    <link rel="prev" title="lshmm.forward_backward.fb_haploid_variants_samples" href="fb_haploid_variants_samples.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+            <a href="../../index.html" class="icon icon-home"> lshmm
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul class="current">
+<li class="toctree-l1 current"><a class="reference internal" href="../index.html">API Reference</a><ul class="current">
+<li class="toctree-l2 current"><a class="reference internal" href="index.html">forward_backward</a><ul class="current">
+<li class="toctree-l3"><a class="reference internal" href="fb_diploid_samples_variants.html">fb_diploid_samples_variants</a></li>
+<li class="toctree-l3"><a class="reference internal" href="fb_diploid_variants_samples.html">fb_diploid_variants_samples</a></li>
+<li class="toctree-l3"><a class="reference internal" href="fb_diploid_variants_samples_tree.html">fb_diploid_variants_samples_tree</a></li>
+<li class="toctree-l3"><a class="reference internal" href="fb_haploid_samples_variants.html">fb_haploid_samples_variants</a></li>
+<li class="toctree-l3"><a class="reference internal" href="fb_haploid_variants_samples.html">fb_haploid_variants_samples</a></li>
+<li class="toctree-l3 current"><a class="current reference internal" href="#">fb_haploid_variants_samples_tree</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../viterbi/index.html">viterbi</a></li>
+</ul>
+</li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../index.html">lshmm</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../index.html" class="icon icon-home"></a> &raquo;</li>
+          <li><a href="../index.html">lshmm</a> &raquo;</li>
+          <li><a href="index.html">lshmm.forward_backward</a> &raquo;</li>
+      <li>lshmm.forward_backward.fb_haploid_variants_samples_tree</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../../_sources/api_reference/forward_backward/fb_haploid_variants_samples_tree.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="lshmm-forward-backward-fb-haploid-variants-samples-tree">
+<h1>lshmm.forward_backward.fb_haploid_variants_samples_tree<a class="headerlink" href="#lshmm-forward-backward-fb-haploid-variants-samples-tree" title="Permalink to this headline"></a></h1>
+<p>Collection of functions to run forwards and backwards algorithms on haploid genotype data encoded with tree sequences.</p>
+<table class="longtable docutils align-default">
+<colgroup>
+<col style="width: 10%" />
+<col style="width: 90%" />
+</colgroup>
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="#lshmm.forward_backward.fb_haploid_variants_samples_tree.mirror_coordinates" title="lshmm.forward_backward.fb_haploid_variants_samples_tree.mirror_coordinates"><code class="xref py py-obj docutils literal notranslate"><span class="pre">lshmm.forward_backward.fb_haploid_variants_samples_tree.mirror_coordinates</span></code></a>(ts)</p></td>
+<td><p>Return a copy of the specified tree sequence in which all coordinates x are transformed into L - x.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#lshmm.forward_backward.fb_haploid_variants_samples_tree.ValueTransition" title="lshmm.forward_backward.fb_haploid_variants_samples_tree.ValueTransition"><code class="xref py py-obj docutils literal notranslate"><span class="pre">lshmm.forward_backward.fb_haploid_variants_samples_tree.ValueTransition</span></code></a>([...])</p></td>
+<td><p>Simple struct holding value transition values.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#lshmm.forward_backward.fb_haploid_variants_samples_tree.LsHmmAlgorithm" title="lshmm.forward_backward.fb_haploid_variants_samples_tree.LsHmmAlgorithm"><code class="xref py py-obj docutils literal notranslate"><span class="pre">lshmm.forward_backward.fb_haploid_variants_samples_tree.LsHmmAlgorithm</span></code></a>(ts, ...)</p></td>
+<td><p>Abstract superclass of Li and Stephens HMM algorithm.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#lshmm.forward_backward.fb_haploid_variants_samples_tree.CompressedMatrix" title="lshmm.forward_backward.fb_haploid_variants_samples_tree.CompressedMatrix"><code class="xref py py-obj docutils literal notranslate"><span class="pre">lshmm.forward_backward.fb_haploid_variants_samples_tree.CompressedMatrix</span></code></a>(ts)</p></td>
+<td><p>Class representing a num_samples x num_sites matrix compressed by a tree sequence.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#lshmm.forward_backward.fb_haploid_variants_samples_tree.ForwardMatrix" title="lshmm.forward_backward.fb_haploid_variants_samples_tree.ForwardMatrix"><code class="xref py py-obj docutils literal notranslate"><span class="pre">lshmm.forward_backward.fb_haploid_variants_samples_tree.ForwardMatrix</span></code></a>(ts)</p></td>
+<td><p>Class representing a compressed forward matrix.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#lshmm.forward_backward.fb_haploid_variants_samples_tree.BackwardMatrix" title="lshmm.forward_backward.fb_haploid_variants_samples_tree.BackwardMatrix"><code class="xref py py-obj docutils literal notranslate"><span class="pre">lshmm.forward_backward.fb_haploid_variants_samples_tree.BackwardMatrix</span></code></a>(ts)</p></td>
+<td><p>Class representing a compressed backward matrix.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#lshmm.forward_backward.fb_haploid_variants_samples_tree.ForwardAlgorithm" title="lshmm.forward_backward.fb_haploid_variants_samples_tree.ForwardAlgorithm"><code class="xref py py-obj docutils literal notranslate"><span class="pre">lshmm.forward_backward.fb_haploid_variants_samples_tree.ForwardAlgorithm</span></code></a>(ts, ...)</p></td>
+<td><p>Runs the Li and Stephens forward algorithm.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#lshmm.forward_backward.fb_haploid_variants_samples_tree.BackwardAlgorithm" title="lshmm.forward_backward.fb_haploid_variants_samples_tree.BackwardAlgorithm"><code class="xref py py-obj docutils literal notranslate"><span class="pre">lshmm.forward_backward.fb_haploid_variants_samples_tree.BackwardAlgorithm</span></code></a>(ts, ...)</p></td>
+<td><p>Runs the Li and Stephens forward algorithm.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#lshmm.forward_backward.fb_haploid_variants_samples_tree.ls_forward_tree" title="lshmm.forward_backward.fb_haploid_variants_samples_tree.ls_forward_tree"><code class="xref py py-obj docutils literal notranslate"><span class="pre">lshmm.forward_backward.fb_haploid_variants_samples_tree.ls_forward_tree</span></code></a>(h, ...)</p></td>
+<td><p>Forward matrix computation based on a tree sequence.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#lshmm.forward_backward.fb_haploid_variants_samples_tree.ls_backward_tree" title="lshmm.forward_backward.fb_haploid_variants_samples_tree.ls_backward_tree"><code class="xref py py-obj docutils literal notranslate"><span class="pre">lshmm.forward_backward.fb_haploid_variants_samples_tree.ls_backward_tree</span></code></a>(h, ...)</p></td>
+<td><p>Backward matrix computation based on a tree sequence.</p></td>
+</tr>
+</tbody>
+</table>
+<span class="target" id="module-lshmm.forward_backward.fb_haploid_variants_samples_tree"></span><p>Collection of functions to run forwards and backwards algorithms on haploid genotype data encoded with tree sequences.</p>
+<dl class="py function">
+<dt class="sig sig-object py" id="lshmm.forward_backward.fb_haploid_variants_samples_tree.mirror_coordinates">
+<span class="sig-prename descclassname"><span class="pre">lshmm.forward_backward.fb_haploid_variants_samples_tree.</span></span><span class="sig-name descname"><span class="pre">mirror_coordinates</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">ts</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/lshmm/forward_backward/fb_haploid_variants_samples_tree.html#mirror_coordinates"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#lshmm.forward_backward.fb_haploid_variants_samples_tree.mirror_coordinates" title="Permalink to this definition"></a></dt>
+<dd><p>Return a copy of the specified tree sequence in which all coordinates x are transformed into L - x.</p>
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="lshmm.forward_backward.fb_haploid_variants_samples_tree.ValueTransition">
+<em class="property"><span class="pre">class</span> </em><span class="sig-prename descclassname"><span class="pre">lshmm.forward_backward.fb_haploid_variants_samples_tree.</span></span><span class="sig-name descname"><span class="pre">ValueTransition</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">tree_node</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">-</span> <span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">value</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">-</span> <span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">value_index</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">-</span> <span class="pre">1</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/lshmm/forward_backward/fb_haploid_variants_samples_tree.html#ValueTransition"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#lshmm.forward_backward.fb_haploid_variants_samples_tree.ValueTransition" title="Permalink to this definition"></a></dt>
+<dd><p>Simple struct holding value transition values.</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="lshmm.forward_backward.fb_haploid_variants_samples_tree.ValueTransition.copy">
+<span class="sig-name descname"><span class="pre">copy</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/lshmm/forward_backward/fb_haploid_variants_samples_tree.html#ValueTransition.copy"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#lshmm.forward_backward.fb_haploid_variants_samples_tree.ValueTransition.copy" title="Permalink to this definition"></a></dt>
+<dd><p>Copy the value transition.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="lshmm.forward_backward.fb_haploid_variants_samples_tree.LsHmmAlgorithm">
+<em class="property"><span class="pre">class</span> </em><span class="sig-prename descclassname"><span class="pre">lshmm.forward_backward.fb_haploid_variants_samples_tree.</span></span><span class="sig-name descname"><span class="pre">LsHmmAlgorithm</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">ts</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">rho</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mu</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">precision</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">10</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/lshmm/forward_backward/fb_haploid_variants_samples_tree.html#LsHmmAlgorithm"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#lshmm.forward_backward.fb_haploid_variants_samples_tree.LsHmmAlgorithm" title="Permalink to this definition"></a></dt>
+<dd><p>Abstract superclass of Li and Stephens HMM algorithm.</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="lshmm.forward_backward.fb_haploid_variants_samples_tree.LsHmmAlgorithm.check_integrity">
+<span class="sig-name descname"><span class="pre">check_integrity</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/lshmm/forward_backward/fb_haploid_variants_samples_tree.html#LsHmmAlgorithm.check_integrity"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#lshmm.forward_backward.fb_haploid_variants_samples_tree.LsHmmAlgorithm.check_integrity" title="Permalink to this definition"></a></dt>
+<dd><p>Check the integrity of the algorithm.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="lshmm.forward_backward.fb_haploid_variants_samples_tree.LsHmmAlgorithm.compress">
+<span class="sig-name descname"><span class="pre">compress</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/lshmm/forward_backward/fb_haploid_variants_samples_tree.html#LsHmmAlgorithm.compress"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#lshmm.forward_backward.fb_haploid_variants_samples_tree.LsHmmAlgorithm.compress" title="Permalink to this definition"></a></dt>
+<dd><p>Compress the values in the tree.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="lshmm.forward_backward.fb_haploid_variants_samples_tree.LsHmmAlgorithm.update_tree">
+<span class="sig-name descname"><span class="pre">update_tree</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/lshmm/forward_backward/fb_haploid_variants_samples_tree.html#LsHmmAlgorithm.update_tree"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#lshmm.forward_backward.fb_haploid_variants_samples_tree.LsHmmAlgorithm.update_tree" title="Permalink to this definition"></a></dt>
+<dd><p>Update the internal data structures to move on to the next tree.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="lshmm.forward_backward.fb_haploid_variants_samples_tree.LsHmmAlgorithm.update_probabilities">
+<span class="sig-name descname"><span class="pre">update_probabilities</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">site</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">haplotype_state</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/lshmm/forward_backward/fb_haploid_variants_samples_tree.html#LsHmmAlgorithm.update_probabilities"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#lshmm.forward_backward.fb_haploid_variants_samples_tree.LsHmmAlgorithm.update_probabilities" title="Permalink to this definition"></a></dt>
+<dd><p>Update values of probabilities of path ending at a set of nodes.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="lshmm.forward_backward.fb_haploid_variants_samples_tree.LsHmmAlgorithm.process_site">
+<span class="sig-name descname"><span class="pre">process_site</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">site</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">haplotype_state</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">forwards</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/lshmm/forward_backward/fb_haploid_variants_samples_tree.html#LsHmmAlgorithm.process_site"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#lshmm.forward_backward.fb_haploid_variants_samples_tree.LsHmmAlgorithm.process_site" title="Permalink to this definition"></a></dt>
+<dd><p>Process the next site.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="lshmm.forward_backward.fb_haploid_variants_samples_tree.LsHmmAlgorithm.run_forward">
+<span class="sig-name descname"><span class="pre">run_forward</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">h</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/lshmm/forward_backward/fb_haploid_variants_samples_tree.html#LsHmmAlgorithm.run_forward"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#lshmm.forward_backward.fb_haploid_variants_samples_tree.LsHmmAlgorithm.run_forward" title="Permalink to this definition"></a></dt>
+<dd><p>Run the forwards algorithm.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="lshmm.forward_backward.fb_haploid_variants_samples_tree.LsHmmAlgorithm.run_backward">
+<span class="sig-name descname"><span class="pre">run_backward</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">h</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/lshmm/forward_backward/fb_haploid_variants_samples_tree.html#LsHmmAlgorithm.run_backward"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#lshmm.forward_backward.fb_haploid_variants_samples_tree.LsHmmAlgorithm.run_backward" title="Permalink to this definition"></a></dt>
+<dd><p>Run the backwards algorithm.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="lshmm.forward_backward.fb_haploid_variants_samples_tree.LsHmmAlgorithm.compute_normalisation_factor">
+<span class="sig-name descname"><span class="pre">compute_normalisation_factor</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/lshmm/forward_backward/fb_haploid_variants_samples_tree.html#LsHmmAlgorithm.compute_normalisation_factor"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#lshmm.forward_backward.fb_haploid_variants_samples_tree.LsHmmAlgorithm.compute_normalisation_factor" title="Permalink to this definition"></a></dt>
+<dd><p>Compute normalisation term to avoid underflow.</p>
+<p>Not implemented here, as this must be defined at the forwards/backwards level.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="lshmm.forward_backward.fb_haploid_variants_samples_tree.LsHmmAlgorithm.compute_next_probability">
+<span class="sig-name descname"><span class="pre">compute_next_probability</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">site_id</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">p_last</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">is_match</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/lshmm/forward_backward/fb_haploid_variants_samples_tree.html#LsHmmAlgorithm.compute_next_probability"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#lshmm.forward_backward.fb_haploid_variants_samples_tree.LsHmmAlgorithm.compute_next_probability" title="Permalink to this definition"></a></dt>
+<dd><p>Compute next probability.</p>
+<p>Not implemented here, as this must be defined at the forwards/backwards level.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="lshmm.forward_backward.fb_haploid_variants_samples_tree.CompressedMatrix">
+<em class="property"><span class="pre">class</span> </em><span class="sig-prename descclassname"><span class="pre">lshmm.forward_backward.fb_haploid_variants_samples_tree.</span></span><span class="sig-name descname"><span class="pre">CompressedMatrix</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">ts</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">normalisation_factor</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/lshmm/forward_backward/fb_haploid_variants_samples_tree.html#CompressedMatrix"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#lshmm.forward_backward.fb_haploid_variants_samples_tree.CompressedMatrix" title="Permalink to this definition"></a></dt>
+<dd><p>Class representing a num_samples x num_sites matrix compressed by a tree sequence.</p>
+<p>Each site is represented by a set of (node, value) pairs,
+which act as “mutations”, i.e., any sample that descends
+from a particular node will inherit that value (unless any other
+values are on the path).</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="lshmm.forward_backward.fb_haploid_variants_samples_tree.CompressedMatrix.store_site">
+<span class="sig-name descname"><span class="pre">store_site</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">site</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">normalisation_factor</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">value_transitions</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/lshmm/forward_backward/fb_haploid_variants_samples_tree.html#CompressedMatrix.store_site"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#lshmm.forward_backward.fb_haploid_variants_samples_tree.CompressedMatrix.store_site" title="Permalink to this definition"></a></dt>
+<dd><p>Store the site information.</p>
+<p>Store the normalisation factor and the collection of value transitions
+at the site</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="lshmm.forward_backward.fb_haploid_variants_samples_tree.CompressedMatrix.num_transitions">
+<em class="property"><span class="pre">property</span> </em><span class="sig-name descname"><span class="pre">num_transitions</span></span><a class="headerlink" href="#lshmm.forward_backward.fb_haploid_variants_samples_tree.CompressedMatrix.num_transitions" title="Permalink to this definition"></a></dt>
+<dd><p>Determine the number of unique value transitions at each site.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="lshmm.forward_backward.fb_haploid_variants_samples_tree.CompressedMatrix.get_site">
+<span class="sig-name descname"><span class="pre">get_site</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">site</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/lshmm/forward_backward/fb_haploid_variants_samples_tree.html#CompressedMatrix.get_site"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#lshmm.forward_backward.fb_haploid_variants_samples_tree.CompressedMatrix.get_site" title="Permalink to this definition"></a></dt>
+<dd><p>Get the value transitions at the site.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="lshmm.forward_backward.fb_haploid_variants_samples_tree.CompressedMatrix.decode">
+<span class="sig-name descname"><span class="pre">decode</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/lshmm/forward_backward/fb_haploid_variants_samples_tree.html#CompressedMatrix.decode"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#lshmm.forward_backward.fb_haploid_variants_samples_tree.CompressedMatrix.decode" title="Permalink to this definition"></a></dt>
+<dd><p>Decode the tree encoding of the values into an explicit matrix.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="lshmm.forward_backward.fb_haploid_variants_samples_tree.ForwardMatrix">
+<em class="property"><span class="pre">class</span> </em><span class="sig-prename descclassname"><span class="pre">lshmm.forward_backward.fb_haploid_variants_samples_tree.</span></span><span class="sig-name descname"><span class="pre">ForwardMatrix</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">ts</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">normalisation_factor</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/lshmm/forward_backward/fb_haploid_variants_samples_tree.html#ForwardMatrix"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#lshmm.forward_backward.fb_haploid_variants_samples_tree.ForwardMatrix" title="Permalink to this definition"></a></dt>
+<dd><p>Class representing a compressed forward matrix.</p>
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="lshmm.forward_backward.fb_haploid_variants_samples_tree.BackwardMatrix">
+<em class="property"><span class="pre">class</span> </em><span class="sig-prename descclassname"><span class="pre">lshmm.forward_backward.fb_haploid_variants_samples_tree.</span></span><span class="sig-name descname"><span class="pre">BackwardMatrix</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">ts</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">normalisation_factor</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/lshmm/forward_backward/fb_haploid_variants_samples_tree.html#BackwardMatrix"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#lshmm.forward_backward.fb_haploid_variants_samples_tree.BackwardMatrix" title="Permalink to this definition"></a></dt>
+<dd><p>Class representing a compressed backward matrix.</p>
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="lshmm.forward_backward.fb_haploid_variants_samples_tree.ForwardAlgorithm">
+<em class="property"><span class="pre">class</span> </em><span class="sig-prename descclassname"><span class="pre">lshmm.forward_backward.fb_haploid_variants_samples_tree.</span></span><span class="sig-name descname"><span class="pre">ForwardAlgorithm</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">ts</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">rho</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mu</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">precision</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">10</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/lshmm/forward_backward/fb_haploid_variants_samples_tree.html#ForwardAlgorithm"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#lshmm.forward_backward.fb_haploid_variants_samples_tree.ForwardAlgorithm" title="Permalink to this definition"></a></dt>
+<dd><p>Runs the Li and Stephens forward algorithm.</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="lshmm.forward_backward.fb_haploid_variants_samples_tree.ForwardAlgorithm.compute_normalisation_factor">
+<span class="sig-name descname"><span class="pre">compute_normalisation_factor</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/lshmm/forward_backward/fb_haploid_variants_samples_tree.html#ForwardAlgorithm.compute_normalisation_factor"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#lshmm.forward_backward.fb_haploid_variants_samples_tree.ForwardAlgorithm.compute_normalisation_factor" title="Permalink to this definition"></a></dt>
+<dd><p>Compute normalisation term to avoid underflow.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="lshmm.forward_backward.fb_haploid_variants_samples_tree.ForwardAlgorithm.compute_next_probability">
+<span class="sig-name descname"><span class="pre">compute_next_probability</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">site_id</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">p_last</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">is_match</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/lshmm/forward_backward/fb_haploid_variants_samples_tree.html#ForwardAlgorithm.compute_next_probability"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#lshmm.forward_backward.fb_haploid_variants_samples_tree.ForwardAlgorithm.compute_next_probability" title="Permalink to this definition"></a></dt>
+<dd><p>Determine the scaled likelihoods at the next site.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="lshmm.forward_backward.fb_haploid_variants_samples_tree.BackwardAlgorithm">
+<em class="property"><span class="pre">class</span> </em><span class="sig-prename descclassname"><span class="pre">lshmm.forward_backward.fb_haploid_variants_samples_tree.</span></span><span class="sig-name descname"><span class="pre">BackwardAlgorithm</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">ts</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">rho</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mu</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">normalisation_factor</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">precision</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">10</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/lshmm/forward_backward/fb_haploid_variants_samples_tree.html#BackwardAlgorithm"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#lshmm.forward_backward.fb_haploid_variants_samples_tree.BackwardAlgorithm" title="Permalink to this definition"></a></dt>
+<dd><p>Runs the Li and Stephens forward algorithm.</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="lshmm.forward_backward.fb_haploid_variants_samples_tree.BackwardAlgorithm.compute_normalisation_factor">
+<span class="sig-name descname"><span class="pre">compute_normalisation_factor</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/lshmm/forward_backward/fb_haploid_variants_samples_tree.html#BackwardAlgorithm.compute_normalisation_factor"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#lshmm.forward_backward.fb_haploid_variants_samples_tree.BackwardAlgorithm.compute_normalisation_factor" title="Permalink to this definition"></a></dt>
+<dd><p>Compute normalisation term to avoid underflow.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="lshmm.forward_backward.fb_haploid_variants_samples_tree.BackwardAlgorithm.compute_next_probability">
+<span class="sig-name descname"><span class="pre">compute_next_probability</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">site_id</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">p_last</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">is_match</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/lshmm/forward_backward/fb_haploid_variants_samples_tree.html#BackwardAlgorithm.compute_next_probability"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#lshmm.forward_backward.fb_haploid_variants_samples_tree.BackwardAlgorithm.compute_next_probability" title="Permalink to this definition"></a></dt>
+<dd><p>Determine the scaled probabilities at the next (previous) site.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="lshmm.forward_backward.fb_haploid_variants_samples_tree.ls_forward_tree">
+<span class="sig-prename descclassname"><span class="pre">lshmm.forward_backward.fb_haploid_variants_samples_tree.</span></span><span class="sig-name descname"><span class="pre">ls_forward_tree</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">h</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ts</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">rho</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mu</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">precision</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">30</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/lshmm/forward_backward/fb_haploid_variants_samples_tree.html#ls_forward_tree"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#lshmm.forward_backward.fb_haploid_variants_samples_tree.ls_forward_tree" title="Permalink to this definition"></a></dt>
+<dd><p>Forward matrix computation based on a tree sequence.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="lshmm.forward_backward.fb_haploid_variants_samples_tree.ls_backward_tree">
+<span class="sig-prename descclassname"><span class="pre">lshmm.forward_backward.fb_haploid_variants_samples_tree.</span></span><span class="sig-name descname"><span class="pre">ls_backward_tree</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">h</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ts_mirror</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">rho</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mu</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">normalisation_factor</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">precision</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">30</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/lshmm/forward_backward/fb_haploid_variants_samples_tree.html#ls_backward_tree"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#lshmm.forward_backward.fb_haploid_variants_samples_tree.ls_backward_tree" title="Permalink to this definition"></a></dt>
+<dd><p>Backward matrix computation based on a tree sequence.</p>
+</dd></dl>
+
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="fb_haploid_variants_samples.html" class="btn btn-neutral float-left" title="lshmm.forward_backward.fb_haploid_variants_samples" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="../viterbi/index.html" class="btn btn-neutral float-right" title="lshmm.viterbi" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p></p>
+  </div>
+
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

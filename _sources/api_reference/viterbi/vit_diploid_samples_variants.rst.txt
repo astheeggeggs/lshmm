@@ -1,0 +1,8 @@
+lshmm.viterbi.vit_diploid_samples_variants
+==========================================
+
+Collection of functions to run Viterbi algorithms on dipoid genotype data, where the data is structured as samples x variants.
+
+.. gnomad_automodulesummary:: lshmm.viterbi.vit_diploid_samples_variants
+
+.. automodule:: lshmm.viterbi.vit_diploid_samples_variants

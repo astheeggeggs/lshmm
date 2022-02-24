@@ -1,0 +1,18 @@
+Metadata-Version: 2.1
+Name: lshmm
+Version: 0.0.1
+Summary: UNKNOWN
+License: MIT
+Platform: UNKNOWN
+Classifier: Topic :: Scientific/Engineering :: Bio-Informatics
+Classifier: Intended Audience :: Science/Research
+Classifier: License :: OSI Approved :: MIT License
+Classifier: Programming Language :: Python :: 3
+Requires-Python: >=3.6
+Description-Content-Type: text/markdown
+License-File: LICENSE
+
+# lshmm
+code to run Li and Stephens
+
+
