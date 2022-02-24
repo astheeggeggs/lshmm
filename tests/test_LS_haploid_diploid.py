@@ -247,7 +247,7 @@ class FBAlgorithmBase(LSBase):
     """Base for forwards backwards algorithm tests."""
 
 
-# @pytest.mark.skip(reason="DEV: skip for time being")
+@pytest.mark.skip(reason="DEV: skip for time being")
 class TestNonTreeMethodsHap(FBAlgorithmBase):
     """Test that we compute the sample likelihoods across all implementations."""
 
@@ -313,7 +313,7 @@ class TestNonTreeMethodsHap(FBAlgorithmBase):
         self.assertAllClose(ll_vs, ll_sv)
 
 
-# @pytest.mark.skip(reason="DEV: skip for time being")
+@pytest.mark.skip(reason="DEV: skip for time being")
 class TestNonTreeMethodsDip(FBAlgorithmBase):
     """Test that we compute the sample likelihoods across all implementations."""
 
@@ -480,11 +480,12 @@ class TestNonTreeMethodsDip(FBAlgorithmBase):
         self.assertAllClose(ll_vs, ll_sv)
 
 
-# @pytest.mark.skip(reason="DEV: skip for time being")
+@pytest.mark.skip(reason="DEV: skip for time being")
 class VitAlgorithmBase(LSBase):
     """Base for viterbi algoritm tests."""
 
 
+@pytest.mark.skip(reason="DEV: skip for time being")
 class TestNonTreeViterbiHap(VitAlgorithmBase):
     """Test that we have the same log-likelihood across all implementations"""
 
@@ -669,7 +670,7 @@ class TestNonTreeViterbiHap(VitAlgorithmBase):
         self.assertAllClose(ll_vs, ll_sv)
 
 
-# @pytest.mark.skip(reason="DEV: skip for time being")
+@pytest.mark.skip(reason="DEV: skip for time being")
 class TestNonTreeViterbiDip(VitAlgorithmBase):
     """Test that we have the same log-likelihood across all implementations"""
 
@@ -826,6 +827,7 @@ class TestNonTreeViterbiDip(VitAlgorithmBase):
         self.assertAllClose(ll_vs, ll_sv)
 
 
+@pytest.mark.skip(reason="DEV: skip for time being")
 class TestForwardTree(FBAlgorithmBase):
     """Tests that the tree algorithm computes the same forward matrix as the simple method."""
 
@@ -842,6 +844,7 @@ class TestForwardTree(FBAlgorithmBase):
             self.assertAllClose(ll_vs, ll_tree)
 
 
+@pytest.mark.skip(reason="DEV: skip for time being")
 class TestMirroring(FBAlgorithmBase):
     """Tests that mirroring the tree sequence and running forwards and backwards algorithms gives
     the same log-likelihood of observing the data."""
@@ -879,6 +882,7 @@ class TestMirroring(FBAlgorithmBase):
             self.assertAllClose(F_vs_mirror_matrix, F_vs_mirror)
 
 
+@pytest.mark.skip(reason="DEV: skip for time being")
 class TestForwardBackwardTree(FBAlgorithmBase):
     """Tests that the tree algorithm computes the same forward matrix as the simple method."""
 
