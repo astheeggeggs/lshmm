@@ -18,6 +18,7 @@ def pydocstyle(session):
 
 @nox.session
 def lint(session):
+    session.install("msprime")
     session.install("-r", "requirements.dev.txt")
     session.install(".")
 
@@ -27,6 +28,8 @@ def lint(session):
 
 @nox.session
 def test(session):
+    session.install("tskit")
+    session.install("msprime")
     session.install("-r", "requirements.dev.txt")
     session.install(".")
 
@@ -35,6 +38,8 @@ def test(session):
 
 @nox.session
 def build_docs(session):
+    session.install("tskit")
+    session.install("msprime")
     session.install("-r", "docs/requirements.docs.txt")
     session.install(".")
 
