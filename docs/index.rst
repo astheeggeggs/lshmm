@@ -1,4 +1,4 @@
-ls_hmm
+lshmm
 ======
 
 Contents

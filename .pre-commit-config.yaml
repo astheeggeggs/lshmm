@@ -20,4 +20,4 @@ repos:
     hooks:
       - id: pydocstyle
         additional_dependencies: ["toml"]
-        files: src/ls_hmm
+        files: lshmm

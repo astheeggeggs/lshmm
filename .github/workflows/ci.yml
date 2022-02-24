@@ -29,14 +29,13 @@ jobs:
           black .
           isort .
       - name: Check docstrings
-        run: pydocstyle src/ls_hmm
+        run: pydocstyle lshmm
       - name: Install package
         run: |
-          pip install wheel hail
           pip install .
       - name: Run Pylint
         run: |
-          pylint src/ls_hmm
+          pylint lshmm
           pylint tests
       - name: Run tests
         run: pytest

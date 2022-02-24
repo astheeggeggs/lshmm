@@ -6,7 +6,7 @@ import pathlib
 import pkgutil
 import re
 
-PACKAGE_NAME = "ls_hmm"
+PACKAGE_NAME = "lshmm"
 
 PACKAGE_PATH = importlib.import_module(PACKAGE_NAME).__path__[0]
 

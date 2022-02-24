@@ -13,7 +13,7 @@ def format(session):
 def pydocstyle(session):
     session.install("-r", "requirements.dev.txt")
 
-    session.run("pydocstyle", "src/ls_hmm")
+    session.run("pydocstyle", "lshmm")
 
 
 @nox.session
@@ -21,7 +21,7 @@ def lint(session):
     session.install("-r", "requirements.dev.txt")
     session.install(".")
 
-    session.run("pylint", "src/ls_hmm")
+    session.run("pylint", "lshmm")
     session.run("pylint", "tests")
 
 
