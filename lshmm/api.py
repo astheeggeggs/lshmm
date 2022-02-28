@@ -1,27 +1,26 @@
-"""Collection of functions to run forwards, backwards, and Viterbi algorithms on haploid or diploid genotype data."""
-import numba as nb
+"""
+External API definitions.
+"""
 import numpy as np
-from forward_backward.fb_diploid_variants_samples import (
+
+from .forward_backward.fb_diploid_variants_samples import (
     backward_ls_dip_loop,
     forward_ls_dip_loop,
 )
-
-# Forwards backwards functions needed
-from forward_backward.fb_haploid_variants_samples import (
+from .forward_backward.fb_haploid_variants_samples import (
     backwards_ls_hap,
     forwards_ls_hap,
 )
-from viterbi.vit_diploid_variants_samples import (
+from .vit_diploid_variants_samples import (
     backwards_viterbi_dip,
     forwards_viterbi_dip_low_mem,
     get_phased_path,
 )
-
-# Viterbi functions needed
-from viterbi.vit_haploid_variants_samples import (
+from .vit_haploid_variants_samples import (
     backwards_viterbi_hap,
     forwards_viterbi_hap_lower_mem_rescaling,
 )
+
 
 EQUAL_BOTH_HOM = 4
 UNEQUAL_BOTH_HOM = 0
@@ -31,7 +30,8 @@ REF_HET_OBS_HOM = 2
 
 
 def forwards(n, m, G_or_H, s, e, r):
-    """Run the Li and Stephens forwards algorithm on haplotype or unphased genotype data."""
+    """Run the Li and Stephens forwards algorithm on haplotype or
+    unphased genotype data."""
     template_dimensions = G_or_H.shape
     assert len(template_dimensions) in [2, 3]
 
@@ -48,7 +48,8 @@ def forwards(n, m, G_or_H, s, e, r):
 
 
 def backwards(n, m, G_or_H, s, e, c, r):
-    """Run the Li and Stephens backwards algorithm on haplotype or unphased genotype data."""
+    """Run the Li and Stephens backwards algorithm on haplotype or
+    unphased genotype data."""
     template_dimensions = G_or_H.shape
     assert len(template_dimensions) in [2, 3]
 
@@ -65,7 +66,8 @@ def backwards(n, m, G_or_H, s, e, c, r):
 
 
 def viterbi(n, m, G_or_H, s, e, r):
-    """Run the Li and Stephens Viterbi algorithm on haplotype or unphased genotype data."""
+    """Run the Li and Stephens Viterbi algorithm on haplotype or
+    unphased genotype data."""
     template_dimensions = G_or_H.shape
     assert len(template_dimensions) in [2, 3]
 
