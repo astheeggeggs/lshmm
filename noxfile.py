@@ -10,13 +10,6 @@ def format(session):
 
 
 @nox.session
-def pydocstyle(session):
-    session.install("-r", "requirements.dev.txt")
-
-    session.run("pydocstyle", "lshmm")
-
-
-@nox.session
 def lint(session):
     session.install("msprime")
     session.install("-r", "requirements.dev.txt")
@@ -64,4 +57,4 @@ def pip_compile(session):
     session.run("pip-compile", *session.posargs)
 
 
-nox.options.sessions = ["format", "pydocstyle", "lint", "test", "build_docs"]
+nox.options.sessions = ["format", "lint", "test", "build_docs"]

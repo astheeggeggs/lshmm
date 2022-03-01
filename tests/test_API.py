@@ -7,12 +7,14 @@ import numpy as np
 import pytest
 import tskit
 
+import lshmm as ls
+import lshmm.forward_backward.fb_diploid_variants_samples as fbd_vs
+import lshmm.forward_backward.fb_haploid_variants_samples as fbh_vs
+
 # import lshmm.viterbi
 import lshmm.vit_diploid_variants_samples as vd_vs
 import lshmm.vit_haploid_variants_samples as vh_vs
-import lshmm.forward_backward.fb_diploid_variants_samples as fbd_vs
-import lshmm.forward_backward.fb_haploid_variants_samples as fbh_vs
-import lshmm as ls
+
 # import lshmm.viterbi
 
 EQUAL_BOTH_HOM = 4

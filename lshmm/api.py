@@ -1,6 +1,4 @@
-"""
-External API definitions.
-"""
+"""External API definitions."""
 import numpy as np
 
 from .forward_backward.fb_diploid_variants_samples import (
@@ -21,7 +19,6 @@ from .vit_haploid_variants_samples import (
     forwards_viterbi_hap_lower_mem_rescaling,
 )
 
-
 EQUAL_BOTH_HOM = 4
 UNEQUAL_BOTH_HOM = 0
 BOTH_HET = 7
@@ -30,8 +27,10 @@ REF_HET_OBS_HOM = 2
 
 
 def forwards(n, m, G_or_H, s, e, r):
-    """Run the Li and Stephens forwards algorithm on haplotype or
-    unphased genotype data."""
+    """
+    Run the Li and Stephens forwards algorithm on haplotype or
+    unphased genotype data.
+    """
     template_dimensions = G_or_H.shape
     assert len(template_dimensions) in [2, 3]
 
@@ -48,8 +47,10 @@ def forwards(n, m, G_or_H, s, e, r):
 
 
 def backwards(n, m, G_or_H, s, e, c, r):
-    """Run the Li and Stephens backwards algorithm on haplotype or
-    unphased genotype data."""
+    """
+    Run the Li and Stephens backwards algorithm on haplotype or
+    unphased genotype data.
+    """
     template_dimensions = G_or_H.shape
     assert len(template_dimensions) in [2, 3]
 
@@ -66,8 +67,10 @@ def backwards(n, m, G_or_H, s, e, c, r):
 
 
 def viterbi(n, m, G_or_H, s, e, r):
-    """Run the Li and Stephens Viterbi algorithm on haplotype or
-    unphased genotype data."""
+    """
+    Run the Li and Stephens Viterbi algorithm on haplotype or
+    unphased genotype data.
+    """
     template_dimensions = G_or_H.shape
     assert len(template_dimensions) in [2, 3]
 
