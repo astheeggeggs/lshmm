@@ -1,4 +1,8 @@
-"""Collection of functions to run forwards and backwards algorithms on diploid genotype data, where the data is structured as samples x variants."""
+"""
+Collection of functions to run forwards and backwards algorithms
+on diploid genotype data, where the data is structured as samples x
+variants.
+"""
 import numba as nb
 import numpy as np
 

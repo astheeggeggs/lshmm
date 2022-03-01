@@ -7,11 +7,15 @@ import numpy as np
 import pytest
 import tskit
 
+import lshmm as ls
 import lshmm.forward_backward.fb_diploid_variants_samples as fbd_vs
 import lshmm.forward_backward.fb_haploid_variants_samples as fbh_vs
-import lshmm.ls as ls
-import lshmm.viterbi.vit_diploid_variants_samples as vd_vs
-import lshmm.viterbi.vit_haploid_variants_samples as vh_vs
+
+# import lshmm.viterbi
+import lshmm.vit_diploid_variants_samples as vd_vs
+import lshmm.vit_haploid_variants_samples as vh_vs
+
+# import lshmm.viterbi
 
 EQUAL_BOTH_HOM = 4
 UNEQUAL_BOTH_HOM = 0
@@ -51,7 +55,8 @@ class LSBase:
         return e
 
     def example_parameters_haplotypes(self, ts, seed=42):
-        """Returns an iterator over combinations of haplotype, recombination and mutation rates."""
+        """Returns an iterator over combinations of haplotype, recombination and
+        mutation rates."""
         np.random.seed(seed)
         H, s = self.example_haplotypes(ts)
         n = H.shape[1]

@@ -10,11 +10,10 @@ import lshmm.forward_backward.fb_diploid_samples_variants as fbd_sv
 import lshmm.forward_backward.fb_diploid_variants_samples as fbd_vs
 import lshmm.forward_backward.fb_haploid_samples_variants as fbh_sv
 import lshmm.forward_backward.fb_haploid_variants_samples as fbh_vs
-import lshmm.forward_backward.fb_haploid_variants_samples_tree as fbh_vst
-import lshmm.viterbi.vit_diploid_samples_variants as vd_sv
-import lshmm.viterbi.vit_diploid_variants_samples as vd_vs
-import lshmm.viterbi.vit_haploid_samples_variants as vh_sv
-import lshmm.viterbi.vit_haploid_variants_samples as vh_vs
+import lshmm.vit_diploid_samples_variants as vd_sv
+import lshmm.vit_diploid_variants_samples as vd_vs
+import lshmm.vit_haploid_samples_variants as vh_sv
+import lshmm.vit_haploid_variants_samples as vh_vs
 
 EQUAL_BOTH_HOM = 4
 UNEQUAL_BOTH_HOM = 0
