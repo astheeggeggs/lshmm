@@ -2,3 +2,5 @@ black==21.9b0 # This should be kept in sync with the version in .pre-commit-conf
 isort==5.9.3 # This should be kept in sync with the version in .pre-commit-config.yaml
 pylint
 pytest
+msprime
+tskit
