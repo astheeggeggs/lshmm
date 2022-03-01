@@ -8,15 +8,6 @@ build-backend = "setuptools.build_meta"
 [tool.isort]
 profile = "black"
 
-[tool.pydocstyle]
-convention = "pep257"
-match = ".*\\.py"
-add_ignore = [
-  "D104", # Do not require docstrings for packages (in __init__.py).
-  "D105", # Ignore missing docstring for magic methods.
-  "D107", # Ignore missing docstring for __init__ methods. Parameters may be documented in the class docstring.
-]
-
 [tool.pylint.messages_control]
 disable = [
   # Ignore refactor and convention categories
