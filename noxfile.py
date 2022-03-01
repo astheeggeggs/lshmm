@@ -27,6 +27,7 @@ def test(session):
     session.run("pytest")
 
 
+# Disabling until we have some documentation
 @nox.session
 def build_docs(session):
     session.install("-r", "docs/requirements.docs.txt")
@@ -53,4 +54,4 @@ def pip_compile(session):
     session.run("pip-compile", *session.posargs)
 
 
-nox.options.sessions = ["format", "lint", "test", "build_docs"]
+nox.options.sessions = ["format", "lint", "test"]

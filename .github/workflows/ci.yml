@@ -23,71 +23,66 @@ jobs:
           restore-keys: |
             pip-
       - name: Install development tools
-        run: pip install -r requirements.dev.txt
+        run: |
+          pip install -r requirements.dev.txt
+          pip install nox
       - name: Check formatting
-        run: |
-          black .
-          isort .
-      - name: Check docstrings
-        run: pydocstyle lshmm
-      - name: Install package
-        run: |
-          pip install .
-      - name: Run Pylint
-        run: |
-          pylint lshmm
-          pylint tests
+        run: nox -s format
+      - name: Check for lint
+        run: nox -s lint
       - name: Run tests
-        run: pytest
-  docs:
-    name: Build documentation
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v2
-      - name: Setup Python 3.8
-        uses: actions/setup-python@v2
-        with:
-          python-version: 3.8
-      - name: Use pip cache
-        uses: actions/cache@v2
-        with:
-          path: ~/.cache/pip
-          key: pip-${{ hashFiles('**/requirements*.txt') }}
-          restore-keys: |
-            pip-
-      - name: Install nox
-        run: pip install nox
-      - name: Build docs
-        run: nox -s build_docs
-      - name: Publish to GitHub Pages
-        if: github.event_name == 'push'
-        run: |
-          # Create empty gh-pages branch
-          git checkout --orphan gh-pages
+        run: nox -s test
 
-          # Remove files other than docs
-          git rm -rf .
-          rm -rf .nox
-          find . -name __pycache__ | xargs rm -r
+  # Disabling for now.
+  # docs:
+  #   name: Build documentation
+  #   runs-on: ubuntu-latest
+  #   steps:
+  #     - name: Checkout
+  #       uses: actions/checkout@v2
+  #     - name: Setup Python 3.8
+  #       uses: actions/setup-python@v2
+  #       with:
+  #         python-version: 3.8
+  #     - name: Use pip cache
+  #       uses: actions/cache@v2
+  #       with:
+  #         path: ~/.cache/pip
+  #         key: pip-${{ hashFiles('**/requirements*.txt') }}
+  #         restore-keys: |
+  #           pip-
+  #     - name: Install nox
+  #       run: pip install nox
+  #     - name: Build docs
+  #       run: nox -s build_docs
+  #     - name: Publish to GitHub Pages
+  #       if: github.event_name == 'push'
+  #       run: |
+  #         # Create empty gh-pages branch
+  #         git checkout --orphan gh-pages
 
-          # Move docs to root
-          mv docs/html/* ./
-          rm -r docs
+  #         # Remove files other than docs
+  #         git rm -rf .
+  #         rm -rf .nox
+  #         find . -name __pycache__ | xargs rm -r
 
-          # Prevent GitHub from assuming that this is a Jekyll site
-          touch .nojekyll
+  #         # Move docs to root
+  #         mv docs/html/* ./
+  #         rm -r docs
 
-          git config user.name "${GITHUB_ACTOR}"
-          git config user.email "${GITHUB_ACTOR}@users.noreply.github.com"
+  #         # Prevent GitHub from assuming that this is a Jekyll site
+  #         touch .nojekyll
 
-          git add .
-          git commit --allow-empty -m "Update docs"
+  #         git config user.name "${GITHUB_ACTOR}"
+  #         git config user.email "${GITHUB_ACTOR}@users.noreply.github.com"
 
-          git push --force origin gh-pages
+  #         git add .
+  #         git commit --allow-empty -m "Update docs"
 
-          # Restore the original working tree by checking out the
-          # commit that triggered the workflow.
-          # This restores requirements.txt so that @actions/cache
-          # can use it for determining the cache key.
-          git checkout ${GITHUB_SHA}
+  #         git push --force origin gh-pages
+
+  #         # Restore the original working tree by checking out the
+  #         # commit that triggered the workflow.
+  #         # This restores requirements.txt so that @actions/cache
+  #         # can use it for determining the cache key.
+  #         git checkout ${GITHUB_SHA}
