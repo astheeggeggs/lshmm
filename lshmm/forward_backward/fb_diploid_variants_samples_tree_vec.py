@@ -112,17 +112,6 @@ class LsHmmAlgorithm:
                 # Add an extra element that tells me the alleles_string there.
                 st.alleles_string = alleles_string
                 st.genotype_index = genotype_index
-                # if alleles_string in mapping_back:
-                # Making sure that if you do overwrite, it's with the same thing (we can just change this to an if statement)
-                # if not (np.allclose(mapping_back[alleles_string].get("value"), st.value, rtol=1e-9, atol=0.0) and np.allclose(mapping_back[alleles_string].get("inner_summation"), st.inner_summation, rtol=1e-9, atol=0.0)):
-                #     print(mapping_back[alleles_string].get("value"))
-                #     print(st.value)
-                #     print(mapping_back[alleles_string].get("inner_summation"))
-                #     print(st.inner_summation)
-                # assert np.allclose(mapping_back[alleles_string].get("value"), st.value, rtol=1e-9, atol=0.0)
-                # assert np.allclose(mapping_back[alleles_string].get("inner_summation"), st.inner_summation, rtol=1e-9, atol=0.0)
-
-                # assert alleles_string not in mapping_back
                 if alleles_string not in mapping_back:
                     mapping_back[alleles_string] = {
                         "value": st.value,
@@ -142,8 +131,6 @@ class LsHmmAlgorithm:
             if st.tree_node != -1:
                 alleles_string_vec.append(st.alleles_string)
 
-        # print(genotypes)
-        # print(alleles_string_vec)
         ancestral_allele, mutations = tree.map_mutations(genotypes, alleles_string_vec)
 
         self.T_index = np.zeros(tree.num_nodes, dtype=int) - 1
@@ -342,20 +329,7 @@ class LsHmmAlgorithm:
         allelic_state = self.allelic_state
         # Set the allelic_state for this site.
         allelic_state[tree.root] = alleles.index(site.ancestral_state)
-        # print("root state")
-        # print(allelic_state[tree.root])
 
-        # if site.id == 13:
-        #     print(site.mutations)
-        #     print(self.T)
-        #     print(tree.draw_text())
-        #     print(self.ts.draw_text())
-        print(site.id)
-        if site.id == 5:
-            assert 0 == 1
-        print(tree.draw_text())
-
-        # blah = self.decode_site()
         for mutation in site.mutations:
             u = mutation.node
             allelic_state[u] = alleles.index(mutation.derived_state)
@@ -368,80 +342,39 @@ class LsHmmAlgorithm:
                         tree_node=mutation.node, value=T[T_index[u]].value.copy()
                     )
                 )
-            # print("difference: ")
-            # print(blah - self.decode_site())
-            # Does A decode correctly here? (as mutations are added)
-
-        # Extra bit that should be removed eventually - this is to get the allelic state at the leaves.
+        # Get the allelic state at the leaves.
         allelic_state[: tree.num_samples()] = tree.tree_sequence.genotype_matrix()[
             site.id, :
         ]
-        # print("allelic state")
-        # print(allelic_state)
+
         node_map = {st.tree_node: st for st in self.T}
         to_compute = np.zeros(
             tree.num_samples(), dtype=int
         )  # Because the node ordering in the leaves is not 0 -> n_samples - 1.
 
-        # for v in tree.samples():
         for v in self.ts.samples():
             v_tmp = v
             while v not in node_map:
                 v = tree.parent(v)
-            # print(f"leaf {v}->{v_tmp}")
             to_compute[v_tmp] = v
 
-        # print(to_compute)
-        print(self.N)
-        print(self.T_index)
         normalisation_factor_inner_transpose = [
             self.compute_normalisation_factor_inner(i) for i in to_compute
         ]
-        # if site.id == 13:
-        #     print("normalisation_factor_inner_transpose")
-        #     print(normalisation_factor_inner_transpose)
-        #     print(to_compute)
-        #     print(self.T)
-        # print(self.mu)
-        # print(f'genotype_state: {genotype_state}')
-        # print(f'EQUAL_BOTH_HOM: {(1 - self.mu[site.id])**2}')
-        # print(f'UNEQUAL_BOTH_HOM: {self.mu[site.id]**2}')
-        # print(f'BOTH_HET: {((1-self.mu[site.id])**2 + self.mu[site.id]**2)}')
-        # print(f'REF_HOM_OBS_HET: {(2*self.mu[site.id]*(1 - self.mu[site.id]))}')
-        # print(f'REF_HET_OBS_HOM: {(self.mu[site.id]*(1-self.mu[site.id]))}')
 
         genotype_template_state = np.add.outer(
             allelic_state[: tree.num_samples()], allelic_state[: tree.num_samples()]
         )
         # These are vectors of length n (at internal nodes).
-        match = genotype_state == genotype_template_state
-        # template_is_hom = np.logical_or(genotype_template_state == 0, genotype_template_state == 2)
-        template_is_het = genotype_template_state == 1
-        # query_is_hom = np.logical_or(genotype_state == 0, genotype_state == 2)
         query_is_het = genotype_state == 1
-
-        index = (
-            4 * match.astype(np.int64)
-            + 2 * template_is_het.astype(np.int64)
-            + int(query_is_het)
-        )
-        # print(index)
-        # print(match)
-        # print(template_is_het)
-        # print(query_is_het)
 
         for j, st in enumerate(T):
             u = st.tree_node
-            # print(f"tree_node: {st.tree_node}")
             st.inner_summation = (
                 self.compute_normalisation_factor_inner(u)
                 + normalisation_factor_inner_transpose
             )
-            # if site.id == 13 and st.tree_node == 14:
-            print("inner_summation")
-            print(st.inner_summation)
-            # if site.id != 0:
-            # assert u != -1
+
             if u != -1:
                 # Get the allelic_state at u. TODO we can cache these states to
                 # avoid some upward traversals.
@@ -456,10 +389,8 @@ class LsHmmAlgorithm:
                 )
                 # These are vectors of length n (at internal nodes).
                 match = genotype_state == genotype_template_state
-                # template_is_hom = np.logical_or(genotype_template_state == 0, genotype_template_state == 2)
                 template_is_het = genotype_template_state == 1
-                # query_is_hom = np.logical_or(genotype_state == 0, genotype_state == 2)
-                query_is_hom = genotype_state == 1
+
                 st.value = self.compute_next_probability(
                     site.id,
                     st.value,
@@ -467,66 +398,24 @@ class LsHmmAlgorithm:
                     match,
                     template_is_het,
                     query_is_het,
-                )  # template_is_hom, query_is_hom)
-                # print("vector version")
-                # print(st.value)
+                )
         # Unset the states
         allelic_state[tree.root] = -1
         for mutation in site.mutations:
             allelic_state[mutation.node] = -1
 
-    # Define function that maps leaves to node inherited from.
-
     def process_site(self, site, genotype_state, forwards=True):
 
         self.update_probabilities(site, genotype_state)
-        A = self.decode_site()
-        # if site.id == 13:
-        #     print("before")
-        #     for st in self.T:
-        #         print(f"\t{st}")
-
         self.stupid_compress()
-        # if site.id == 13:
-        #     # print("after")
-        #     for st in self.T:
-        #         print(f"\t{st}")
-        #     for j, st in enumerate(self.T):
-        #         u = st.tree_node
-        #         if u != -1 and st.tree_node == 14:
-        #             print(f'node: {u}')
-        #             print(f'descendent leaves: {self.N[j]}')
-        #             print(st.value)
-        #             print(st.inner_summation)
-
-        A_compress = self.decode_site()
-        # assert np.allclose(A, A_compress, rtol=1e-9, atol=0.0)
         s = self.compute_normalisation_factor()
-        # if not np.allclose(self.A[site.id, :, :] * self.c[site.id], A):
-        #     print(site.id)
-        #     print(self.A[site.id, :, :] * self.c[site.id] - A)
-        #     print(f"normalisation_factor: {s}")
-        #     print(f"normalisation_factor matrix: {self.c[site.id]}")
-        #     print("N below")
-        #     print(self.N)
-        # print("normalise")
-        # print(np.around(s, 10))
-        # assert isclose(self.c[site.id], s)
-        # assert np.allclose(self.A[site.id, :, :] * self.c[site.id], A)
-
         T = self.T
-        # print("before normalisation")
-        # print(self.T)
+
         for st in T:
             if st.tree_node != tskit.NULL:
-                # print(f"tree node: {st.tree_node}")
-                # print(f"value: {st.value}")
-                # st.old_value = copy.deepcopy(st.value)
-                # st.value = copy.deepcopy(st.value)
                 st.value /= s
                 st.value = np.round(st.value, self.precision)
 
-        # print(self.T)
         self.output.store_site(site.id, s, [(st.tree_node, st.value) for st in self.T])
 
     def run_forward(self, g):
@@ -540,16 +429,7 @@ class LsHmmAlgorithm:
         while self.tree.next():
             self.update_tree()
             for site in self.tree.sites():
-                # print(f"site {site.id}")
                 self.process_site(site, g[site.id])
-                F_check, inner_summation_check = self.decode_site()
-                # if site.id != 0:
-                #     print("inner summation")
-                #     print(np.around(inner_summation_check, 10))
-                # print("F unnormalised")
-                # print(np.around(F_check * self.output.normalisation_factor[site.id], 10))
-                # print("F")
-                # print(np.around(F_check, 10))
         return self.output
 
     def compute_normalisation_factor(self):
@@ -619,21 +499,6 @@ class CompressedMatrix:
                 A[site.id] = self.decode_site(tree, site.id)
         return A
 
-    # def decode(self):
-    #     """
-    #     Decodes the tree encoding of the values into an explicit
-    #     matrix.
-    #     """
-    #     A = np.zeros((self.num_sites, self.num_samples, self.num_samples))
-    #     for tree in self.ts.trees():
-    #         for site in tree.sites():
-    #             f = dict(self.value_transitions[site.id])
-    #             for j, u in enumerate(self.ts.samples()):
-    #                 while u not in f:
-    #                     u = tree.parent(u)
-    #                 A[site.id, j, :] = f[u]
-    #     return A
-
 
 class ForwardMatrix(CompressedMatrix):
     """Class representing a compressed forward matrix."""
@@ -642,21 +507,16 @@ class ForwardMatrix(CompressedMatrix):
 class ForwardAlgorithm(LsHmmAlgorithm):
     """Runs the Li and Stephens forward algorithm."""
 
-    def __init__(self, ts, rho, mu, A, c, precision=30):
+    def __init__(self, ts, rho, mu, precision=30):
         super().__init__(ts, rho, mu, precision)
         self.output = ForwardMatrix(ts)
-        # Debugging
-        self.A = A
-        self.c = c
 
     def compute_normalisation_factor(self):
         s = 0
         for j, st in enumerate(self.T):
             assert st.tree_node != tskit.NULL
             assert self.N[j] > 0
-            s += self.N[j] * self.compute_normalisation_factor_inner(
-                st.tree_node
-            )  # st.inner_summation
+            s += self.N[j] * self.compute_normalisation_factor_inner(st.tree_node)
         return s
 
     def compute_normalisation_factor_inner(self, node):
@@ -670,21 +530,10 @@ class ForwardAlgorithm(LsHmmAlgorithm):
         is_match,
         template_is_het,
         query_is_het,
-    ):  # template_is_hom, query_is_hom):
+    ):
         rho = self.rho[site_id]
         mu = self.mu[site_id]
         n = self.ts.num_samples
-
-        # if site_id == 13:
-        #     print(rho)
-        #     print(mu)
-        #     print(n)
-
-        # EQUAL_BOTH_HOM = np.logical_and(np.logical_and(is_match, template_is_hom), query_is_hom)
-        # UNEQUAL_BOTH_HOM = np.logical_and(np.logical_and(np.logical_not(is_match), template_is_hom), query_is_hom)
-        # BOTH_HET = np.logical_and(np.logical_not(template_is_hom), np.logical_not(query_is_hom))
-        # REF_HOM_OBS_HET = np.logical_and(template_is_hom, np.logical_not(query_is_hom))
-        # REF_HET_OBS_HOM =  np.logical_and(np.logical_not(template_is_hom), query_is_hom)
 
         template_is_hom = np.logical_not(template_is_het)
         query_is_hom = np.logical_not(query_is_het)
@@ -699,26 +548,11 @@ class ForwardAlgorithm(LsHmmAlgorithm):
         REF_HOM_OBS_HET = np.logical_and(template_is_hom, query_is_het)
         REF_HET_OBS_HOM = np.logical_and(template_is_het, query_is_hom)
 
-        # if site_id == 13:
-        #     if np.any(EQUAL_BOTH_HOM):
-        # print(f'EQUAL_BOTH_HOM: {(1 - mu)**2}')
-        # #     if np.any(UNEQUAL_BOTH_HOM):
-        # print(f'UNEQUAL_BOTH_HOM: {mu**2}')
-        # #     if np.any(BOTH_HET):
-        # print(f'BOTH_HET: {((1-mu)**2 + mu**2)}')
-        # #     if np.any(REF_HOM_OBS_HET):
-        # print(f'REF_HOM_OBS_HET: {(2*mu*(1 - mu))}')
-        # #     if np.any(REF_HET_OBS_HOM):
-        # print(f'REF_HET_OBS_HOM: {(mu*(1-mu))}')
-
         p_t = (
             (rho / n) ** 2
             + ((1 - rho) * (rho / n)) * inner_normalisation_factor
             + (1 - rho) ** 2 * p_last
         )
-        # if site_id == 13:
-        #     print("before multiply by emission")
-        #     print(p_t)
         p_e = (
             EQUAL_BOTH_HOM * (1 - mu) ** 2
             + UNEQUAL_BOTH_HOM * (mu ** 2)
@@ -726,15 +560,10 @@ class ForwardAlgorithm(LsHmmAlgorithm):
             + REF_HET_OBS_HOM * (mu * (1 - mu))
             + BOTH_HET * ((1 - mu) ** 2 + mu ** 2)
         )
-        # if site_id == 13:
-        #     print("emission")
-        #     print(p_e)
-        #     print("after multiply by emission")
-        #     print(p_t * p_e)
         return p_t * p_e
 
 
-def ls_forward_tree(g, ts, rho, mu, A, c, precision=30):
+def ls_forward_tree(g, ts, rho, mu, precision=30):
     """Forward matrix computation based on a tree sequence."""
-    fa = ForwardAlgorithm(ts, rho, mu, A, c, precision=precision)
+    fa = ForwardAlgorithm(ts, rho, mu, precision=precision)
     return fa.run_forward(g)

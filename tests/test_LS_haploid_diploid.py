@@ -979,12 +979,12 @@ class TestForwardDipTree(FBAlgorithmBase):
             file_path = "tree.txt"
             # with open(file_path, "w") as o:
             #     with contextlib.redirect_stdout(o):
-            # cm = fbd_vstv.ls_forward_tree(s[0, :], ts_check, r, mu, F_vs, c_vs)
+            cm = fbd_vstv.ls_forward_tree(s[0, :], ts_check, r, mu)
 
             file_path = "tree2.txt"
             # with open(file_path, "w") as o:
             # with contextlib.redirect_stdout(o):
-            cm = fbd_vstd.ls_forward_tree(s[0, :], ts_check, r, mu, F_vs, c_vs)
+            cm = fbd_vstd.ls_forward_tree(s[0, :], ts_check, r, mu)
             # print(cm.normalisation_factor)
             # print(cm.normalisation_factor - c_vs)
             # print(cm.decode())
