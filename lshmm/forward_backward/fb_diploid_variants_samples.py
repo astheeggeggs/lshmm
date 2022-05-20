@@ -52,25 +52,59 @@ def forwards_ls_dip(n, m, G, s, e, r, norm=True):
         G[0, :, :] == 1
     ).astype(np.int64)
 
+    print("site 0")
+    # print(F[0, 0, :])
+
     if s[0, 0] == 1:
         index += 1
     F[0, :, :] *= e[0, index]
     c = np.ones(m)
     r_n = r / n
 
+    print(f"genotype_state: {s[0,0]}")
+    print(f"EQUAL_BOTH_HOM: {e[0, EQUAL_BOTH_HOM]}")
+    print(f"UNEQUAL_BOTH_HOM: {e[0, UNEQUAL_BOTH_HOM]}")
+    print(f"BOTH_HET: {e[0, BOTH_HET]}")
+    print(f"REF_HOM_OBS_HET: {e[0, REF_HOM_OBS_HET]}")
+    print(f"REF_HET_OBS_HOM: {e[0, REF_HET_OBS_HOM]}")
+    print(index)
+    print(np.equal(G[0, :, :], s[0, 0]))
+    print(G[0, :, :] == 1)
+    print(s[0, 0] == 1)
+    # print(F[0, 0, :])
+
     if norm:
         c[0] = np.sum(F[0, :, :])
+        print("normalise")
+        print(np.around(c[0], 10))
+        print("F unnormalised")
+        print(F[0, :, :])
         F[0, :, :] *= 1 / c[0]
+        print("F")
+        print(F[0, :, :])
 
         # Forwards
         for l in range(1, m):
-
+            # if l == 13:
+            print(f"site {l}")
+            print(f"genotype_state: {s[0,l]}")
+            print(f"EQUAL_BOTH_HOM: {e[0, EQUAL_BOTH_HOM]}")
+            print(f"UNEQUAL_BOTH_HOM: {e[0, UNEQUAL_BOTH_HOM]}")
+            print(f"BOTH_HET: {e[0, BOTH_HET]}")
+            print(f"REF_HOM_OBS_HET: {e[0, REF_HOM_OBS_HET]}")
+            print(f"REF_HET_OBS_HOM: {e[0, REF_HET_OBS_HOM]}")
+            #     print("recombination")
+            #     print(r[l])
             index = 4 * np.equal(G[l, :, :], s[0, l]).astype(np.int64) + 2 * (
                 G[l, :, :] == 1
             ).astype(np.int64)
 
             if s[0, l] == 1:
                 index += 1
+            print(index)
+            print(np.equal(G[l, :, :], s[0, l]))
+            print(G[l, :, :] == 1)
+            print(s[0, l] == 1)
 
             # No change in both
             F[l, :, :] = (1 - r[l]) ** 2 * F[l - 1, :, :]
@@ -81,12 +115,30 @@ def forwards_ls_dip(n, m, G, s, e, r, norm=True):
             # One changes
             sum_j = np_sum(F[l - 1, :, :], 0).repeat(n).reshape((-1, n)).T
             # sum_j2 = np_sum(F[l - 1, :, :], 1).repeat(n).reshape((-1, n))
+            # if l == 13:
+            # print("inner summation")
+            # print((sum_j + sum_j.T))
+            # print(sum_j)
             F[l, :, :] += ((1 - r[l]) * r_n[l]) * (sum_j + sum_j.T)
-
+            # if l == 13:
+            #     print("before multiply by emission")
+            #     print(F[l, :, :])
+            #     print(e[l, index])
             # Emission
             F[l, :, :] *= e[l, index]
+            # if l == 13:
+            #     print("after multiply by emission")
+            #     print(F[l, :, :])
             c[l] = np.sum(F[l, :, :])
+            print("normalise")
+            print(np.around(c[l], 10))
+            print("inner summation")
+            print((sum_j + sum_j.T))
+            print("F unnormalised")
+            print(np.around(F[l, :, :], 10))
             F[l, :, :] *= 1 / c[l]
+            print("F")
+            print(np.around(F[l, :, :], 10))
 
         ll = np.sum(np.log10(c))
     else:
@@ -109,6 +161,7 @@ def forwards_ls_dip(n, m, G, s, e, r, norm=True):
             # One changes
             sum_j = np_sum(F[l - 1, :, :], 0).repeat(n).reshape((-1, n)).T
             # sum_j2 = np_sum(F[l - 1, :, :], 1).repeat(n).reshape((-1, n))
+
             F[l, :, :] += ((1 - r[l]) * r_n[l]) * (sum_j + sum_j.T)
 
             # Emission

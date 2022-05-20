@@ -8,8 +8,11 @@ import pytest
 
 import lshmm.forward_backward.fb_diploid_samples_variants as fbd_sv
 import lshmm.forward_backward.fb_diploid_variants_samples as fbd_vs
+import lshmm.forward_backward.fb_diploid_variants_samples_tree_dict as fbd_vstd
+import lshmm.forward_backward.fb_diploid_variants_samples_tree_vec as fbd_vstv
 import lshmm.forward_backward.fb_haploid_samples_variants as fbh_sv
 import lshmm.forward_backward.fb_haploid_variants_samples as fbh_vs
+import lshmm.forward_backward.fb_haploid_variants_samples_tree as fbh_vst
 import lshmm.vit_diploid_samples_variants as vd_sv
 import lshmm.vit_diploid_variants_samples as vd_vs
 import lshmm.vit_haploid_samples_variants as vh_sv
@@ -20,6 +23,8 @@ UNEQUAL_BOTH_HOM = 0
 BOTH_HET = 7
 REF_HOM_OBS_HET = 1
 REF_HET_OBS_HOM = 2
+
+import contextlib
 
 import tskit
 
@@ -76,7 +81,7 @@ class LSBase:
         e = np.zeros((m, 8))
         e[:, EQUAL_BOTH_HOM] = (1 - mu) ** 2
         e[:, UNEQUAL_BOTH_HOM] = mu ** 2
-        e[:, BOTH_HET] = 1 - mu
+        e[:, BOTH_HET] = (1 - mu) ** 2 + mu ** 2
         e[:, REF_HOM_OBS_HET] = 2 * mu * (1 - mu)
         e[:, REF_HET_OBS_HOM] = mu * (1 - mu)
 
@@ -157,18 +162,17 @@ class LSBase:
 
         e = self.genotype_emission(mu, m)
 
-        yield n, m, G, s, e, r
+        yield n, m, G, s, e, r, mu
 
         # Mixture of random and extremes
         rs = [np.zeros(m) + 0.999, np.zeros(m) + 1e-6, np.random.rand(m)]
 
         mus = [np.zeros(m) + 0.33, np.zeros(m) + 1e-6, np.random.rand(m) * 0.33]
 
-        e = self.genotype_emission(mu, m)
-
         for r, mu in itertools.product(rs, mus):
             r[0] = 0
-            yield n, m, G, s, e, r
+            e = self.genotype_emission(mu, m)
+            yield n, m, G, s, e, r, mu
 
     def example_parameters_genotypes_larger(
         self, ts, seed=42, mean_r=1e-5, mean_mu=1e-5
@@ -203,6 +207,16 @@ class LSBase:
         assert ts.num_sites > 3
         self.verify(ts)
 
+    def test_simple_n_10_no_recombination_high_mut(self):
+        ts = msprime.simulate(10, recombination_rate=0, mutation_rate=3, random_seed=42)
+        assert ts.num_sites > 3
+        self.verify(ts)
+
+    def test_simple_n_10_no_recombination_high_mut(self):
+        ts = msprime.simulate(20, recombination_rate=0, mutation_rate=3, random_seed=42)
+        assert ts.num_sites > 3
+        self.verify(ts)
+
     def test_simple_n_6(self):
         ts = msprime.simulate(6, recombination_rate=2, mutation_rate=7, random_seed=42)
         assert ts.num_sites > 5
@@ -213,27 +227,27 @@ class LSBase:
         assert ts.num_sites > 5
         self.verify(ts)
 
-    def test_simple_n_8_high_recombination(self):
-        ts = msprime.simulate(8, recombination_rate=20, mutation_rate=5, random_seed=42)
-        assert ts.num_trees > 15
-        assert ts.num_sites > 5
-        self.verify(ts)
+    # def test_simple_n_8_high_recombination(self):
+    #     ts = msprime.simulate(8, recombination_rate=20, mutation_rate=5, random_seed=42)
+    #     assert ts.num_trees > 15
+    #     assert ts.num_sites > 5
+    #     self.verify(ts)
 
     def test_simple_n_16(self):
         ts = msprime.simulate(16, recombination_rate=2, mutation_rate=5, random_seed=42)
         assert ts.num_sites > 5
         self.verify(ts)
 
-    # Test a bigger one.
-    def test_large(self, n=50, length=100000, mean_r=1e-5, mean_mu=1e-5, seed=42):
-        ts = msprime.simulate(
-            n + 1,
-            length=length,
-            mutation_rate=mean_mu,
-            recombination_rate=mean_r,
-            random_seed=seed,
-        )
-        self.verify_larger(ts)
+    # # Test a bigger one.
+    # def test_large(self, n=50, length=100000, mean_r=1e-5, mean_mu=1e-5, seed=42):
+    #     ts = msprime.simulate(
+    #         n + 1,
+    #         length=length,
+    #         mutation_rate=mean_mu,
+    #         recombination_rate=mean_r,
+    #         random_seed=seed,
+    #     )
+    #     self.verify_larger(ts)
 
     def verify(self, ts):
         raise NotImplementedError()
@@ -284,32 +298,32 @@ class TestNonTreeMethodsHap(FBAlgorithmBase):
             # samples x variants agrees with variants x samples
             self.assertAllClose(ll_vs, ll_sv)
 
-    def verify_larger(self, ts):
-        # variants x samples
-        n, m, H_vs, s, e_vs, r = self.example_parameters_haplotypes_larger(ts)
+    # def verify_larger(self, ts):
+    #     # variants x samples
+    #     n, m, H_vs, s, e_vs, r = self.example_parameters_haplotypes_larger(ts)
 
-        e_sv = e_vs.T
-        H_sv = H_vs.T
+    #     e_sv = e_vs.T
+    #     H_sv = H_vs.T
 
-        F_vs, c_vs, ll_vs = fbh_vs.forwards_ls_hap(n, m, H_vs, s, e_vs, r, norm=False)
-        B_vs = fbh_vs.backwards_ls_hap(n, m, H_vs, s, e_vs, c_vs, r)
-        self.assertAllClose(np.log10(np.sum(F_vs * B_vs, 1)), ll_vs * np.ones(m))
-        F_tmp, c_tmp, ll_tmp = fbh_vs.forwards_ls_hap(n, m, H_vs, s, e_vs, r, norm=True)
-        B_tmp = fbh_vs.backwards_ls_hap(n, m, H_vs, s, e_vs, c_tmp, r)
-        self.assertAllClose(ll_vs, ll_tmp)
-        self.assertAllClose(np.sum(F_tmp * B_tmp, 1), np.ones(m))
+    #     F_vs, c_vs, ll_vs = fbh_vs.forwards_ls_hap(n, m, H_vs, s, e_vs, r, norm=False)
+    #     B_vs = fbh_vs.backwards_ls_hap(n, m, H_vs, s, e_vs, c_vs, r)
+    #     self.assertAllClose(np.log10(np.sum(F_vs * B_vs, 1)), ll_vs * np.ones(m))
+    #     F_tmp, c_tmp, ll_tmp = fbh_vs.forwards_ls_hap(n, m, H_vs, s, e_vs, r, norm=True)
+    #     B_tmp = fbh_vs.backwards_ls_hap(n, m, H_vs, s, e_vs, c_tmp, r)
+    #     self.assertAllClose(ll_vs, ll_tmp)
+    #     self.assertAllClose(np.sum(F_tmp * B_tmp, 1), np.ones(m))
 
-        # samples x variants
-        F_sv, c_sv, ll_sv = fbh_sv.forwards_ls_hap(n, m, H_sv, s, e_sv, r, norm=False)
-        B_sv = fbh_sv.backwards_ls_hap(n, m, H_sv, s, e_sv, c_sv, r)
-        self.assertAllClose(np.log10(np.sum(F_sv * B_sv, 0)), ll_sv * np.ones(m))
-        F_tmp, c_tmp, ll_tmp = fbh_sv.forwards_ls_hap(n, m, H_sv, s, e_sv, r, norm=True)
-        B_tmp = fbh_sv.backwards_ls_hap(n, m, H_sv, s, e_sv, c_tmp, r)
-        self.assertAllClose(ll_sv, ll_tmp)
-        self.assertAllClose(np.sum(F_tmp * B_tmp, 0), np.ones(m))
+    #     # samples x variants
+    #     F_sv, c_sv, ll_sv = fbh_sv.forwards_ls_hap(n, m, H_sv, s, e_sv, r, norm=False)
+    #     B_sv = fbh_sv.backwards_ls_hap(n, m, H_sv, s, e_sv, c_sv, r)
+    #     self.assertAllClose(np.log10(np.sum(F_sv * B_sv, 0)), ll_sv * np.ones(m))
+    #     F_tmp, c_tmp, ll_tmp = fbh_sv.forwards_ls_hap(n, m, H_sv, s, e_sv, r, norm=True)
+    #     B_tmp = fbh_sv.backwards_ls_hap(n, m, H_sv, s, e_sv, c_tmp, r)
+    #     self.assertAllClose(ll_sv, ll_tmp)
+    #     self.assertAllClose(np.sum(F_tmp * B_tmp, 0), np.ones(m))
 
-        # samples x variants agrees with variants x samples
-        self.assertAllClose(ll_vs, ll_sv)
+    #     # samples x variants agrees with variants x samples
+    #     self.assertAllClose(ll_vs, ll_sv)
 
 
 @pytest.mark.skip(reason="DEV: skip for time being")
@@ -317,7 +331,7 @@ class TestNonTreeMethodsDip(FBAlgorithmBase):
     """Test that we compute the sample likelihoods across all implementations."""
 
     def verify(self, ts):
-        for n, m, G_vs, s, e_vs, r in self.example_parameters_genotypes(ts):
+        for n, m, G_vs, s, e_vs, r, mu in self.example_parameters_genotypes(ts):
             e_sv = e_vs.T
             G_sv = G_vs.T
 
@@ -400,7 +414,7 @@ class TestNonTreeMethodsDip(FBAlgorithmBase):
 
     def verify_larger(self, ts):
         # variants x samples
-        n, m, G_vs, s, e_vs, r = self.example_parameters_genotypes_larger(ts)
+        n, m, G_vs, s, e_vs, r, mu = self.example_parameters_genotypes_larger(ts)
 
         e_sv = e_vs.T
         G_sv = G_vs.T
@@ -674,7 +688,7 @@ class TestNonTreeViterbiDip(VitAlgorithmBase):
     """Test that we have the same log-likelihood across all implementations"""
 
     def verify(self, ts):
-        for n, m, G_vs, s, e_vs, r in self.example_parameters_genotypes(ts):
+        for n, m, G_vs, s, e_vs, r, mu in self.example_parameters_genotypes(ts):
             e_sv = e_vs.T
             G_sv = G_vs.T
 
@@ -827,7 +841,7 @@ class TestNonTreeViterbiDip(VitAlgorithmBase):
 
 
 @pytest.mark.skip(reason="DEV: skip for time being")
-class TestForwardTree(FBAlgorithmBase):
+class TestForwardHapTree(FBAlgorithmBase):
     """Tests that the tree algorithm computes the same forward matrix as the simple method."""
 
     def verify(self, ts):
@@ -836,10 +850,13 @@ class TestForwardTree(FBAlgorithmBase):
             F_vs, c_vs, ll_vs = fbh_vs.forwards_ls_hap(
                 n, m, H_vs, s, e_vs, r, norm=True
             )
+            # print(c_vs)
             # Note, need to remove the first sample from the ts, and ensure that invariant sites aren't removed.
             ts_check = ts.simplify(range(1, n + 1), filter_sites=False)
             cm = fbh_vst.ls_forward_tree(s[0, :], ts_check, r, mu)
+            # print(cm.normalisation_factor)
             ll_tree = np.sum(np.log10(cm.normalisation_factor))
+            # assert 0 == 1
             self.assertAllClose(ll_vs, ll_tree)
 
 
@@ -910,3 +927,74 @@ class TestForwardBackwardTree(FBAlgorithmBase):
             B_vs_tree = np.flip(cm.decode(), axis=0)
 
             self.assertAllClose(B_vs, B_vs_tree)
+
+
+# @pytest.mark.skip(reason="DEV: skip for time being")
+class TestForwardDipTree(FBAlgorithmBase):
+    """Tests that the tree algorithm computes the same forward matrix as the simple method."""
+
+    def verify(self, ts):
+        # i = 0
+        for n, m, G_vs, s, e_vs, r, mu in self.example_parameters_genotypes(ts):
+            # if i == 1:
+            # print("")
+            # print("")
+            # print(r)
+            # print(mu)
+
+            # F_vs, c_vs, ll_vs = fbd_vs.forwards_ls_dip(
+            #     n, m, G_vs, s, e_vs, r, norm=True
+            # )
+            # print(G_vs)
+            # print(c_vs)
+            # print(ll_vs)
+
+            # print("Matrix version: change to the same order as the trees")
+            # Note, need to remove the first sample from the ts, and ensure that invariant sites aren't removed.
+            ts_check, mapping = ts.simplify(
+                range(1, n + 1), filter_sites=False, map_nodes=True
+            )
+            # print(mapping)
+            G_check = np.zeros((m, n, n))
+            for i in range(m):
+                G_check[i, :, :] = np.add.outer(
+                    ts_check.genotype_matrix()[i, :], ts_check.genotype_matrix()[i, :]
+                )
+
+            file_path = "matrix.txt"
+            with open(file_path, "w") as o:
+                with contextlib.redirect_stdout(o):
+                    print(mu)
+                    F_vs, c_vs, ll_vs = fbd_vs.forwards_ls_dip(
+                        n, m, G_check, s, e_vs, r, norm=True
+                    )
+            # print(ll_vs)
+
+            # print(ts_check.genotype_matrix())
+            # for sample in ts.samples():
+            # print(sample)
+            # for tree in ts_check.trees():
+            # for leaf in tree.leaves():
+            # print(leaf)
+            file_path = "tree.txt"
+            # with open(file_path, "w") as o:
+            #     with contextlib.redirect_stdout(o):
+            # cm = fbd_vstv.ls_forward_tree(s[0, :], ts_check, r, mu, F_vs, c_vs)
+
+            file_path = "tree2.txt"
+            # with open(file_path, "w") as o:
+            # with contextlib.redirect_stdout(o):
+            cm = fbd_vstd.ls_forward_tree(s[0, :], ts_check, r, mu, F_vs, c_vs)
+            # print(cm.normalisation_factor)
+            # print(cm.normalisation_factor - c_vs)
+            # print(cm.decode())
+            # print(F_vs)
+
+            # print(F_vs[0,0,:])
+            # print(cm.decode()[0,0,:])
+            ll_tree = np.sum(np.log10(cm.normalisation_factor))
+            print(ll_tree)
+            print(ll_vs)
+            # assert 0 == 1
+            self.assertAllClose(ll_vs, ll_tree)
+            # i += 1
