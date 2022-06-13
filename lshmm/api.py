@@ -26,64 +26,187 @@ REF_HOM_OBS_HET = 1
 REF_HET_OBS_HOM = 2
 
 
-def forwards(n, m, G_or_H, s, e, r):
+def forwards(reference_panel, query, recombination_rate, mutation_rate):
     """
     Run the Li and Stephens forwards algorithm on haplotype or
     unphased genotype data.
     """
-    template_dimensions = G_or_H.shape
-    assert len(template_dimensions) in [2, 3]
+    ref_shape = reference_panel.shape
+    ploidy = len(ref_shape) - 1
 
-    if len(template_dimensions) == 2:
+    if ploidy not in (1, 2):
+        raise ValueError("Ploidy not supported.")
+
+    if not (query.shape[0] == ref_shape[0]):
+        raise ValueError(
+            "Number of variants in query does not match reference_panel. If haploid, ensure variant x sample matrices are passed."
+        )
+
+    if (ploidy == 2) and (not (ref_shape[1] == ref_shape[2])):
+        raise ValueError(
+            "reference_panel dimensions incorrect, perhaps a sample x sample x variant matrix was passed. Expected variant x sample x sample."
+        )
+
+    m = ref_shape[0]
+    n = ref_shape[1]
+
+    if ploidy == 1:
         # Haploid
-        assert (G_or_H.shape == np.array([m, n])).all()
-        F, c, ll = forwards_ls_hap(n, m, G_or_H, s, e, r, norm=True)
+        # Evaluate emission probabilities here, using the mutation rate - this can take a scalar or vector.
+        e = np.zeros((m, 2))
+        e[:, 0] = mutation_rate
+        e[:, 1] = 1 - mutation_rate
+
+        (
+            forward_array,
+            normalisation_factor_from_forward,
+            log_likelihood,
+        ) = forwards_ls_hap(
+            n, m, reference_panel, query, e, recombination_rate, norm=True
+        )
     else:
         # Diploid
-        assert (G_or_H.shape == np.array([m, n, n])).all()
-        F, c, ll = forward_ls_dip_loop(n, m, G_or_H, s, e, r, norm=True)
+        # Evaluate emission probabilities here, using the mutation rate - this can take a scalar or vector.
+        # DEV: there's a wrinkle here.
+        e = np.zeros((m, 8))
+        e[:, EQUAL_BOTH_HOM] = (1 - mutation_rate) ** 2
+        e[:, UNEQUAL_BOTH_HOM] = mutations_rate ** 2
+        e[:, BOTH_HET] = 1 - mutations_rate
+        e[:, REF_HOM_OBS_HET] = 2 * mutations_rate * (1 - mutations_rate)
+        e[:, REF_HET_OBS_HOM] = mutations_rate * (1 - mutations_rate)
 
-    return F, c, ll
+        (
+            forward_array,
+            normalisation_factor_from_forward,
+            log_likelihood,
+        ) = forward_ls_dip_loop(
+            n, m, reference_panel, query, e, recombination_rate, norm=True
+        )
+
+    return forward_array, normalisation_factor_from_forward, log_likelihood
 
 
-def backwards(n, m, G_or_H, s, e, c, r):
+def backwards(
+    reference_panel,
+    query,
+    recombination_rate,
+    mutation_rate,
+    normalisation_factor_from_forward,
+):
     """
     Run the Li and Stephens backwards algorithm on haplotype or
     unphased genotype data.
     """
-    template_dimensions = G_or_H.shape
-    assert len(template_dimensions) in [2, 3]
+    ref_shape = reference_panel.shape
+    ploidy = len(ref_shape) - 1
 
-    if len(template_dimensions) == 2:
+    if ploidy not in (1, 2):
+        raise ValueError("Ploidy not supported.")
+
+    if not (query.shape[0] == ref_shape[0]):
+        raise ValueError(
+            "Number of variants in query does not match reference_panel. If haploid, ensure variant x sample matrices are passed."
+        )
+
+    if (ploidy == 2) and (not (ref_shape[1] == ref_shape[2])):
+        raise ValueError(
+            "reference_panel dimensions incorrect, perhaps a sample x sample x variant matrix was passed. Expected variant x sample x sample."
+        )
+
+    m = ref_shape[0]
+    n = ref_shape[1]
+
+    if ploidy == 1:
         # Haploid
-        assert (G_or_H.shape == np.array([m, n])).all()
-        B = backwards_ls_hap(n, m, G_or_H, s, e, c, r)
+        # Evaluate emission probabilities here, using the mutation rate - this can take a scalar or vector.
+        e = np.zeros((m, 2))
+        e[:, 0] = mutation_rate
+        e[:, 1] = 1 - mutation_rate
+
+        backwards_array = backwards_ls_hap(
+            n,
+            m,
+            reference_panel,
+            query,
+            e,
+            normalisation_factor_from_forward,
+            recombination_rate,
+        )
     else:
         # Diploid
-        assert (G_or_H.shape == np.array([m, n, n])).all()
-        B = backward_ls_dip_loop(n, m, G_or_H, s, e, c, r)
+        # Evaluate emission probabilities here, using the mutation rate - this can take a scalar or vector.
+        # DEV: there's a wrinkle here.
+        e = np.zeros((m, 8))
+        e[:, EQUAL_BOTH_HOM] = (1 - mutation_rate) ** 2
+        e[:, UNEQUAL_BOTH_HOM] = mutations_rate ** 2
+        e[:, BOTH_HET] = 1 - mutations_rate
+        e[:, REF_HOM_OBS_HET] = 2 * mutations_rate * (1 - mutations_rate)
+        e[:, REF_HET_OBS_HOM] = mutations_rate * (1 - mutations_rate)
 
-    return B
+        backwards_array = backward_ls_dip_loop(
+            n,
+            m,
+            reference_panel,
+            query,
+            e,
+            normalisation_factor_from_forward,
+            recombination_rate,
+        )
+
+    return backwards_array
 
 
-def viterbi(n, m, G_or_H, s, e, r):
+def viterbi(reference_panel, query, mutation_rate, recombination_rate):
     """
     Run the Li and Stephens Viterbi algorithm on haplotype or
     unphased genotype data.
     """
-    template_dimensions = G_or_H.shape
-    assert len(template_dimensions) in [2, 3]
+    ref_shape = reference_panel.shape
+    ploidy = len(ref_shape) - 1
 
-    if len(template_dimensions) == 2:
+    if ploidy not in (1, 2):
+        raise ValueError("Ploidy not supported.")
+
+    if not (query.shape[0] == ref_shape[0]):
+        raise ValueError(
+            "Number of variants in query does not match reference_panel. If haploid, ensure variant x sample matrices are passed."
+        )
+
+    if (ploidy == 2) and (not (ref_shape[1] == ref_shape[2])):
+        raise ValueError(
+            "reference_panel dimensions incorrect, perhaps a sample x sample x variant matrix was passed. Expected variant x sample x sample."
+        )
+
+    m = ref_shape[0]
+    n = ref_shape[1]
+
+    if ploidy == 1:
         # Haploid
-        assert (G_or_H.shape == np.array([m, n])).all()
-        V, P, ll = forwards_viterbi_hap_lower_mem_rescaling(n, m, G_or_H, s, e, r)
-        path = backwards_viterbi_hap(m, V, P)
+        # Evaluate emission probabilities here, using the mutation rate - this can take a scalar or vector.
+        # DEV: there's a wrinkle here.
+        e = np.zeros((m, 2))
+        e[:, 0] = mutation_rate
+        e[:, 1] = 1 - mutation_rate
+
+        V, P, log_likelihood = forwards_viterbi_hap_lower_mem_rescaling(
+            n, m, reference_panel, query, e, recombination_rate
+        )
+        most_likely_path = backwards_viterbi_hap(m, V, P)
     else:
         # Diploid
-        assert (G_or_H.shape == np.array([m, n, n])).all()
-        V, P, ll = forwards_viterbi_dip_low_mem(n, m, G_or_H, s, e, r)
-        unphased_path = backwards_viterbi_dip(m, V, P)
-        path = get_phased_path(n, unphased_path)
+        # Evaluate emission probabilities here, using the mutation rate - this can take a scalar or vector.
+        # DEV: there's a wrinkle here.
+        e = np.zeros((m, 8))
+        e[:, EQUAL_BOTH_HOM] = (1 - mutation_rate) ** 2
+        e[:, UNEQUAL_BOTH_HOM] = mutations_rate ** 2
+        e[:, BOTH_HET] = 1 - mutations_rate
+        e[:, REF_HOM_OBS_HET] = 2 * mutations_rate * (1 - mutations_rate)
+        e[:, REF_HET_OBS_HOM] = mutations_rate * (1 - mutations_rate)
 
-    return path, ll
+        V, P, log_likelihood = forwards_viterbi_dip_low_mem(
+            n, m, reference_panel, query, e, recombination_rate
+        )
+        unphased_path = backwards_viterbi_dip(m, V, P)
+        most_likely_path = get_phased_path(n, unphased_path)
+
+    return most_likely_path, log_likelihood
