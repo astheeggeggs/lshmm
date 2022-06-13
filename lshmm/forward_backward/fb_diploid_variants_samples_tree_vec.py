@@ -405,18 +405,66 @@ class LsHmmAlgorithm:
             allelic_state[mutation.node] = -1
 
     def process_site(self, site, genotype_state, forwards=True):
+        if forwards:
+            # Forwards algorithm
+            self.update_probabilities(site, genotype_state)
+            self.stupid_compress()
+            s = self.compute_normalisation_factor()
+            T = self.T
 
-        self.update_probabilities(site, genotype_state)
-        self.stupid_compress()
-        s = self.compute_normalisation_factor()
-        T = self.T
+            for st in T:
+                if st.tree_node != tskit.NULL:
+                    st.value /= s
+                    st.value = np.round(st.value, self.precision)
 
-        for st in T:
-            if st.tree_node != tskit.NULL:
-                st.value /= s
-                st.value = np.round(st.value, self.precision)
+            self.output.store_site(
+                site.id, s, [(st.tree_node, st.value) for st in self.T]
+            )
+        else:
+            # Backwards algorithm
+            self.output.store_site(
+                site.id,
+                self.output.normalisation_factor[site.id],
+                [(st.tree_node, st.value) for st in self.T],
+            )
+            self.update_probabilities(site, genotype_state)
+            self.stupid_compress()
+            b_last_sum = self.compute_normalisation_factor()  # (Double sum)
 
-        self.output.store_site(site.id, s, [(st.tree_node, st.value) for st in self.T])
+            node_map = {st.tree_node: st for st in self.T}
+            # Because the node ordering in the leaves is not 0 -> n_samples - 1.
+            to_compute = np.zeros(self.tree.num_samples(), dtype=int)
+
+            for v in self.ts.samples():
+                v_tmp = v
+                while v not in node_map:
+                    v = self.tree.parent(v)
+                to_compute[v_tmp] = v
+
+            # Update the inner summation piece (Single sums)
+            normalisation_factor_inner_transpose = [
+                self.compute_normalisation_factor_inner(i) for i in to_compute
+            ]
+
+            for j, st in enumerate(self.T):
+                u = st.tree_node
+                st.inner_summation = (
+                    self.compute_normalisation_factor_inner(u)
+                    + normalisation_factor_inner_transpose
+                )
+
+            s = self.output.normalisation_factor[site.id]
+            for st in self.T:
+                if st.tree_node != tskit.NULL:
+                    st.value = (
+                        ((self.rho[site.id] / self.ts.num_samples) ** 2) * b_last_sum
+                        + (1 - self.rho[site.id])
+                        * (self.rho[site.id] / self.ts.num_samples)
+                        * st.inner_summation
+                        + (1 - self.rho[site.id]) ** 2 * st.value
+                    )
+                    st.value /= s
+                    st.value = np.round(st.value, self.precision)
 
     def run_forward(self, g):
         n = self.ts.num_samples
@@ -432,12 +480,24 @@ class LsHmmAlgorithm:
                 self.process_site(site, g[site.id])
         return self.output
 
+    def run_backward(self, g):
+        n = self.ts.num_samples
+        self.tree.clear()
+        for u in self.ts.samples():
+            self.T_index[u] = len(self.T)
+            self.T.append(ValueTransition(tree_node=u, value=np.ones(n)))
+        while self.tree.next():
+            self.update_tree()
+            for site in self.tree.sites():
+                self.process_site(site, g[site.id], forwards=False)
+        return self.output
+
     def compute_normalisation_factor(self):
         raise NotImplementedError()
 
     def compute_next_probability(
         self, site_id, p_last, inner_summation, is_match, template_is_het, query_is_het
-    ):  # template_is_hom, query_is_hom):
+    ):
         raise NotImplementedError()
 
 
@@ -504,6 +564,10 @@ class ForwardMatrix(CompressedMatrix):
     """Class representing a compressed forward matrix."""
 
 
+class BackwardMatrix(CompressedMatrix):
+    """Class representing a compressed forward matrix."""
+
+
 class ForwardAlgorithm(LsHmmAlgorithm):
     """Runs the Li and Stephens forward algorithm."""
 
@@ -563,7 +627,67 @@ class ForwardAlgorithm(LsHmmAlgorithm):
         return p_t * p_e
 
 
+class BackwardAlgorithm(LsHmmAlgorithm):
+    """Runs the Li and Stephens forward algorithm."""
+
+    def __init__(self, ts, rho, mu, normalisation_factor, precision=10):
+        super().__init__(ts, rho, mu, precision)
+        self.output = BackwardMatrix(ts, normalisation_factor)
+
+    def compute_normalisation_factor(self):
+        s = 0
+        for j, st in enumerate(self.T):
+            assert st.tree_node != tskit.NULL
+            assert self.N[j] > 0
+            s += self.N[j] * self.compute_normalisation_factor_inner(st.tree_node)
+        return s
+
+    def compute_normalisation_factor_inner(self, node):
+        return np.sum(self.T[self.T_index[node]].value)
+
+    def compute_next_probability(
+        self,
+        site_id,
+        p_next,
+        inner_normalisation_factor,
+        is_match,
+        template_is_het,
+        query_is_het,
+    ):
+        mu = self.mu[site_id]
+
+        template_is_hom = np.logical_not(template_is_het)
+        query_is_hom = np.logical_not(query_is_het)
+
+        EQUAL_BOTH_HOM = np.logical_and(
+            np.logical_and(is_match, template_is_hom), query_is_hom
+        )
+        UNEQUAL_BOTH_HOM = np.logical_and(
+            np.logical_and(np.logical_not(is_match), template_is_hom), query_is_hom
+        )
+        BOTH_HET = np.logical_and(template_is_het, query_is_het)
+        REF_HOM_OBS_HET = np.logical_and(template_is_hom, query_is_het)
+        REF_HET_OBS_HOM = np.logical_and(template_is_het, query_is_hom)
+
+        p_e = (
+            EQUAL_BOTH_HOM * (1 - mu) ** 2
+            + UNEQUAL_BOTH_HOM * (mu ** 2)
+            + REF_HOM_OBS_HET * (2 * mu * (1 - mu))
+            + REF_HET_OBS_HOM * (mu * (1 - mu))
+            + BOTH_HET * ((1 - mu) ** 2 + mu ** 2)
+        )
+        return p_next * p_e
+
+
 def ls_forward_tree(g, ts, rho, mu, precision=30):
     """Forward matrix computation based on a tree sequence."""
     fa = ForwardAlgorithm(ts, rho, mu, precision=precision)
     return fa.run_forward(g)
+
+
+def ls_backward_tree(g, ts_mirror, rho, mu, normalisation_factor, precision=30):
+    """Backward matrix computation based on a tree sequence."""
+    ba = BackwardAlgorithm(
+        ts_mirror, rho, mu, normalisation_factor, precision=precision
+    )
+    return ba.run_backward(g)

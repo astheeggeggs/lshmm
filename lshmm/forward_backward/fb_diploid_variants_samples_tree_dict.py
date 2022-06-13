@@ -256,7 +256,7 @@ class LsHmmAlgorithm:
                 )
                 # Add on this extra node to each of the internal lists
                 for st in T:
-                    if not isinstance(st.value_list, int):
+                    if not (st.value_list == tskit.NULL):
                         st.value_list.append(
                             InternalValueTransition(
                                 tree_node=edge.child,
@@ -280,7 +280,7 @@ class LsHmmAlgorithm:
                     )
                     # Add on this extra node to each of the internal lists
                     for st in T:
-                        if not isinstance(st.value_list, int):
+                        if not (st.value_list == tskit.NULL):
                             st.value_list.append(
                                 InternalValueTransition(
                                     tree_node=edge.parent,
@@ -303,7 +303,7 @@ class LsHmmAlgorithm:
                 st.value_list = -1
                 # Also need to mark the corresponding InternalValueTransition as unused for the remaining states
                 for st2 in T:
-                    if not isinstance(st2.value_list, int):
+                    if not (st2.value_list == tskit.NULL):
                         st2.value_list[T_index[edge.child]].value = -1
                         st2.value_list[T_index[edge.child]].tree_node = -1
 
@@ -321,7 +321,7 @@ class LsHmmAlgorithm:
                 if parent[vt.tree_node] == -1 and vt.value_index != -2:
                     # Also need to mark the corresponding InternalValueTransition as unused for the remaining states
                     for st2 in T:
-                        if not isinstance(st2.value_list, int):
+                        if not (st2.value_list == tskit.NULL):
                             st2.value_list[T_index[vt.tree_node]].value = -1
                             st2.value_list[T_index[vt.tree_node]].tree_node = -1
                     T_index[vt.tree_node] = -1
@@ -377,7 +377,7 @@ class LsHmmAlgorithm:
                     )  # DEV: is it possible to not use deepcopies?
                 )
                 for st in T:
-                    if not isinstance(st.value_list, int):
+                    if not (st.value_list == tskit.NULL):
                         st.value_list.append(
                             InternalValueTransition(
                                 tree_node=mutation.node,
@@ -443,21 +443,68 @@ class LsHmmAlgorithm:
             allelic_state[mutation.node] = -1
 
     def process_site(self, site, genotype_state, forwards=True):
-        self.update_probabilities(site, genotype_state)
-        self.stupid_compress_dict()
-        s1 = self.compute_normalisation_factor_dict()
-        T = self.T
+        if forwards:
+            # Forwards algorithm
+            self.update_probabilities(site, genotype_state)
+            self.stupid_compress_dict()
+            s1 = self.compute_normalisation_factor_dict()
+            T = self.T
 
-        for st in T:
-            if st.tree_node != tskit.NULL:
-                # Need to loop through value copy, and normalise
-                for st2 in st.value_list:
-                    st2.value /= s1
-                    st2.value = np.round(st2.value, self.precision)
+            for st in T:
+                if st.tree_node != tskit.NULL:
+                    # Need to loop through value copy, and normalise
+                    for st2 in st.value_list:
+                        st2.value /= s1
+                        st2.value = np.round(st2.value, self.precision)
 
-        self.output.store_site(
-            site.id, s1, [(st.tree_node, st.value_list) for st in self.T]
-        )
+            self.output.store_site(
+                site.id, s1, [(st.tree_node, st.value_list) for st in self.T]
+            )
+        else:
+            # Backwards algorithm
+            self.output.store_site(
+                site.id,
+                self.output.normalisation_factor[site.id],
+                [(st.tree_node, st.value_list) for st in self.T],
+            )
+            self.update_probabilities(site, genotype_state)
+            self.stupid_compress_dict()
+            b_last_sum = self.compute_normalisation_factor_dict()  # (Double sum)
+
+            normalisation_factor_inner = {}
+
+            for st1 in self.T:
+                if st1.tree_node != -1:
+                    normalisation_factor_inner[
+                        st1.tree_node
+                    ] = self.compute_normalisation_factor_inner_dict(st1.tree_node)
+
+            for st1 in self.T:
+                if st1.tree_node != -1:
+                    for st2 in st1.value_list:
+                        if st2.tree_node != -1:
+                            self.T[self.T_index[st1.tree_node]].value_list[
+                                self.T_index[st2.tree_node]
+                            ].inner_summation = (
+                                normalisation_factor_inner[st1.tree_node]
+                                + normalisation_factor_inner[st2.tree_node]
+                            )
+
+            s = self.output.normalisation_factor[site.id]
+            for st1 in self.T:
+                if st1.tree_node != tskit.NULL:
+
+                    for st2 in st1.value_list:
+                        st2.value = (
+                            ((self.rho[site.id] / self.ts.num_samples) ** 2)
+                            * b_last_sum
+                            + (1 - self.rho[site.id])
+                            * (self.rho[site.id] / self.ts.num_samples)
+                            * st2.inner_summation
+                            + (1 - self.rho[site.id]) ** 2 * st2.value
+                        )
+                        st2.value /= s
+                        st2.value = np.round(st2.value, self.precision)
 
     def run_forward(self, g):
         n = self.ts.num_samples
@@ -477,7 +524,24 @@ class LsHmmAlgorithm:
 
         return self.output
 
-    def compute_normalisation_factor(self):
+    def run_backward(self, g):
+        n = self.ts.num_samples
+        self.tree.clear()
+        for u in self.ts.samples():
+            self.T_index[u] = len(self.T)
+            self.T.append(ValueTransition(tree_node=u, value_list=[]))
+            for v in self.ts.samples():
+                self.T[self.T_index[u]].value_list.append(
+                    InternalValueTransition(tree_node=v, value=1)
+                )
+
+        while self.tree.next():
+            self.update_tree()
+            for site in self.tree.sites():
+                self.process_site(site, g[site.id], forwards=False)
+        return self.output
+
+    def compute_normalisation_factor_dict(self):
         raise NotImplementedError()
 
     def compute_next_probability_dict(
@@ -508,7 +572,7 @@ class CompressedMatrix:
 
     def store_site(self, site, normalisation_factor, value_transitions):
         self.normalisation_factor[site] = normalisation_factor
-        self.value_transitions[site] = value_transitions
+        self.value_transitions[site] = copy.deepcopy(value_transitions)
 
     # Expose the same API as the low-level classes
 
@@ -520,17 +584,22 @@ class CompressedMatrix:
     def get_site(self, site):
         return self.value_transitions[site]
 
-    def decode_site(self, tree, site_id):
+    def decode_site_dict(self, tree, site_id):
         """
         Decodes the tree encoding of the values into an explicit
         matrix.
         """
         A = np.zeros((self.num_samples, self.num_samples))
         f = dict(self.value_transitions[site_id])
-        for j, u in enumerate(self.ts.samples()):
-            while u not in f:
-                u = tree.parent(u)
-            A[j, :] = f[u]
+
+        for j1, u1 in enumerate(self.ts.samples()):
+            while u1 not in f:
+                u1 = tree.parent(u1)
+            f1 = {st.tree_node: st for st in f[u1]}
+            for j2, u2 in enumerate(self.ts.samples()):
+                while u2 not in f1:
+                    u2 = tree.parent(u2)
+                A[j1, j2] = f1[u2].value
         return A
 
     def decode(self):
@@ -541,11 +610,15 @@ class CompressedMatrix:
         A = np.zeros((self.num_sites, self.num_samples, self.num_samples))
         for tree in self.ts.trees():
             for site in tree.sites():
-                A[site.id] = self.decode_site(tree, site.id)
+                A[site.id] = self.decode_site_dict(tree, site.id)
         return A
 
 
 class ForwardMatrix(CompressedMatrix):
+    """Class representing a compressed forward matrix."""
+
+
+class BackwardMatrix(CompressedMatrix):
     """Class representing a compressed forward matrix."""
 
 
@@ -555,19 +628,6 @@ class ForwardAlgorithm(LsHmmAlgorithm):
     def __init__(self, ts, rho, mu, precision=30):
         super().__init__(ts, rho, mu, precision)
         self.output = ForwardMatrix(ts)
-        # Debugging
-        # self.A = A
-        # self.c = c
-
-    def compute_normalisation_factor(self):
-        s = 0
-        for j, st in enumerate(self.T):
-            assert st.tree_node != tskit.NULL
-            assert self.N[j] > 0
-            s += self.N[j] * self.compute_normalisation_factor_inner(
-                st.tree_node
-            )  # st.inner_summation
-        return s
 
     def compute_normalisation_factor_dict(self):
         s = 0
@@ -628,7 +688,74 @@ class ForwardAlgorithm(LsHmmAlgorithm):
         return p_t * p_e
 
 
+# DEV: Sort this
+class BackwardAlgorithm(LsHmmAlgorithm):
+    """Runs the Li and Stephens forward algorithm."""
+
+    def __init__(self, ts, rho, mu, normalisation_factor, precision=10):
+        super().__init__(ts, rho, mu, precision)
+        self.output = BackwardMatrix(ts, normalisation_factor)
+
+    def compute_normalisation_factor_dict(self):
+        s = 0
+        for j, st in enumerate(self.T):
+            assert st.tree_node != tskit.NULL
+            assert self.N[j] > 0
+            s += self.N[j] * self.compute_normalisation_factor_inner_dict(st.tree_node)
+        return s
+
+    def compute_normalisation_factor_inner_dict(self, node):
+        s_inner = 0
+        F_previous = self.T[self.T_index[node]].value_list
+        for st in F_previous:
+            j = st.tree_node
+            if j != -1:
+                s_inner += self.N[self.T_index[j]] * st.value
+        return s_inner
+
+    def compute_next_probability_dict(
+        self,
+        site_id,
+        p_next,
+        inner_normalisation_factor,
+        is_match,
+        template_is_het,
+        query_is_het,
+    ):
+        mu = self.mu[site_id]
+
+        template_is_hom = np.logical_not(template_is_het)
+        query_is_hom = np.logical_not(query_is_het)
+
+        EQUAL_BOTH_HOM = np.logical_and(
+            np.logical_and(is_match, template_is_hom), query_is_hom
+        )
+        UNEQUAL_BOTH_HOM = np.logical_and(
+            np.logical_and(np.logical_not(is_match), template_is_hom), query_is_hom
+        )
+        BOTH_HET = np.logical_and(template_is_het, query_is_het)
+        REF_HOM_OBS_HET = np.logical_and(template_is_hom, query_is_het)
+        REF_HET_OBS_HOM = np.logical_and(template_is_het, query_is_hom)
+
+        p_e = (
+            EQUAL_BOTH_HOM * (1 - mu) ** 2
+            + UNEQUAL_BOTH_HOM * (mu ** 2)
+            + REF_HOM_OBS_HET * (2 * mu * (1 - mu))
+            + REF_HET_OBS_HOM * (mu * (1 - mu))
+            + BOTH_HET * ((1 - mu) ** 2 + mu ** 2)
+        )
+        return p_next * p_e
+
+
 def ls_forward_tree(g, ts, rho, mu, precision=30):
     """Forward matrix computation based on a tree sequence."""
     fa = ForwardAlgorithm(ts, rho, mu, precision=precision)
     return fa.run_forward(g)
+
+
+def ls_backward_tree(g, ts_mirror, rho, mu, normalisation_factor, precision=30):
+    """Backward matrix computation based on a tree sequence."""
+    ba = BackwardAlgorithm(
+        ts_mirror, rho, mu, normalisation_factor, precision=precision
+    )
+    return ba.run_backward(g)

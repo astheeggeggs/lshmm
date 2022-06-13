@@ -2,23 +2,6 @@ import numpy as np
 import tskit
 
 
-def mirror_coordinates(ts):
-    """
-    Returns a copy of the specified tree sequence in which all
-    coordinates x are transformed into L - x.
-    """
-    L = ts.sequence_length
-    tables = ts.dump_tables()
-    left = tables.edges.left
-    right = tables.edges.right
-    tables.edges.left = L - right
-    tables.edges.right = L - left
-    tables.sites.position = L - tables.sites.position  # + 1
-    # TODO migrations.
-    tables.sort()
-    return tables.tree_sequence()
-
-
 class ValueTransition:
     """Simple struct holding value transition values."""
 
@@ -96,6 +79,10 @@ class LsHmmAlgorithm:
                 for j in range(num_values):
                     value_count[j] += child[j]
             max_value_count = np.max(value_count)
+            # NOTE: we need to set the set to zero here because we actually
+            # visit some nodes more than once during the postorder traversal.
+            # This would seem to be wasteful, so we should revisit this when
+            # cleaning up the algorithm logic.
             optimal_set[u, :] = 0
             optimal_set[u, value_count == max_value_count] = 1
 
@@ -263,48 +250,25 @@ class LsHmmAlgorithm:
                     haplotype_state == tskit.MISSING_DATA
                     or haplotype_state == allelic_state[v]
                 )
-                st.value = self.compute_next_probability(site.id, st.value, match)
+                st.value = self.compute_next_probability(site.id, st.value, match, u)
 
         # Unset the states
         allelic_state[tree.root] = -1
         for mutation in site.mutations:
             allelic_state[mutation.node] = -1
 
-    def process_site(self, site, haplotype_state, forwards=True):
-        if forwards:
-            # Forwards algorithm
-            self.update_probabilities(site, haplotype_state)
-            self.compress()
-            s = self.compute_normalisation_factor()
-            for st in self.T:
-                if st.tree_node != tskit.NULL:
-                    st.value /= s
-                    st.value = round(st.value, self.precision)
-            self.output.store_site(
-                site.id, s, [(st.tree_node, st.value) for st in self.T]
-            )
-        else:
-            # Backwards algorithm
-            self.output.store_site(
-                site.id,
-                self.output.normalisation_factor[site.id],
-                [(st.tree_node, st.value) for st in self.T],
-            )
-            self.update_probabilities(site, haplotype_state)
-            self.compress()
-            b_last_sum = self.compute_normalisation_factor()
-            s = self.output.normalisation_factor[site.id]
-            for st in self.T:
-                if st.tree_node != tskit.NULL:
-                    st.value = (
-                        self.rho[site.id] / self.ts.num_samples
-                    ) * b_last_sum + (1 - self.rho[site.id]) * st.value
-                    st.value /= s
-                    st.value = round(st.value, self.precision)
+    def process_site(self, site, haplotype_state):
+        self.update_probabilities(site, haplotype_state)
+        self.compress()
+        s = self.compute_normalisation_factor()
+        for st in self.T:
+            if st.tree_node != tskit.NULL:
+                st.value /= s
+                st.value = round(st.value, self.precision)
+        self.output.store_site(site.id, s, [(st.tree_node, st.value) for st in self.T])
 
-    def run_forward(self, h):
+    def run(self, h):
         n = self.ts.num_samples
-        self.tree.clear()
         for u in self.ts.samples():
             self.T_index[u] = len(self.T)
             self.T.append(ValueTransition(tree_node=u, value=1 / n))
@@ -314,22 +278,10 @@ class LsHmmAlgorithm:
                 self.process_site(site, h[site.id])
         return self.output
 
-    def run_backward(self, h):
-        n = self.ts.num_samples
-        self.tree.clear()
-        for u in self.ts.samples():
-            self.T_index[u] = len(self.T)
-            self.T.append(ValueTransition(tree_node=u, value=1))
-        while self.tree.next():
-            self.update_tree()
-            for site in self.tree.sites():
-                self.process_site(site, h[site.id], forwards=False)
-        return self.output
-
     def compute_normalisation_factor(self):
         raise NotImplementedError()
 
-    def compute_next_probability(self, site_id, p_last, is_match):
+    def compute_next_probability(self, site_id, p_last, is_match, node):
         raise NotImplementedError()
 
 
@@ -342,16 +294,12 @@ class CompressedMatrix:
     values are on the path).
     """
 
-    def __init__(self, ts, normalisation_factor=None):
+    def __init__(self, ts):
         self.ts = ts
         self.num_sites = ts.num_sites
         self.num_samples = ts.num_samples
         self.value_transitions = [None for _ in range(self.num_sites)]
-        if normalisation_factor is None:
-            self.normalisation_factor = np.zeros(self.num_sites)
-        else:
-            self.normalisation_factor = normalisation_factor
-            assert len(self.normalisation_factor) == self.num_sites
+        self.normalisation_factor = np.zeros(self.num_sites)
 
     def store_site(self, site, normalisation_factor, value_transitions):
         self.normalisation_factor[site] = normalisation_factor
@@ -383,73 +331,128 @@ class CompressedMatrix:
         return A
 
 
-class ForwardMatrix(CompressedMatrix):
-    """Class representing a compressed forward matrix."""
+class ViterbiMatrix(CompressedMatrix):
+    """
+    Class representing the compressed Viterbi matrix.
+    """
+
+    def __init__(self, ts):
+        super().__init__(ts)
+        self.recombination_required = [(-1, 0, False)]
+
+    def add_recombination_required(self, site, node, required):
+        self.recombination_required.append((site, node, required))
+
+    def choose_sample(self, site_id, tree):
+        max_value = -1
+        u = -1
+        for node, value in self.value_transitions[site_id]:
+            if value > max_value:
+                max_value = value
+                u = node
+        assert u != -1
+
+        transition_nodes = [u for (u, _) in self.value_transitions[site_id]]
+        while not tree.is_sample(u):
+            for v in tree.children(u):
+                if v not in transition_nodes:
+                    u = v
+                    break
+            else:
+                raise AssertionError("could not find path")
+        return u
+
+    def traceback(self):
+        # Run the traceback.
+        m = self.ts.num_sites
+        match = np.zeros(m, dtype=int)
+        recombination_tree = np.zeros(self.ts.num_nodes, dtype=int) - 1
+        tree = tskit.Tree(self.ts)
+        tree.last()
+        current_node = -1
+
+        rr_index = len(self.recombination_required) - 1
+        for site in reversed(self.ts.sites()):
+            while tree.interval.left > site.position:
+                tree.prev()
+            assert tree.interval.left <= site.position < tree.interval.right
+
+            # Fill in the recombination tree
+            j = rr_index
+            while self.recombination_required[j][0] == site.id:
+                u, required = self.recombination_required[j][1:]
+                recombination_tree[u] = required
+                j -= 1
+
+            if current_node == -1:
+                current_node = self.choose_sample(site.id, tree)
+            match[site.id] = current_node
+
+            # Now traverse up the tree from the current node. The first marked node
+            # we meet tells us whether we need to recombine.
+            u = current_node
+            while u != -1 and recombination_tree[u] == -1:
+                u = tree.parent(u)
+
+            assert u != -1
+            if recombination_tree[u] == 1:
+                # Need to switch at the next site.
+                current_node = -1
+            # Reset the nodes in the recombination tree.
+            j = rr_index
+            while self.recombination_required[j][0] == site.id:
+                u, required = self.recombination_required[j][1:]
+                recombination_tree[u] = -1
+                j -= 1
+            rr_index = j
+
+        return match
 
 
-class BackwardMatrix(CompressedMatrix):
-    """Class representing a compressed backward matrix."""
-
-
-class ForwardAlgorithm(LsHmmAlgorithm):
-    """Runs the Li and Stephens forward algorithm."""
+class ViterbiAlgorithm(LsHmmAlgorithm):
+    """
+    Runs the Li and Stephens Viterbi algorithm.
+    """
 
     def __init__(self, ts, rho, mu, precision=10):
         super().__init__(ts, rho, mu, precision)
-        self.output = ForwardMatrix(ts)
+        self.output = ViterbiMatrix(ts)
 
     def compute_normalisation_factor(self):
-        s = 0
-        for j, st in enumerate(self.T):
+        max_st = ValueTransition(value=-1)
+        for st in self.T:
             assert st.tree_node != tskit.NULL
-            assert self.N[j] > 0
-            s += self.N[j] * st.value
-        return s
+            if st.value > max_st.value:
+                max_st = st
+        if max_st.value == 0:
+            raise ValueError(
+                "Trying to match non-existent allele with zero mutation rate"
+            )
+        return max_st.value
 
-    def compute_next_probability(self, site_id, p_last, is_match):
+    def compute_next_probability(self, site_id, p_last, is_match, node):
         rho = self.rho[site_id]
         mu = self.mu[site_id]
         n = self.ts.num_samples
 
-        p_t = p_last * (1 - rho) + rho / n
+        p_no_recomb = p_last * (1 - rho + rho / n)
+        p_recomb = rho / n
+        recombination_required = False
+        if p_no_recomb > p_recomb:
+            p_t = p_no_recomb
+        else:
+            p_t = p_recomb
+            recombination_required = True
+        self.output.add_recombination_required(site_id, node, recombination_required)
         p_e = mu
         if is_match:
             p_e = 1 - mu
         return p_t * p_e
 
 
-class BackwardAlgorithm(LsHmmAlgorithm):
-    """Runs the Li and Stephens forward algorithm."""
-
-    def __init__(self, ts, rho, mu, normalisation_factor, precision=10):
-        super().__init__(ts, rho, mu, precision)
-        self.output = BackwardMatrix(ts, normalisation_factor)
-
-    def compute_normalisation_factor(self):
-        s = 0
-        for j, st in enumerate(self.T):
-            assert st.tree_node != tskit.NULL
-            assert self.N[j] > 0
-            s += self.N[j] * st.value
-        return s
-
-    def compute_next_probability(self, site_id, p_next, is_match):
-        mu = self.mu[site_id]
-        e = mu
-        if is_match:
-            e = 1 - mu
-        return p_next * e
-
-
-def ls_forward_tree(h, ts, rho, mu, precision=30):
-    """Forward matrix computation based on a tree sequence."""
-    fa = ForwardAlgorithm(ts, rho, mu, precision=precision)
-    return fa.run_forward(h)
-
-
-def ls_backward_tree(h, ts_mirror, rho, mu, normalisation_factor, precision=30):
-    """Backward matrix computation based on a tree sequence."""
-    ba = BackwardAlgorithm(
-        ts_mirror, rho, mu, normalisation_factor, precision=precision
-    )
-    return ba.run_backward(h)
+def ls_viterbi_tree(h, ts, rho, mu, precision=30):
+    """
+    Viterbi path computation based on a tree sequence.
+    """
+    va = ViterbiAlgorithm(ts, rho, mu, precision=precision)
+    return va.run(h)

@@ -17,6 +17,7 @@ import lshmm.vit_diploid_samples_variants as vd_sv
 import lshmm.vit_diploid_variants_samples as vd_vs
 import lshmm.vit_haploid_samples_variants as vh_sv
 import lshmm.vit_haploid_variants_samples as vh_vs
+import lshmm.vit_haploid_variants_samples_tree as vh_vst
 
 EQUAL_BOTH_HOM = 4
 UNEQUAL_BOTH_HOM = 0
@@ -197,7 +198,7 @@ class LSBase:
 
     def assertAllClose(self, A, B):
         """Assert that all entries of two matrices are 'close'"""
-        assert np.allclose(A, B, rtol=1e-9, atol=0.0)
+        assert np.allclose(A, B, rtol=1e-5, atol=1e-8)
 
     # Define a bunch of very small tree-sequences for testing a collection of parameters on
     def test_simple_n_10_no_recombination(self):
@@ -227,11 +228,11 @@ class LSBase:
         assert ts.num_sites > 5
         self.verify(ts)
 
-    # def test_simple_n_8_high_recombination(self):
-    #     ts = msprime.simulate(8, recombination_rate=20, mutation_rate=5, random_seed=42)
-    #     assert ts.num_trees > 15
-    #     assert ts.num_sites > 5
-    #     self.verify(ts)
+    def test_simple_n_8_high_recombination(self):
+        ts = msprime.simulate(8, recombination_rate=20, mutation_rate=5, random_seed=42)
+        assert ts.num_trees > 15
+        assert ts.num_sites > 5
+        self.verify(ts)
 
     def test_simple_n_16(self):
         ts = msprime.simulate(16, recombination_rate=2, mutation_rate=5, random_seed=42)
@@ -493,12 +494,12 @@ class TestNonTreeMethodsDip(FBAlgorithmBase):
         self.assertAllClose(ll_vs, ll_sv)
 
 
-@pytest.mark.skip(reason="DEV: skip for time being")
+# @pytest.mark.skip(reason="DEV: skip for time being")
 class VitAlgorithmBase(LSBase):
     """Base for viterbi algoritm tests."""
 
 
-@pytest.mark.skip(reason="DEV: skip for time being")
+# @pytest.mark.skip(reason="DEV: skip for time being")
 class TestNonTreeViterbiHap(VitAlgorithmBase):
     """Test that we have the same log-likelihood across all implementations"""
 
@@ -861,7 +862,7 @@ class TestForwardHapTree(FBAlgorithmBase):
 
 
 @pytest.mark.skip(reason="DEV: skip for time being")
-class TestMirroring(FBAlgorithmBase):
+class TestMirroringHap(FBAlgorithmBase):
     """Tests that mirroring the tree sequence and running forwards and backwards algorithms gives
     the same log-likelihood of observing the data."""
 
@@ -899,6 +900,92 @@ class TestMirroring(FBAlgorithmBase):
 
 
 @pytest.mark.skip(reason="DEV: skip for time being")
+class TestMirroringDip(FBAlgorithmBase):
+    """Tests that mirroring the tree sequence and running forwards and backwards algorithms gives
+    the same log-likelihood of observing the data."""
+
+    def verify(self, ts):
+        for n, m, G_vs, s, e_vs, r, mu in self.example_parameters_genotypes(ts):
+            # Note, need to remove the first sample from the ts, and ensure that invariant sites aren't removed.
+            ts_check, mapping = ts.simplify(
+                range(1, n + 1), filter_sites=False, map_nodes=True
+            )
+            G_check = np.zeros((m, n, n))
+            for i in range(m):
+                G_check[i, :, :] = np.add.outer(
+                    ts_check.genotype_matrix()[i, :], ts_check.genotype_matrix()[i, :]
+                )
+
+            cm_v = fbd_vstv.ls_forward_tree(s[0, :], ts_check, r, mu)
+            ll_tree_vec = np.sum(np.log10(cm_v.normalisation_factor))
+
+            ts_check_mirror = fbd_vstv.mirror_coordinates(ts_check)
+            r_flip = np.insert(np.flip(r)[:-1], 0, 0)
+            cm_mirror = fbd_vstv.ls_forward_tree(
+                np.flip(s[0, :]), ts_check_mirror, r_flip, np.flip(mu)
+            )
+            ll_mirror_tree_vec = np.sum(np.log10(cm_mirror.normalisation_factor))
+
+            self.assertAllClose(ll_tree_vec, ll_mirror_tree_vec)
+
+            # Ensure that the decoded matrices are the same
+            F_vs_mirror_matrix, c_vs, ll_vs = fbd_vs.forwards_ls_dip(
+                n,
+                m,
+                np.flip(G_check, axis=0),
+                np.flip(s, axis=1),
+                np.flip(e_vs, axis=0),
+                r_flip,
+                norm=True,
+            )
+
+            self.assertAllClose(F_vs_mirror_matrix, cm_mirror.decode())
+
+
+@pytest.mark.skip(reason="DEV: skip for time being")
+class TestMirroringDipdict(FBAlgorithmBase):
+    """Tests that mirroring the tree sequence and running forwards and backwards algorithms gives
+    the same log-likelihood of observing the data."""
+
+    def verify(self, ts):
+        for n, m, G_vs, s, e_vs, r, mu in self.example_parameters_genotypes(ts):
+            # Note, need to remove the first sample from the ts, and ensure that invariant sites aren't removed.
+            ts_check, mapping = ts.simplify(
+                range(1, n + 1), filter_sites=False, map_nodes=True
+            )
+            G_check = np.zeros((m, n, n))
+            for i in range(m):
+                G_check[i, :, :] = np.add.outer(
+                    ts_check.genotype_matrix()[i, :], ts_check.genotype_matrix()[i, :]
+                )
+
+            cm_d = fbd_vstd.ls_forward_tree(s[0, :], ts_check, r, mu)
+            ll_tree_dict = np.sum(np.log10(cm_d.normalisation_factor))
+
+            ts_check_mirror = fbd_vstd.mirror_coordinates(ts_check)
+            r_flip = np.insert(np.flip(r)[:-1], 0, 0)
+            cm_mirror = fbd_vstd.ls_forward_tree(
+                np.flip(s[0, :]), ts_check_mirror, r_flip, np.flip(mu)
+            )
+            ll_mirror_tree_dict = np.sum(np.log10(cm_mirror.normalisation_factor))
+
+            self.assertAllClose(ll_tree_dict, ll_mirror_tree_dict)
+
+            # Ensure that the decoded matrices are the same
+            F_vs_mirror_matrix, c_vs, ll_vs = fbd_vs.forwards_ls_dip(
+                n,
+                m,
+                np.flip(G_check, axis=0),
+                np.flip(s, axis=1),
+                np.flip(e_vs, axis=0),
+                r_flip,
+                norm=True,
+            )
+
+            self.assertAllClose(F_vs_mirror_matrix, cm_mirror.decode())
+
+
+@pytest.mark.skip(reason="DEV: skip for time being")
 class TestForwardBackwardTree(FBAlgorithmBase):
     """Tests that the tree algorithm computes the same forward matrix as the simple method."""
 
@@ -929,72 +1016,135 @@ class TestForwardBackwardTree(FBAlgorithmBase):
             self.assertAllClose(B_vs, B_vs_tree)
 
 
-# @pytest.mark.skip(reason="DEV: skip for time being")
+@pytest.mark.skip(reason="DEV: skip for time being")
 class TestForwardDipTree(FBAlgorithmBase):
     """Tests that the tree algorithm computes the same forward matrix as the simple method."""
 
     def verify(self, ts):
-        # i = 0
         for n, m, G_vs, s, e_vs, r, mu in self.example_parameters_genotypes(ts):
-            # if i == 1:
-            # print("")
-            # print("")
-            # print(r)
-            # print(mu)
-
-            # F_vs, c_vs, ll_vs = fbd_vs.forwards_ls_dip(
-            #     n, m, G_vs, s, e_vs, r, norm=True
-            # )
-            # print(G_vs)
-            # print(c_vs)
-            # print(ll_vs)
-
-            # print("Matrix version: change to the same order as the trees")
             # Note, need to remove the first sample from the ts, and ensure that invariant sites aren't removed.
             ts_check, mapping = ts.simplify(
                 range(1, n + 1), filter_sites=False, map_nodes=True
             )
-            # print(mapping)
             G_check = np.zeros((m, n, n))
             for i in range(m):
                 G_check[i, :, :] = np.add.outer(
                     ts_check.genotype_matrix()[i, :], ts_check.genotype_matrix()[i, :]
                 )
 
-            file_path = "matrix.txt"
-            with open(file_path, "w") as o:
-                with contextlib.redirect_stdout(o):
-                    print(mu)
-                    F_vs, c_vs, ll_vs = fbd_vs.forwards_ls_dip(
-                        n, m, G_check, s, e_vs, r, norm=True
-                    )
-            # print(ll_vs)
+            F_vs, c_vs, ll_vs = fbd_vs.forwards_ls_dip(
+                n, m, G_check, s, e_vs, r, norm=True
+            )
 
-            # print(ts_check.genotype_matrix())
-            # for sample in ts.samples():
-            # print(sample)
-            # for tree in ts_check.trees():
-            # for leaf in tree.leaves():
-            # print(leaf)
-            file_path = "tree.txt"
-            # with open(file_path, "w") as o:
-            #     with contextlib.redirect_stdout(o):
-            cm = fbd_vstv.ls_forward_tree(s[0, :], ts_check, r, mu)
+            cm_v = fbd_vstv.ls_forward_tree(s[0, :], ts_check, r, mu)
+            cm_d = fbd_vstd.ls_forward_tree(s[0, :], ts_check, r, mu)
 
-            file_path = "tree2.txt"
-            # with open(file_path, "w") as o:
-            # with contextlib.redirect_stdout(o):
-            cm = fbd_vstd.ls_forward_tree(s[0, :], ts_check, r, mu)
-            # print(cm.normalisation_factor)
-            # print(cm.normalisation_factor - c_vs)
-            # print(cm.decode())
-            # print(F_vs)
+            # print("dictionary decoding")
+            # cm_d.decode()
+            # print("vector decoding")
+            # print(cm_v.decode()[0,:,:])
+            # print("original matrix decoding")
+            # print(F_vs[0,:,:])
+
+            # assert 0 == 1
+            self.assertAllClose(cm_d.decode(), F_vs)
+            self.assertAllClose(cm_v.decode(), F_vs)
 
             # print(F_vs[0,0,:])
             # print(cm.decode()[0,0,:])
-            ll_tree = np.sum(np.log10(cm.normalisation_factor))
-            print(ll_tree)
-            print(ll_vs)
-            # assert 0 == 1
+            ll_tree_vec = np.sum(np.log10(cm_v.normalisation_factor))
+            ll_tree_dict = np.sum(np.log10(cm_d.normalisation_factor))
+            # print(ll_tree_vec)
+            # print(ll_tree_dict)
+            # print(ll_vs)
+
+            self.assertAllClose(ll_vs, ll_tree_vec)
+            self.assertAllClose(ll_vs, ll_tree_dict)
+
+
+@pytest.mark.skip(reason="DEV: skip for time being")
+class TestForwardBackwardTree(FBAlgorithmBase):
+    """Tests that the tree algorithm computes the same forward matrix as the simple method."""
+
+    def verify(self, ts):
+        for n, m, G_vs, s, e_vs, r, mu in self.example_parameters_genotypes(ts):
+            # Note, need to remove the first sample from the ts, and ensure that invariant sites aren't removed.
+            ts_check, mapping = ts.simplify(
+                range(1, n + 1), filter_sites=False, map_nodes=True
+            )
+            G_check = np.zeros((m, n, n))
+            for i in range(m):
+                G_check[i, :, :] = np.add.outer(
+                    ts_check.genotype_matrix()[i, :], ts_check.genotype_matrix()[i, :]
+                )
+
+            F_vs, c_vs, ll_vs = fbd_vs.forwards_ls_dip(
+                n, m, G_check, s, e_vs, r, norm=True
+            )
+
+            B_vs = fbd_vs.backwards_ls_dip(n, m, G_check, s, e_vs, c_vs, r)
+
+            # Note, need to remove the first sample from the ts, and ensure that invariant sites aren't removed.
+            ts_check = ts.simplify(range(1, n + 1), filter_sites=False)
+            cm_vf = fbd_vstv.ls_forward_tree(s[0, :], ts_check, r, mu)
+            cm_df = fbd_vstd.ls_forward_tree(s[0, :], ts_check, r, mu)
+            ll_tree_vec = np.sum(np.log10(cm_vf.normalisation_factor))
+            ll_tree_dict = np.sum(np.log10(cm_df.normalisation_factor))
+            self.assertAllClose(ll_tree_dict, ll_tree_vec)
+
+            ts_check_mirror = fbd_vstv.mirror_coordinates(ts_check)
+            r_flip = np.flip(r)
+            cm_vb = fbd_vstv.ls_backward_tree(
+                np.flip(s[0, :]),
+                ts_check_mirror,
+                r_flip,
+                np.flip(mu),
+                np.flip(cm_vf.normalisation_factor),
+            )
+            B_vs_vb = np.flip(cm_vb.decode(), axis=0)
+
+            ts_check_mirror = fbd_vstd.mirror_coordinates(ts_check)
+            r_flip = np.flip(r)
+            cm_db = fbd_vstd.ls_backward_tree(
+                np.flip(s[0, :]),
+                ts_check_mirror,
+                r_flip,
+                np.flip(mu),
+                np.flip(cm_df.normalisation_factor),
+            )
+            B_vs_db = np.flip(cm_db.decode(), axis=0)
+
+            print(B_vs_db - B_vs)
+            self.assertAllClose(B_vs, B_vs_db)
+
+
+class TestTreeViterbiHap(VitAlgorithmBase):
+    """Test that we have the same log-likelihood between tree and matrix implementations"""
+
+    def verify(self, ts):
+        for n, m, H_vs, s, e_vs, r in self.example_parameters_haplotypes(ts):
+            mu = e_vs[:, 0]
+            ts_check = ts.simplify(range(1, n + 1), filter_sites=False)
+            V, P, ll_vs = vh_vs.forwards_viterbi_hap_lower_mem_rescaling(
+                n, m, H_vs, s, e_vs, r
+            )
+            cm = vh_vst.ls_viterbi_tree(s[0, :], ts_check, r, mu)
+            ll_tree = np.sum(np.log10(cm.normalisation_factor)) + np.log10(
+                np.max(cm.decode()[-1, :])
+            )
             self.assertAllClose(ll_vs, ll_tree)
-            # i += 1
+
+
+# class TestTreeViterbiDip(VitAlgorithmBase):
+#     """Test that we have the same log-likelihood between tree and matrix implementations"""
+
+#     def verify(self, ts):
+#         for n, m, H_vs, s, e_vs, r in self.example_parameters_haplotypes(ts):
+#             mu = e_vs[:, 0]
+#             ts_check = ts.simplify(range(1, n + 1), filter_sites=False)
+#             V, P, ll_vs = vh_vs.forwards_viterbi_hap_lower_mem_rescaling(
+#                 n, m, H_vs, s, e_vs, r
+#             )
+#             cm = vh_vst.ls_viterbi_tree(s[0, :], ts_check, r, mu)
+#             ll_tree = np.sum(np.log10(cm.normalisation_factor)) + np.log10(np.max(cm.decode()[-1,:]))
+#             self.assertAllClose(ll_vs, ll_tree)
