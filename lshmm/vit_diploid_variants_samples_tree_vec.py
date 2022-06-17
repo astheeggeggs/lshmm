@@ -321,6 +321,7 @@ class LsHmmAlgorithm:
                     vt.tree_node = -1
                 vt.value_index = -1
 
+    # DEV: sort this
     def update_probabilities(self, site, genotype_state):
         tree = self.tree
         T_index = self.T_index
@@ -358,9 +359,7 @@ class LsHmmAlgorithm:
                 v = tree.parent(v)
             to_compute[v_tmp] = v
 
-        normalisation_factor_inner_transpose = [
-            self.compute_normalisation_factor_inner(i) for i in to_compute
-        ]
+        single_switch = [self.compute_normalisation_factor_inner(i) for i in to_compute]
 
         genotype_template_state = np.add.outer(
             allelic_state[: tree.num_samples()], allelic_state[: tree.num_samples()]
@@ -368,12 +367,14 @@ class LsHmmAlgorithm:
         # These are vectors of length n (at internal nodes).
         query_is_het = genotype_state == 1
 
-        for j, st in enumerate(T):
+        for st in T:
             u = st.tree_node
-            st.inner_summation = (
-                self.compute_normalisation_factor_inner(u)
-                + normalisation_factor_inner_transpose
-            )
+            j2_switch = self.compute_normalisation_factor_inner(u)
+            st.inner_summation = [
+                max(j2_switch, j1_switch) for j1_switch in single_switch
+            ]
+            # Evaluate for st and compare to st.inner_summation and take the max
+            # There needs to be a replacement here with the max evaluated across one of the samples
 
             if u != -1:
                 # Get the allelic_state at u. TODO we can cache these states to
@@ -387,10 +388,13 @@ class LsHmmAlgorithm:
                 genotype_template_state = (
                     allelic_state[v] + allelic_state[: tree.num_samples()]
                 )
+
                 # These are vectors of length n (at internal nodes).
                 match = genotype_state == genotype_template_state
                 template_is_het = genotype_template_state == 1
 
+                # This is with the first element in the pair fixed - the outer 'node' (j1).
+                # V_previous[j1,:] in the matrix code is st.value here
                 st.value = self.compute_next_probability(
                     site.id,
                     st.value,
@@ -398,75 +402,28 @@ class LsHmmAlgorithm:
                     match,
                     template_is_het,
                     query_is_het,
+                    u,
                 )
+
         # Unset the states
         allelic_state[tree.root] = -1
         for mutation in site.mutations:
             allelic_state[mutation.node] = -1
 
-    def process_site(self, site, genotype_state, forwards=True):
-        if forwards:
-            # Forwards algorithm
-            self.update_probabilities(site, genotype_state)
-            self.stupid_compress()
-            s = self.compute_normalisation_factor()
-            T = self.T
+    def process_site(self, site, genotype_state):
+        self.update_probabilities(site, genotype_state)
+        self.stupid_compress()
+        s = self.compute_normalisation_factor()
+        T = self.T
 
-            for st in T:
-                if st.tree_node != tskit.NULL:
-                    st.value /= s
-                    st.value = np.round(st.value, self.precision)
+        for st in T:
+            if st.tree_node != tskit.NULL:
+                st.value /= s
+                st.value = np.round(st.value, self.precision)
 
-            self.output.store_site(
-                site.id, s, [(st.tree_node, st.value) for st in self.T]
-            )
-        else:
-            # Backwards algorithm
-            self.output.store_site(
-                site.id,
-                self.output.normalisation_factor[site.id],
-                [(st.tree_node, st.value) for st in self.T],
-            )
-            self.update_probabilities(site, genotype_state)
-            self.stupid_compress()
-            b_last_sum = self.compute_normalisation_factor()  # (Double sum)
+        self.output.store_site(site.id, s, [(st.tree_node, st.value) for st in self.T])
 
-            node_map = {st.tree_node: st for st in self.T}
-            # Because the node ordering in the leaves is not 0 -> n_samples - 1.
-            to_compute = np.zeros(self.tree.num_samples(), dtype=int)
-
-            for v in self.ts.samples():
-                v_tmp = v
-                while v not in node_map:
-                    v = self.tree.parent(v)
-                to_compute[v_tmp] = v
-
-            # Update the inner summation piece (Single sums)
-            normalisation_factor_inner_transpose = [
-                self.compute_normalisation_factor_inner(i) for i in to_compute
-            ]
-
-            for j, st in enumerate(self.T):
-                u = st.tree_node
-                st.inner_summation = (
-                    self.compute_normalisation_factor_inner(u)
-                    + normalisation_factor_inner_transpose
-                )
-
-            s = self.output.normalisation_factor[site.id]
-            for st in self.T:
-                if st.tree_node != tskit.NULL:
-                    st.value = (
-                        ((self.rho[site.id] / self.ts.num_samples) ** 2) * b_last_sum
-                        + (1 - self.rho[site.id])
-                        * (self.rho[site.id] / self.ts.num_samples)
-                        * st.inner_summation
-                        + (1 - self.rho[site.id]) ** 2 * st.value
-                    )
-                    st.value /= s
-                    st.value = np.round(st.value, self.precision)
-
-    def run_forward(self, g):
+    def run_viterbi(self, g):
         n = self.ts.num_samples
         self.tree.clear()
         for u in self.ts.samples():
@@ -480,23 +437,18 @@ class LsHmmAlgorithm:
                 self.process_site(site, g[site.id])
         return self.output
 
-    def run_backward(self, g):
-        n = self.ts.num_samples
-        self.tree.clear()
-        for u in self.ts.samples():
-            self.T_index[u] = len(self.T)
-            self.T.append(ValueTransition(tree_node=u, value=np.ones(n)))
-        while self.tree.next():
-            self.update_tree()
-            for site in self.tree.sites():
-                self.process_site(site, g[site.id], forwards=False)
-        return self.output
-
     def compute_normalisation_factor(self):
         raise NotImplementedError()
 
     def compute_next_probability(
-        self, site_id, p_last, inner_summation, is_match, template_is_het, query_is_het
+        self,
+        site_id,
+        p_last,
+        inner_summation,
+        is_match,
+        template_is_het,
+        query_is_het,
+        node,
     ):
         raise NotImplementedError()
 
@@ -560,44 +512,55 @@ class CompressedMatrix:
         return A
 
 
-class ForwardMatrix(CompressedMatrix):
-    """Class representing a compressed forward matrix."""
+class ViterbiMatrix(CompressedMatrix):
+    """Class representing the compressed Viterbi matrix."""
 
 
-class BackwardMatrix(CompressedMatrix):
-    """Class representing a compressed forward matrix."""
+class ViterbiAlgorithm(LsHmmAlgorithm):
+    """
+    Runs the Li and Stephens Viterbi algorithm.
+    """
 
-
-class ForwardAlgorithm(LsHmmAlgorithm):
-    """Runs the Li and Stephens forward algorithm."""
-
-    def __init__(self, ts, rho, mu, precision=30):
+    def __init__(self, ts, rho, mu, precision=10):
         super().__init__(ts, rho, mu, precision)
-        self.output = ForwardMatrix(ts)
+        self.output = ViterbiMatrix(ts)
 
+    # This loops through everything in the tree (via the ValueTransitions) and finds the maximum value
     def compute_normalisation_factor(self):
         s = 0
-        for j, st in enumerate(self.T):
+        for st in self.T:
             assert st.tree_node != tskit.NULL
-            assert self.N[j] > 0
-            s += self.N[j] * self.compute_normalisation_factor_inner(st.tree_node)
+            max_st = np.max(st.value)
+            if max_st > s:
+                s = max_st
+        if s == 0:
+            raise ValueError(
+                "Trying to match non-existent allele with zero mutation rate"
+            )
         return s
 
     def compute_normalisation_factor_inner(self, node):
-        return np.sum(self.T[self.T_index[node]].value)
+        return np.max(self.T[self.T_index[node]].value)
 
+    # DEV: sort this
     def compute_next_probability(
         self,
         site_id,
-        p_last,
+        p_last,  # In this context, this is a vector of likelihoods from the previous step representing the likelihood of the most likely path
+        # where one is copying from this internal node and the other is copying from each node represented in the vector.
         inner_normalisation_factor,
         is_match,
         template_is_het,
         query_is_het,
+        node,
     ):
-        rho = self.rho[site_id]
+        # Within this function we are evaluating the shift of a vector V from t-1 to t
+        # It has been normalised from the previous step so that the maximum value in V at t-1 is 1.
+
+        r = self.rho[site_id]
         mu = self.mu[site_id]
         n = self.ts.num_samples
+        r_n = r / n
 
         template_is_hom = np.logical_not(template_is_het)
         query_is_hom = np.logical_not(query_is_het)
@@ -612,11 +575,7 @@ class ForwardAlgorithm(LsHmmAlgorithm):
         REF_HOM_OBS_HET = np.logical_and(template_is_hom, query_is_het)
         REF_HET_OBS_HOM = np.logical_and(template_is_het, query_is_hom)
 
-        p_t = (
-            (rho / n) ** 2
-            + ((1 - rho) * (rho / n)) * inner_normalisation_factor
-            + (1 - rho) ** 2 * p_last
-        )
+        # Emission probabilities (not required if we don't need to evaluate the likelihood)
         p_e = (
             EQUAL_BOTH_HOM * (1 - mu) ** 2
             + UNEQUAL_BOTH_HOM * (mu ** 2)
@@ -624,72 +583,32 @@ class ForwardAlgorithm(LsHmmAlgorithm):
             + REF_HET_OBS_HOM * (mu * (1 - mu))
             + BOTH_HET * ((1 - mu) ** 2 + mu ** 2)
         )
+
+        no_switch = (1 - r) ** 2 + 2 * (r_n * (1 - r)) + r_n ** 2
+        single_switch = r_n * (1 - r) + r_n ** 2
+        double_switch = r_n ** 2
+
+        V_single_switch = inner_normalisation_factor
+        p_t = p_last * no_switch
+        single_switch_tmp = [single_switch * ss for ss in V_single_switch]
+
+        for j2 in range(n):
+            # Single or double switch?
+            if single_switch_tmp[j2] > double_switch:
+                # Then single switch is the alternative
+                if p_t[j2] < single_switch * V_single_switch[j2]:
+                    p_t[j2] = single_switch * V_single_switch[j2]
+            else:
+                # Double switch is the alternative
+                if p_t[j2] < double_switch:
+                    p_t[j2] = double_switch
 
         return p_t * p_e
 
 
-class BackwardAlgorithm(LsHmmAlgorithm):
-    """Runs the Li and Stephens forward algorithm."""
-
-    def __init__(self, ts, rho, mu, normalisation_factor, precision=10):
-        super().__init__(ts, rho, mu, precision)
-        self.output = BackwardMatrix(ts, normalisation_factor)
-
-    def compute_normalisation_factor(self):
-        s = 0
-        for j, st in enumerate(self.T):
-            assert st.tree_node != tskit.NULL
-            assert self.N[j] > 0
-            s += self.N[j] * self.compute_normalisation_factor_inner(st.tree_node)
-        return s
-
-    def compute_normalisation_factor_inner(self, node):
-        return np.sum(self.T[self.T_index[node]].value)
-
-    def compute_next_probability(
-        self,
-        site_id,
-        p_next,
-        inner_normalisation_factor,
-        is_match,
-        template_is_het,
-        query_is_het,
-    ):
-        mu = self.mu[site_id]
-
-        template_is_hom = np.logical_not(template_is_het)
-        query_is_hom = np.logical_not(query_is_het)
-
-        EQUAL_BOTH_HOM = np.logical_and(
-            np.logical_and(is_match, template_is_hom), query_is_hom
-        )
-        UNEQUAL_BOTH_HOM = np.logical_and(
-            np.logical_and(np.logical_not(is_match), template_is_hom), query_is_hom
-        )
-        BOTH_HET = np.logical_and(template_is_het, query_is_het)
-        REF_HOM_OBS_HET = np.logical_and(template_is_hom, query_is_het)
-        REF_HET_OBS_HOM = np.logical_and(template_is_het, query_is_hom)
-
-        p_e = (
-            EQUAL_BOTH_HOM * (1 - mu) ** 2
-            + UNEQUAL_BOTH_HOM * (mu ** 2)
-            + REF_HOM_OBS_HET * (2 * mu * (1 - mu))
-            + REF_HET_OBS_HOM * (mu * (1 - mu))
-            + BOTH_HET * ((1 - mu) ** 2 + mu ** 2)
-        )
-
-        return p_next * p_e
-
-
-def ls_forward_tree(g, ts, rho, mu, precision=30):
-    """Forward matrix computation based on a tree sequence."""
-    fa = ForwardAlgorithm(ts, rho, mu, precision=precision)
-    return fa.run_forward(g)
-
-
-def ls_backward_tree(g, ts_mirror, rho, mu, normalisation_factor, precision=30):
-    """Backward matrix computation based on a tree sequence."""
-    ba = BackwardAlgorithm(
-        ts_mirror, rho, mu, normalisation_factor, precision=precision
-    )
-    return ba.run_backward(g)
+def ls_viterbi_tree(h, ts, rho, mu, precision=30):
+    """
+    Viterbi path computation based on a tree sequence.
+    """
+    va = ViterbiAlgorithm(ts, rho, mu, precision=precision)
+    return va.run_viterbi(h)

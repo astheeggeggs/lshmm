@@ -99,6 +99,9 @@ def forwards_viterbi_dip_naive(n, m, G, s, e, r):
             )
             V[0, j1, j2] = 1 / (n ** 2) * e[0, index_tmp]
 
+    c[0] = np.amax(V[0, :, :])
+    V[0, :, :] *= 1 / c[0]
+
     for l in range(1, m):
         index = (
             4 * np.equal(G[l, :, :], s[0, l]).astype(np.int64)

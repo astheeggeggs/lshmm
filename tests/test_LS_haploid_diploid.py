@@ -15,6 +15,8 @@ import lshmm.forward_backward.fb_haploid_variants_samples as fbh_vs
 import lshmm.forward_backward.fb_haploid_variants_samples_tree as fbh_vst
 import lshmm.vit_diploid_samples_variants as vd_sv
 import lshmm.vit_diploid_variants_samples as vd_vs
+import lshmm.vit_diploid_variants_samples_tree_dict as vd_vstd
+import lshmm.vit_diploid_variants_samples_tree_vec as vd_vstv
 import lshmm.vit_haploid_samples_variants as vh_sv
 import lshmm.vit_haploid_variants_samples as vh_vs
 import lshmm.vit_haploid_variants_samples_tree as vh_vst
@@ -1039,24 +1041,11 @@ class TestForwardDipTree(FBAlgorithmBase):
             cm_v = fbd_vstv.ls_forward_tree(s[0, :], ts_check, r, mu)
             cm_d = fbd_vstd.ls_forward_tree(s[0, :], ts_check, r, mu)
 
-            # print("dictionary decoding")
-            # cm_d.decode()
-            # print("vector decoding")
-            # print(cm_v.decode()[0,:,:])
-            # print("original matrix decoding")
-            # print(F_vs[0,:,:])
-
-            # assert 0 == 1
             self.assertAllClose(cm_d.decode(), F_vs)
             self.assertAllClose(cm_v.decode(), F_vs)
 
-            # print(F_vs[0,0,:])
-            # print(cm.decode()[0,0,:])
             ll_tree_vec = np.sum(np.log10(cm_v.normalisation_factor))
             ll_tree_dict = np.sum(np.log10(cm_d.normalisation_factor))
-            # print(ll_tree_vec)
-            # print(ll_tree_dict)
-            # print(ll_vs)
 
             self.assertAllClose(ll_vs, ll_tree_vec)
             self.assertAllClose(ll_vs, ll_tree_dict)
@@ -1114,10 +1103,10 @@ class TestForwardBackwardTree(FBAlgorithmBase):
             )
             B_vs_db = np.flip(cm_db.decode(), axis=0)
 
-            print(B_vs_db - B_vs)
             self.assertAllClose(B_vs, B_vs_db)
 
 
+# @pytest.mark.skip(reason="DEV: skip for time being")
 class TestTreeViterbiHap(VitAlgorithmBase):
     """Test that we have the same log-likelihood between tree and matrix implementations"""
 
@@ -1128,23 +1117,50 @@ class TestTreeViterbiHap(VitAlgorithmBase):
             V, P, ll_vs = vh_vs.forwards_viterbi_hap_lower_mem_rescaling(
                 n, m, H_vs, s, e_vs, r
             )
+            path_vs = vh_vs.backwards_viterbi_hap(m, V, P)
+            ll_check = vh_vs.path_ll_hap(n, m, H_vs, path_vs, s, e_vs, r)
+
             cm = vh_vst.ls_viterbi_tree(s[0, :], ts_check, r, mu)
-            ll_tree = np.sum(np.log10(cm.normalisation_factor)) + np.log10(
-                np.max(cm.decode()[-1, :])
-            )
+            ll_tree = np.sum(np.log10(cm.normalisation_factor))
             self.assertAllClose(ll_vs, ll_tree)
 
+            # Now, need to ensure that the likelihood of the preferred path is the same as ll_tree (and ll_vs).
+            path_tree = cm.traceback()
+            ll_check = vh_vs.path_ll_hap(n, m, H_vs, path_tree, s, e_vs, r)
+            self.assertAllClose(ll_vs, ll_check)
 
-# class TestTreeViterbiDip(VitAlgorithmBase):
-#     """Test that we have the same log-likelihood between tree and matrix implementations"""
 
-#     def verify(self, ts):
-#         for n, m, H_vs, s, e_vs, r in self.example_parameters_haplotypes(ts):
-#             mu = e_vs[:, 0]
-#             ts_check = ts.simplify(range(1, n + 1), filter_sites=False)
-#             V, P, ll_vs = vh_vs.forwards_viterbi_hap_lower_mem_rescaling(
-#                 n, m, H_vs, s, e_vs, r
-#             )
-#             cm = vh_vst.ls_viterbi_tree(s[0, :], ts_check, r, mu)
-#             ll_tree = np.sum(np.log10(cm.normalisation_factor)) + np.log10(np.max(cm.decode()[-1,:]))
-#             self.assertAllClose(ll_vs, ll_tree)
+@pytest.mark.skip(reason="DEV: skip for time being")
+class TestTreeViterbiDip(VitAlgorithmBase):
+    """Test that we have the same log-likelihood between tree and matrix implementations"""
+
+    def verify(self, ts):
+
+        for n, m, G_vs, s, e_vs, r, mu in self.example_parameters_genotypes(ts):
+            # Note, need to remove the first sample from the ts, and ensure that invariant sites aren't removed.
+            ts_check, mapping = ts.simplify(
+                range(1, n + 1), filter_sites=False, map_nodes=True
+            )
+            G_check = np.zeros((m, n, n))
+            for i in range(m):
+                G_check[i, :, :] = np.add.outer(
+                    ts_check.genotype_matrix()[i, :], ts_check.genotype_matrix()[i, :]
+                )
+            ts_check = ts.simplify(range(1, n + 1), filter_sites=False)
+            V, P, ll_vs = vd_vs.forwards_viterbi_dip_low_mem(n, m, G_check, s, e_vs, r)
+
+            cm_v = vd_vstv.ls_viterbi_tree(s[0, :], ts_check, r, mu)
+            V_v = cm_v.decode()
+            ll_tree_vec = np.sum(np.log10(cm_v.normalisation_factor))
+
+            cm_d = vd_vstd.ls_viterbi_tree(s[0, :], ts_check, r, mu)
+            ll_tree_dict = np.sum(np.log10(cm_d.normalisation_factor))
+            V_d = cm_v.decode()
+
+            self.assertAllClose(V_d, V_v)
+            # self.assertAllClose(V, V_d)
+
+            self.assertAllClose(ll_vs, ll_tree_vec)
+            self.assertAllClose(ll_vs, ll_tree_dict)
+
+            # Last piece to include is the traceback in the diploid case.
