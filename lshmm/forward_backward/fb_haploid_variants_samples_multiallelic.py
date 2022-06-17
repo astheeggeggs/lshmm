@@ -4,7 +4,7 @@ import numpy as np
 
 
 @nb.jit
-def check_alleles(alleles, n):
+def check_alleles(alleles, m):
     """
     Checks the specified allele list and returns a list of lists
     of alleles of length num_sites.
@@ -14,14 +14,14 @@ def check_alleles(alleles, n):
     num_sites.
     """
     if isinstance(alleles[0], str):
-        return [alleles for _ in range(n)]
-    if len(alleles) != n:
+        return [alleles for _ in range(m)]
+    if len(alleles) != m:
         raise ValueError("Malformed alleles list")
     return alleles
 
 
 @nb.jit
-def forwards_ls_hap(n, m, H, s, e, r, norm=True):
+def forwards_ls_hap(n, m, alleles, H, s, e, r, norm=True):
     """Matrix based haploid LS forward algorithm using numpy vectorisation."""
     # Initialise
     alleles = check_alleles(alleles, m)
@@ -69,7 +69,7 @@ def forwards_ls_hap(n, m, H, s, e, r, norm=True):
 
 
 @nb.jit
-def backwards_ls_hap(n, m, H, s, e, c, r):
+def backwards_ls_hap(n, m, alleles, H, s, e, c, r):
     """Matrix based haploid LS backward algorithm using numpy vectorisation."""
     # Initialise
     alleles = check_alleles(alleles, m)
