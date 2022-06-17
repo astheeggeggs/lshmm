@@ -9,12 +9,12 @@ from .forward_backward.fb_haploid_variants_samples import (
     backwards_ls_hap,
     forwards_ls_hap,
 )
-from .vit_diploid_variants_samples import (
+from .viterbi.vit_diploid_variants_samples import (
     backwards_viterbi_dip,
     forwards_viterbi_dip_low_mem,
     get_phased_path,
 )
-from .vit_haploid_variants_samples import (
+from .viterbi.vit_haploid_variants_samples import (
     backwards_viterbi_hap,
     forwards_viterbi_hap_lower_mem_rescaling,
 )
