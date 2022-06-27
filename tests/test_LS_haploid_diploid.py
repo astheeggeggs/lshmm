@@ -11,10 +11,10 @@ import lshmm.forward_backward.fb_diploid_variants_samples as fbd_vs
 import lshmm.forward_backward.fb_haploid_samples_variants as fbh_sv
 import lshmm.forward_backward.fb_haploid_variants_samples as fbh_vs
 
-# import lshmm.viterbi.vit_diploid_samples_variants as vd_sv
-# import lshmm.viterbi.vit_diploid_variants_samples as vd_vs
-# import lshmm.viterbi.vit_haploid_samples_variants as vh_sv
-# import lshmm.viterbi.vit_haploid_variants_samples as vh_vs
+import lshmm.vit_diploid_samples_variants as vd_sv
+import lshmm.vit_diploid_variants_samples as vd_vs
+import lshmm.vit_haploid_samples_variants as vh_sv
+import lshmm.vit_haploid_variants_samples as vh_vs
 
 EQUAL_BOTH_HOM = 4
 UNEQUAL_BOTH_HOM = 0
@@ -80,6 +80,7 @@ class LSBase:
 
         for r, mu in itertools.product(rs, mus):
             r[0] = 0
+            e = self.haplotype_emission(mu, m)
             yield n, m, H, s, e, r
 
     def example_parameters_haplotypes_larger(
@@ -141,6 +142,7 @@ class LSBase:
 
         for r, mu in itertools.product(rs, mus):
             r[0] = 0
+            e = self.genotype_emission(mu, m)
             yield n, m, G, s, e, r
 
     def example_parameters_genotypes_larger(
@@ -219,7 +221,7 @@ class FBAlgorithmBase(LSBase):
     """Base for forwards backwards algorithm tests."""
 
 
-@pytest.mark.skip(reason="DEV: skip for time being")
+# @pytest.mark.skip(reason="DEV: skip for time being")
 class TestNonTreeMethodsHap(FBAlgorithmBase):
     """Test that we compute the sample likelihoods across all implementations."""
 
@@ -285,7 +287,7 @@ class TestNonTreeMethodsHap(FBAlgorithmBase):
         self.assertAllClose(ll_vs, ll_sv)
 
 
-@pytest.mark.skip(reason="DEV: skip for time being")
+# @pytest.mark.skip(reason="DEV: skip for time being")
 class TestNonTreeMethodsDip(FBAlgorithmBase):
     """Test that we compute the sample likelihoods across all implementations."""
 
@@ -452,12 +454,12 @@ class TestNonTreeMethodsDip(FBAlgorithmBase):
         self.assertAllClose(ll_vs, ll_sv)
 
 
-@pytest.mark.skip(reason="DEV: skip for time being")
+# @pytest.mark.skip(reason="DEV: skip for time being")
 class VitAlgorithmBase(LSBase):
     """Base for viterbi algoritm tests."""
 
 
-@pytest.mark.skip(reason="DEV: skip for time being")
+# @pytest.mark.skip(reason="DEV: skip for time being")
 class TestNonTreeViterbiHap(VitAlgorithmBase):
     """Test that we have the same log-likelihood across all implementations"""
 
@@ -642,7 +644,7 @@ class TestNonTreeViterbiHap(VitAlgorithmBase):
         self.assertAllClose(ll_vs, ll_sv)
 
 
-@pytest.mark.skip(reason="DEV: skip for time being")
+# @pytest.mark.skip(reason="DEV: skip for time being")
 class TestNonTreeViterbiDip(VitAlgorithmBase):
     """Test that we have the same log-likelihood across all implementations"""
 
@@ -797,89 +799,3 @@ class TestNonTreeViterbiDip(VitAlgorithmBase):
 
         # samples x variants agrees with variants x samples
         self.assertAllClose(ll_vs, ll_sv)
-
-
-@pytest.mark.skip(reason="DEV: skip for time being")
-class TestForwardTree(FBAlgorithmBase):
-    """Tests that the tree algorithm computes the same forward matrix as the simple method."""
-
-    def verify(self, ts):
-        for n, m, H_vs, s, e_vs, r in self.example_parameters_haplotypes(ts):
-            mu = e_vs[:, 0]
-            F_vs, c_vs, ll_vs = fbh_vs.forwards_ls_hap(
-                n, m, H_vs, s, e_vs, r, norm=True
-            )
-            # Note, need to remove the first sample from the ts, and ensure that invariant sites aren't removed.
-            ts_check = ts.simplify(range(1, n + 1), filter_sites=False)
-            cm = fbh_vst.ls_forward_tree(s[0, :], ts_check, r, mu)
-            ll_tree = np.sum(np.log10(cm.normalisation_factor))
-            self.assertAllClose(ll_vs, ll_tree)
-
-
-@pytest.mark.skip(reason="DEV: skip for time being")
-class TestMirroring(FBAlgorithmBase):
-    """Tests that mirroring the tree sequence and running forwards and backwards algorithms gives
-    the same log-likelihood of observing the data."""
-
-    def verify(self, ts):
-        for n, m, H_vs, s, e_vs, r in self.example_parameters_haplotypes(ts):
-            mu = e_vs[:, 0]
-            F_vs, c_vs, ll_vs = fbh_vs.forwards_ls_hap(
-                n, m, H_vs, s, e_vs, r, norm=True
-            )
-            ts_check = ts.simplify(range(1, n + 1), filter_sites=False)
-            cm = fbh_vst.ls_forward_tree(s[0, :], ts_check, r, mu)
-            ll_tree = np.sum(np.log10(cm.normalisation_factor))
-            ts_check_mirror = fbh_vst.mirror_coordinates(ts_check)
-            r_flip = np.insert(np.flip(r)[:-1], 0, 0)
-            cm = fbh_vst.ls_forward_tree(
-                np.flip(s[0, :]), ts_check_mirror, r_flip, np.flip(mu)
-            )
-            ll_mirror_tree = np.sum(np.log10(cm.normalisation_factor))
-
-            self.assertAllClose(ll_tree, ll_mirror_tree)
-
-            # Ensure that the decoded matrices are the same
-            F_vs_mirror_matrix, c_vs, ll_vs = fbh_vs.forwards_ls_hap(
-                n,
-                m,
-                np.flip(H_vs, axis=0),
-                np.flip(s, axis=1),
-                np.flip(e_vs, axis=0),
-                r_flip,
-                norm=True,
-            )
-            F_vs_mirror = cm.decode()
-
-            self.assertAllClose(F_vs_mirror_matrix, F_vs_mirror)
-
-
-@pytest.mark.skip(reason="DEV: skip for time being")
-class TestForwardBackwardTree(FBAlgorithmBase):
-    """Tests that the tree algorithm computes the same forward matrix as the simple method."""
-
-    def verify(self, ts):
-        for n, m, H_vs, s, e_vs, r in self.example_parameters_haplotypes(ts):
-            mu = e_vs[:, 0]
-            F_vs, c_vs, ll_vs = fbh_vs.forwards_ls_hap(
-                n, m, H_vs, s, e_vs, r, norm=True
-            )
-            B_vs = fbh_vs.backwards_ls_hap(n, m, H_vs, s, e_vs, c_vs, r)
-
-            # Note, need to remove the first sample from the ts, and ensure that invariant sites aren't removed.
-            ts_check = ts.simplify(range(1, n + 1), filter_sites=False)
-            cm = fbh_vst.ls_forward_tree(s[0, :], ts_check, r, mu)
-            ll_tree = np.sum(np.log10(cm.normalisation_factor))
-
-            ts_check_mirror = fbh_vst.mirror_coordinates(ts_check)
-            r_flip = np.flip(r)
-            cm = fbh_vst.ls_backward_tree(
-                np.flip(s[0, :]),
-                ts_check_mirror,
-                r_flip,
-                np.flip(mu),
-                np.flip(cm.normalisation_factor),
-            )
-            B_vs_tree = np.flip(cm.decode(), axis=0)
-
-            self.assertAllClose(B_vs, B_vs_tree)

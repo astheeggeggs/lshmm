@@ -11,18 +11,14 @@ import lshmm as ls
 import lshmm.forward_backward.fb_diploid_variants_samples as fbd_vs
 import lshmm.forward_backward.fb_haploid_variants_samples as fbh_vs
 
-# import lshmm.viterbi
-# import lshmm.viterbi.vit_diploid_variants_samples as vd_vs
-# import lshmm.viterbi.vit_haploid_variants_samples as vh_vs
-
-# import lshmm.viterbi
+import lshmm.vit_diploid_variants_samples as vd_vs
+import lshmm.vit_haploid_variants_samples as vh_vs
 
 EQUAL_BOTH_HOM = 4
 UNEQUAL_BOTH_HOM = 0
 BOTH_HET = 7
 REF_HOM_OBS_HET = 1
 REF_HET_OBS_HOM = 2
-
 
 class LSBase:
     """Superclass of Li and Stephens tests."""
@@ -54,6 +50,7 @@ class LSBase:
 
         return e
 
+
     def example_parameters_haplotypes(self, ts, seed=42):
         """Returns an iterator over combinations of haplotype, recombination and
         mutation rates."""
@@ -69,7 +66,7 @@ class LSBase:
 
         e = self.haplotype_emission(mu, m)
 
-        yield n, m, H, s, e, r
+        yield n, m, H, s, e, r, mu
 
         # Mixture of random and extremes
         rs = [np.zeros(m) + 0.999, np.zeros(m) + 1e-6, np.random.rand(m)]
@@ -80,7 +77,8 @@ class LSBase:
 
         for r, mu in itertools.product(rs, mus):
             r[0] = 0
-            yield n, m, H, s, e, r
+            e = self.haplotype_emission(mu, m)
+            yield n, m, H, s, e, r, mu
 
     def example_parameters_haplotypes_larger(
         self, ts, seed=42, mean_r=1e-5, mean_mu=1e-5
@@ -100,7 +98,7 @@ class LSBase:
         # Define the emission probability matrix
         e = self.haplotype_emission(mu, m)
 
-        return n, m, H, s, e, r
+        return n, m, H, s, e, r, mu
 
     def example_genotypes(self, ts):
 
@@ -130,7 +128,7 @@ class LSBase:
 
         e = self.genotype_emission(mu, m)
 
-        yield n, m, G, s, e, r
+        yield n, m, G, s, e, r, mu
 
         # Mixture of random and extremes
         rs = [np.zeros(m) + 0.999, np.zeros(m) + 1e-6, np.random.rand(m)]
@@ -140,8 +138,9 @@ class LSBase:
         e = self.genotype_emission(mu, m)
 
         for r, mu in itertools.product(rs, mus):
+            e = self.genotype_emission(mu, m)
             r[0] = 0
-            yield n, m, G, s, e, r
+            yield n, m, G, s, e, r, mu
 
     def example_parameters_genotypes_larger(
         self, ts, seed=42, mean_r=1e-5, mean_mu=1e-5
@@ -162,7 +161,7 @@ class LSBase:
         # Define the emission probability matrix
         e = self.genotype_emission(mu, m)
 
-        return n, m, G, s, e, r
+        return n, m, G, s, e, r, mu
 
     def assertAllClose(self, A, B):
         """Assert that all entries of two matrices are 'close'"""
@@ -218,40 +217,37 @@ class LSBase:
 class FBAlgorithmBase(LSBase):
     """Base for forwards backwards algorithm tests."""
 
-
-@pytest.mark.skip(reason="DEV: skip for time being")
-class TestNonTreeMethodsHap(FBAlgorithmBase):
+# @pytest.mark.skip(reason="DEV: skip for time being")
+class TestMethodsHap(FBAlgorithmBase):
     """Test that we compute the sample likelihoods across all implementations."""
 
     def verify(self, ts):
-        for n, m, H_vs, s, e_vs, r in self.example_parameters_haplotypes(ts):
-
+        for n, m, H_vs, s, e_vs, r, mu in self.example_parameters_haplotypes(ts):
             F_vs, c_vs, ll_vs = fbh_vs.forwards_ls_hap(n, m, H_vs, s, e_vs, r)
             B_vs = fbh_vs.backwards_ls_hap(n, m, H_vs, s, e_vs, c_vs, r)
-
-            F, c, ll = ls.forwards(n, m, H_vs, s, e_vs, r)
-            B = ls.backwards(n, m, H_vs, s, e_vs, c, r)
-
+            F, c, ll = ls.forwards(H_vs, s, r, mu)
+            B = ls.backwards(H_vs, s, c, r, mu)
             self.assertAllClose(F, F_vs)
-            self.assertAllClose(B, B_vs)
             self.assertAllClose(ll_vs, ll)
 
+            mu = None
+            F, c, ll = ls.forwards(H_vs, s, r, mu)
+            B = ls.backwards(H_vs, s, c, r, mu)
 
-@pytest.mark.skip(reason="DEV: skip for time being")
-class TestNonTreeMethodsDip(FBAlgorithmBase):
+
+# @pytest.mark.skip(reason="DEV: skip for time being")
+class TestMethodsDip(FBAlgorithmBase):
     """Test that we compute the sample likelihoods across all implementations."""
 
     def verify(self, ts):
-        for n, m, G_vs, s, e_vs, r in self.example_parameters_genotypes(ts):
+        for n, m, G_vs, s, e_vs, r, mu in self.example_parameters_genotypes(ts):
 
             F_vs, c_vs, ll_vs = fbd_vs.forward_ls_dip_loop(
                 n, m, G_vs, s, e_vs, r, norm=True
             )
+            F, c, ll = ls.forwards(G_vs, s, r, mu)
             B_vs = fbd_vs.backward_ls_dip_loop(n, m, G_vs, s, e_vs, c_vs, r)
-
-            F, c, ll = ls.forwards(n, m, G_vs, s, e_vs, r)
-            B = ls.backwards(n, m, G_vs, s, e_vs, c, r)
-
+            B = ls.backwards(G_vs, s, c, r, mu)
             self.assertAllClose(F, F_vs)
             self.assertAllClose(B, B_vs)
             self.assertAllClose(ll_vs, ll)
@@ -260,39 +256,36 @@ class TestNonTreeMethodsDip(FBAlgorithmBase):
 class VitAlgorithmBase(LSBase):
     """Base for viterbi algoritm tests."""
 
-
-@pytest.mark.skip(reason="DEV: skip for time being")
-class TestNonTreeViterbiHap(VitAlgorithmBase):
+# @pytest.mark.skip(reason="DEV: skip for time being")
+class TestViterbiHap(VitAlgorithmBase):
     """Test that we have the same log-likelihood across all implementations"""
 
     def verify(self, ts):
-        for n, m, H_vs, s, e_vs, r in self.example_parameters_haplotypes(ts):
+        for n, m, H_vs, s, e_vs, r, mu in self.example_parameters_haplotypes(ts):
 
             V_vs, P_vs, ll_vs = vh_vs.forwards_viterbi_hap_lower_mem_rescaling(
                 n, m, H_vs, s, e_vs, r
             )
             path_vs = vh_vs.backwards_viterbi_hap(m, V_vs, P_vs)
-
-            path, ll = ls.viterbi(n, m, H_vs, s, e_vs, r)
+            path, ll = ls.viterbi(H_vs, s, r, mu)
 
             self.assertAllClose(ll_vs, ll)
             self.assertAllClose(path_vs, path)
 
-
-@pytest.mark.skip(reason="DEV: skip for time being")
-class TestNonTreeViterbiDip(VitAlgorithmBase):
+# @pytest.mark.skip(reason="DEV: skip for time being")
+class TestViterbiDip(VitAlgorithmBase):
     """Test that we have the same log-likelihood across all implementations"""
 
     def verify(self, ts):
-        for n, m, G_vs, s, e_vs, r in self.example_parameters_genotypes(ts):
+        for n, m, G_vs, s, e_vs, r, mu in self.example_parameters_genotypes(ts):
 
             V_vs, P_vs, ll_vs = vd_vs.forwards_viterbi_dip_low_mem(
                 n, m, G_vs, s, e_vs, r
             )
             path_vs = vd_vs.backwards_viterbi_dip(m, V_vs, P_vs)
             phased_path_vs = vd_vs.get_phased_path(n, path_vs)
-
-            path, ll = ls.viterbi(n, m, G_vs, s, e_vs, r)
+            path, ll = ls.viterbi(G_vs, s, r, mu)   
 
             self.assertAllClose(ll_vs, ll)
             self.assertAllClose(phased_path_vs, path)
+
