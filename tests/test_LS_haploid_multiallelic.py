@@ -8,8 +8,7 @@ import pytest
 import tskit
 
 import lshmm.forward_backward.fb_haploid_variants_samples_multiallelic as fbh
-
-# import lshmm.vit_haploid_variants_samples as vh
+import lshmm.vit_haploid_variants_samples_multiallelic as vh
 
 
 class LSBase:
@@ -50,7 +49,6 @@ class LSBase:
         e = self.haplotype_emission(mu, m)
 
         yield n, m, alleles, H, s, e, r
-        print(alleles)
 
         # Mixture of random and extremes
         rs = [np.zeros(m) + 0.999, np.zeros(m) + 1e-6, np.random.rand(m)]
@@ -61,28 +59,8 @@ class LSBase:
 
         for r, mu in itertools.product(rs, mus):
             r[0] = 0
+            e = self.haplotype_emission(mu, m)
             yield n, m, alleles, H, s, e, r
-            print(alleles)
-
-    def example_parameters_haplotypes_larger(
-        self, ts, seed=42, mean_r=1e-5, mean_mu=1e-5
-    ):
-
-        np.random.seed(seed)
-        H, s = self.example_haplotypes(ts)
-        n = H.shape[1]
-        m = ts.get_num_sites()
-
-        r = mean_r * np.ones(m) * ((np.random.rand(m) + 0.5) / 2)
-        r[0] = 0
-
-        # Error probability
-        mu = mean_mu * np.ones(m) * ((np.random.rand(m) + 0.5) / 2)
-
-        # Define the emission probability matrix
-        e = self.haplotype_emission(mu, m)
-
-        return n, m, H, s, e, r
 
     def assertAllClose(self, A, B):
         """Assert that all entries of two matrices are 'close'"""
@@ -139,22 +117,8 @@ class LSBase:
         print(ts.num_trees)
         self.verify(ts)
 
-    # Test a bigger one.
-    def test_large(self, n=50, length=100000, mean_r=1e-5, mean_mu=1e-5, seed=42):
-        ts = msprime.simulate(
-            n + 1,
-            length=length,
-            mutation_rate=mean_mu,
-            recombination_rate=mean_r,
-            random_seed=seed,
-        )
-        self.verify_larger(ts)
-
     def verify(self, ts):
         raise NotImplementedError()
-
-    def verify_larger(self, ts):
-        pass
 
 
 class FBAlgorithmBase(LSBase):
@@ -167,13 +131,15 @@ class TestNonTreeMethodsHap(FBAlgorithmBase):
 
     def verify(self, ts):
         for n, m, alleles, H, s, e, r in self.example_parameters_haplotypes(ts):
-            F, c, ll = fbh.forwards_ls_hap(n, m, alleles, H, s, e, r, norm=False)
-            B = fbh.backwards_ls_hap(n, m, alleles, H, s, e, c, r)
+            F, c, ll = fbh.forwards_ls_hap_wrapper(
+                n, m, alleles, H, s, e, r, norm=False
+            )
+            B = fbh.backwards_ls_hap_wrapper(n, m, alleles, H, s, e, c, r)
             self.assertAllClose(np.log10(np.sum(F * B, 1)), ll * np.ones(m))
-            F_tmp, c_tmp, ll_tmp = fbh.forwards_ls_hap(
+            F_tmp, c_tmp, ll_tmp = fbh.forwards_ls_hap_wrapper(
                 n, m, alleles, H, s, e, r, norm=True
             )
-            B_tmp = fbh.backwards_ls_hap(n, m, alleles, H, s, e, c_tmp, r)
+            B_tmp = fbh.backwards_ls_hap_wrapper(n, m, alleles, H, s, e, c_tmp, r)
             self.assertAllClose(ll, ll_tmp)
             self.assertAllClose(np.sum(F_tmp * B_tmp, 1), np.ones(m))
 
@@ -190,45 +156,15 @@ class TestNonTreeViterbiHap(VitAlgorithmBase):
     def verify(self, ts):
         for n, m, alleles, H, s, e, r in self.example_parameters_haplotypes(ts):
 
-            V, P, ll = vh.forwards_viterbi_hap_naive(n, m, H, s, e, r)
-            path = vh.backwards_viterbi_hap(m, V[m - 1, :], P)
+            V, P, ll = vh.forwards_viterbi_hap_naive_wrapper(n, m, H, s, e, r)
+            path = vh.backwards_viterbi_hap_wrapper(m, V[m - 1, :], P)
             ll_check = vh.path_ll_hap(n, m, H, path, s, e, r)
             self.assertAllClose(ll, ll_check)
 
-            V_tmp, P_tmp, ll_tmp = vh.forwards_viterbi_hap_naive_vec(n, m, H, s, e, r)
-            path_tmp = vh.backwards_viterbi_hap(m, V_tmp[m - 1, :], P_tmp)
-            ll_check = vh.path_ll_hap(n, m, H, path_tmp, s, e, r)
-            self.assertAllClose(ll_tmp, ll_check)
-            self.assertAllClose(ll, ll_tmp)
-
-            V_tmp, P_tmp, ll_tmp = vh.forwards_viterbi_hap_naive_low_mem(
+            V_tmp, P_tmp, ll_tmp = vh.forwards_viterbi_hap_lower_mem_rescaling_wrapper(
                 n, m, H, s, e, r
             )
-            path_tmp = vh.backwards_viterbi_hap(m, V_tmp, P_tmp)
-            ll_check = vh.path_ll_hap(n, m, H, path_tmp, s, e, r)
-            self.assertAllClose(ll_tmp, ll_check)
-            self.assertAllClose(ll, ll_tmp)
-
-            V_tmp, P_tmp, ll_tmp = vh.forwards_viterbi_hap_naive_low_mem_rescaling(
-                n, m, H, s, e, r
-            )
-            path_tmp = vh.backwards_viterbi_hap(m, V_tmp, P_tmp)
-            ll_check = vh.path_ll_hap(n, m, H, path_tmp, s, e, r)
-            self.assertAllClose(ll_tmp, ll_check)
-            self.assertAllClose(ll, ll_tmp)
-
-            V_tmp, P_tmp, ll_tmp = vh.forwards_viterbi_hap_low_mem_rescaling(
-                n, m, H, s, e, r
-            )
-            path_tmp = vh.backwards_viterbi_hap(m, V_tmp, P_tmp)
-            ll_check = vh.path_ll_hap(n, m, H, path_tmp, s, e, r)
-            self.assertAllClose(ll_tmp, ll_check)
-            self.assertAllClose(ll, ll_tmp)
-
-            V_tmp, P_tmp, ll_tmp = vh.forwards_viterbi_hap_lower_mem_rescaling(
-                n, m, H, s, e, r
-            )
-            path_tmp = vh.backwards_viterbi_hap(m, V_tmp, P_tmp)
+            path_tmp = vh.backwards_viterbi_hap_wrapper(m, V_tmp, P_tmp)
             ll_check = vh.path_ll_hap(n, m, H, path_tmp, s, e, r)
             self.assertAllClose(ll_tmp, ll_check)
             self.assertAllClose(ll, ll_tmp)

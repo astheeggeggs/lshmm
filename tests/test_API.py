@@ -10,7 +10,6 @@ import tskit
 import lshmm as ls
 import lshmm.forward_backward.fb_diploid_variants_samples as fbd_vs
 import lshmm.forward_backward.fb_haploid_variants_samples as fbh_vs
-
 import lshmm.vit_diploid_variants_samples as vd_vs
 import lshmm.vit_haploid_variants_samples as vh_vs
 
@@ -19,6 +18,7 @@ UNEQUAL_BOTH_HOM = 0
 BOTH_HET = 7
 REF_HOM_OBS_HET = 1
 REF_HET_OBS_HOM = 2
+
 
 class LSBase:
     """Superclass of Li and Stephens tests."""
@@ -49,7 +49,6 @@ class LSBase:
         e[:, REF_HET_OBS_HOM] = mu * (1 - mu)
 
         return e
-
 
     def example_parameters_haplotypes(self, ts, seed=42):
         """Returns an iterator over combinations of haplotype, recombination and
@@ -196,26 +195,13 @@ class LSBase:
         assert ts.num_sites > 5
         self.verify(ts)
 
-    # Test a bigger one.
-    def test_large(self, n=50, length=100000, mean_r=1e-5, mean_mu=1e-5, seed=42):
-        ts = msprime.simulate(
-            n + 1,
-            length=length,
-            mutation_rate=mean_mu,
-            recombination_rate=mean_r,
-            random_seed=seed,
-        )
-        self.verify_larger(ts)
-
     def verify(self, ts):
         raise NotImplementedError()
-
-    def verify_larger(self, ts):
-        pass
 
 
 class FBAlgorithmBase(LSBase):
     """Base for forwards backwards algorithm tests."""
+
 
 # @pytest.mark.skip(reason="DEV: skip for time being")
 class TestMethodsHap(FBAlgorithmBase):
@@ -225,8 +211,8 @@ class TestMethodsHap(FBAlgorithmBase):
         for n, m, H_vs, s, e_vs, r, mu in self.example_parameters_haplotypes(ts):
             F_vs, c_vs, ll_vs = fbh_vs.forwards_ls_hap(n, m, H_vs, s, e_vs, r)
             B_vs = fbh_vs.backwards_ls_hap(n, m, H_vs, s, e_vs, c_vs, r)
-            F, c, ll = ls.forwards(H_vs, s, r, mu)
-            B = ls.backwards(H_vs, s, c, r, mu)
+            F, c, ll = ls.forwards(H_vs, s, r, mutation_rate=mu)
+            B = ls.backwards(H_vs, s, c, r, mutation_rate=mu)
             self.assertAllClose(F, F_vs)
             self.assertAllClose(ll_vs, ll)
 
@@ -245,9 +231,9 @@ class TestMethodsDip(FBAlgorithmBase):
             F_vs, c_vs, ll_vs = fbd_vs.forward_ls_dip_loop(
                 n, m, G_vs, s, e_vs, r, norm=True
             )
-            F, c, ll = ls.forwards(G_vs, s, r, mu)
+            F, c, ll = ls.forwards(G_vs, s, r, mutation_rate=mu)
             B_vs = fbd_vs.backward_ls_dip_loop(n, m, G_vs, s, e_vs, c_vs, r)
-            B = ls.backwards(G_vs, s, c, r, mu)
+            B = ls.backwards(G_vs, s, c, r, mutation_rate=mu)
             self.assertAllClose(F, F_vs)
             self.assertAllClose(B, B_vs)
             self.assertAllClose(ll_vs, ll)
@@ -255,6 +241,7 @@ class TestMethodsDip(FBAlgorithmBase):
 
 class VitAlgorithmBase(LSBase):
     """Base for viterbi algoritm tests."""
+
 
 # @pytest.mark.skip(reason="DEV: skip for time being")
 class TestViterbiHap(VitAlgorithmBase):
@@ -267,10 +254,11 @@ class TestViterbiHap(VitAlgorithmBase):
                 n, m, H_vs, s, e_vs, r
             )
             path_vs = vh_vs.backwards_viterbi_hap(m, V_vs, P_vs)
-            path, ll = ls.viterbi(H_vs, s, r, mu)
+            path, ll = ls.viterbi(H_vs, s, r, mutation_rate=mu)
 
             self.assertAllClose(ll_vs, ll)
             self.assertAllClose(path_vs, path)
+
 
 # @pytest.mark.skip(reason="DEV: skip for time being")
 class TestViterbiDip(VitAlgorithmBase):
@@ -284,8 +272,7 @@ class TestViterbiDip(VitAlgorithmBase):
             )
             path_vs = vd_vs.backwards_viterbi_dip(m, V_vs, P_vs)
             phased_path_vs = vd_vs.get_phased_path(n, path_vs)
-            path, ll = ls.viterbi(G_vs, s, r, mu)   
+            path, ll = ls.viterbi(G_vs, s, r, mutation_rate=mu)
 
             self.assertAllClose(ll_vs, ll)
             self.assertAllClose(phased_path_vs, path)
-

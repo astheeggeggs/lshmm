@@ -3,7 +3,6 @@ import numba as nb
 import numpy as np
 
 
-@nb.jit
 def check_alleles(alleles, m):
     """
     Checks the specified allele list and returns a list of lists
@@ -14,17 +13,17 @@ def check_alleles(alleles, m):
     num_sites.
     """
     if isinstance(alleles[0], str):
-        return [alleles for _ in range(m)]
+        return np.int8([len(alleles) for _ in range(m)])
     if len(alleles) != m:
         raise ValueError("Malformed alleles list")
-    return alleles
+    n_alleles = np.int8([(len(alleles_site)) for alleles_site in alleles])
+    return n_alleles
 
 
 @nb.jit
-def forwards_ls_hap(n, m, alleles, H, s, e, r, norm=True):
+def forwards_ls_hap(n, m, n_alleles, H, s, e, r, norm=True):
     """Matrix based haploid LS forward algorithm using numpy vectorisation."""
     # Initialise
-    alleles = check_alleles(alleles, m)
     F = np.zeros((m, n))
     r_n = r / n
 
@@ -69,10 +68,10 @@ def forwards_ls_hap(n, m, alleles, H, s, e, r, norm=True):
 
 
 @nb.jit
-def backwards_ls_hap(n, m, alleles, H, s, e, c, r):
+def backwards_ls_hap(n, m, n_alleles, H, s, e, c, r):
     """Matrix based haploid LS backward algorithm using numpy vectorisation."""
     # Initialise
-    alleles = check_alleles(alleles, m)
+    # alleles = check_alleles(alleles, m)
     B = np.zeros((m, n))
     for i in range(n):
         B[m - 1, i] = 1
@@ -92,4 +91,16 @@ def backwards_ls_hap(n, m, alleles, H, s, e, c, r):
             B[l, i] += (1 - r[l + 1]) * tmp_B[i]
             B[l, i] *= 1 / c[l + 1]
 
+    return B
+
+
+def forwards_ls_hap_wrapper(n, m, alleles, H, s, e, r, norm=True):
+    n_alleles = check_alleles(alleles, m)
+    F, c, ll = forwards_ls_hap(n, m, n_alleles, H, s, e, r, norm)
+    return F, c, ll
+
+
+def backwards_ls_hap_wrapper(n, m, alleles, H, s, e, c, r):
+    n_alleles = check_alleles(alleles, m)
+    B = backwards_ls_hap(n, m, n_alleles, H, s, e, c, r)
     return B
