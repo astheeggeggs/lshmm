@@ -10,7 +10,6 @@ import lshmm.forward_backward.fb_diploid_samples_variants as fbd_sv
 import lshmm.forward_backward.fb_diploid_variants_samples as fbd_vs
 import lshmm.forward_backward.fb_haploid_samples_variants as fbh_sv
 import lshmm.forward_backward.fb_haploid_variants_samples as fbh_vs
-
 import lshmm.vit_diploid_samples_variants as vd_sv
 import lshmm.vit_diploid_variants_samples as vd_vs
 import lshmm.vit_haploid_samples_variants as vh_sv
@@ -221,7 +220,7 @@ class FBAlgorithmBase(LSBase):
     """Base for forwards backwards algorithm tests."""
 
 
-# @pytest.mark.skip(reason="DEV: skip for time being")
+@pytest.mark.skip(reason="DEV: skip for time being")
 class TestNonTreeMethodsHap(FBAlgorithmBase):
     """Test that we compute the sample likelihoods across all implementations."""
 
@@ -287,7 +286,7 @@ class TestNonTreeMethodsHap(FBAlgorithmBase):
         self.assertAllClose(ll_vs, ll_sv)
 
 
-# @pytest.mark.skip(reason="DEV: skip for time being")
+@pytest.mark.skip(reason="DEV: skip for time being")
 class TestNonTreeMethodsDip(FBAlgorithmBase):
     """Test that we compute the sample likelihoods across all implementations."""
 
@@ -459,7 +458,7 @@ class VitAlgorithmBase(LSBase):
     """Base for viterbi algoritm tests."""
 
 
-# @pytest.mark.skip(reason="DEV: skip for time being")
+@pytest.mark.skip(reason="DEV: skip for time being")
 class TestNonTreeViterbiHap(VitAlgorithmBase):
     """Test that we have the same log-likelihood across all implementations"""
 
@@ -505,6 +504,21 @@ class TestNonTreeViterbiHap(VitAlgorithmBase):
                 n, m, H_vs, s, e_vs, r
             )
             path_tmp = vh_vs.backwards_viterbi_hap(m, V_tmp, P_tmp)
+            ll_check = vh_vs.path_ll_hap(n, m, H_vs, path_tmp, s, e_vs, r)
+            self.assertAllClose(ll_tmp, ll_check)
+            self.assertAllClose(ll_vs, ll_tmp)
+
+            (
+                V_tmp,
+                V_argmaxes_tmp,
+                recombs,
+                ll_tmp,
+            ) = vh_vs.forwards_viterbi_hap_lower_mem_rescaling_no_pointer(
+                n, m, H_vs, s, e_vs, r
+            )
+            path_tmp = vh_vs.backwards_viterbi_hap_no_pointer(
+                m, V_argmaxes_tmp, recombs
+            )
             ll_check = vh_vs.path_ll_hap(n, m, H_vs, path_tmp, s, e_vs, r)
             self.assertAllClose(ll_tmp, ll_check)
             self.assertAllClose(ll_vs, ll_tmp)
@@ -599,6 +613,19 @@ class TestNonTreeViterbiHap(VitAlgorithmBase):
         self.assertAllClose(ll_tmp, ll_check)
         self.assertAllClose(ll_vs, ll_tmp)
 
+        (
+            V_tmp,
+            V_argmaxes_tmp,
+            recombs,
+            ll_tmp,
+        ) = vh_vs.forwards_viterbi_hap_lower_mem_rescaling_no_pointer(
+            n, m, H_vs, s, e_vs, r
+        )
+        path_tmp = vh_vs.backwards_viterbi_hap_no_pointer(m, V_argmaxes_tmp, recombs)
+        ll_check = vh_vs.path_ll_hap(n, m, H_vs, path_tmp, s, e_vs, r)
+        self.assertAllClose(ll_tmp, ll_check)
+        self.assertAllClose(ll_vs, ll_tmp)
+
         # samples x variants
         V_sv, P_sv, ll_sv = vh_sv.forwards_viterbi_hap_naive(n, m, H_sv, s, e_sv, r)
         path_tmp = vh_sv.backwards_viterbi_hap(m, V_sv[:, m - 1], P_sv)
@@ -678,6 +705,31 @@ class TestNonTreeViterbiDip(VitAlgorithmBase):
             self.assertAllClose(ll_tmp, path_ll_tmp)
             self.assertAllClose(ll_vs, ll_tmp)
 
+            (
+                V_tmp,
+                V_argmaxes_tmp,
+                V_rowcol_maxes_tmp,
+                V_rowcol_argmaxes_tmp,
+                recombs_single,
+                recombs_double,
+                P_tmp,
+                ll_tmp,
+            ) = vd_vs.forwards_viterbi_dip_low_mem_no_pointer(n, m, G_vs, s, e_vs, r)
+            path_tmp = vd_vs.backwards_viterbi_dip_no_pointer(
+                m,
+                V_argmaxes_tmp,
+                V_rowcol_maxes_tmp,
+                V_rowcol_argmaxes_tmp,
+                recombs_single,
+                recombs_double,
+                V_tmp,
+                P_tmp,
+            )
+            phased_path_tmp = vd_vs.get_phased_path(n, path_tmp)
+            path_ll_tmp = vd_vs.path_ll_dip(n, m, G_vs, phased_path_tmp, s, e_vs, r)
+            self.assertAllClose(ll_tmp, path_ll_tmp)
+            self.assertAllClose(ll_vs, ll_tmp)
+
             V_tmp, P_tmp, ll_tmp = vd_vs.forwards_viterbi_dip_naive_vec(
                 n, m, G_vs, s, e_vs, r
             )
@@ -749,6 +801,31 @@ class TestNonTreeViterbiDip(VitAlgorithmBase):
             n, m, G_vs, s, e_vs, r
         )
         path_tmp = vd_vs.backwards_viterbi_dip(m, V_tmp, P_tmp)
+        phased_path_tmp = vd_vs.get_phased_path(n, path_tmp)
+        path_ll_tmp = vd_vs.path_ll_dip(n, m, G_vs, phased_path_tmp, s, e_vs, r)
+        self.assertAllClose(ll_tmp, path_ll_tmp)
+        self.assertAllClose(ll_vs, ll_tmp)
+
+        (
+            V_tmp,
+            V_argmaxes_tmp,
+            V_rowcol_maxes_tmp,
+            V_rowcol_argmaxes_tmp,
+            recombs_single,
+            recombs_double,
+            P_tmp,
+            ll_tmp,
+        ) = vd_vs.forwards_viterbi_dip_low_mem_no_pointer(n, m, G_vs, s, e_vs, r)
+        path_tmp = vd_vs.backwards_viterbi_dip_no_pointer(
+            m,
+            V_argmaxes_tmp,
+            V_rowcol_maxes_tmp,
+            V_rowcol_argmaxes_tmp,
+            recombs_single,
+            recombs_double,
+            V_tmp,
+            P_tmp,
+        )
         phased_path_tmp = vd_vs.get_phased_path(n, path_tmp)
         path_ll_tmp = vd_vs.path_ll_dip(n, m, G_vs, phased_path_tmp, s, e_vs, r)
         self.assertAllClose(ll_tmp, path_ll_tmp)

@@ -381,6 +381,40 @@ def forwards_viterbi_hap_lower_mem_rescaling(n, m, H, s, e, r):
     return V, P, ll
 
 
+@nb.jit
+def forwards_viterbi_hap_lower_mem_rescaling_no_pointer(n, m, H, s, e, r):
+    """LS haploid Viterbi algorithm with even smaller memory footprint and exploits the Markov process structure."""
+    # Initialise
+    V = np.zeros(n)
+    for i in range(n):
+        V[i] = 1 / n * e[0, np.int64(np.equal(H[0, i], s[0, 0]))]
+    r_n = r / n
+    c = np.ones(m)
+    recombs = [
+        set() for _ in range(m)
+    ]  # This is going to be filled with the templates we can recombine to that have higher prob than staying where we are.
+    V_argmaxes = np.zeros(m)
+
+    for j in range(1, m):
+        argmax = np.argmax(V)
+        V_argmaxes[j - 1] = argmax
+        c[j] = V[argmax]
+        V *= 1 / c[j]
+        for i in range(n):
+            V[i] = V[i] * (1 - r[j] + r_n[j])
+            if V[i] < r_n[j]:
+                V[i] = r_n[j]
+                recombs[j].add(
+                    i
+                )  # We add template i as a potential template to recombine to at site j.
+            V[i] *= e[j, np.int64(np.equal(H[j, i], s[0, j]))]
+
+    V_argmaxes[m - 1] = np.argmax(V)
+    ll = np.sum(np.log10(c)) + np.log10(np.max(V))
+
+    return V, V_argmaxes, recombs, ll
+
+
 # Speedier version, variants x samples
 @nb.jit
 def backwards_viterbi_hap(m, V_last, P):
@@ -392,6 +426,22 @@ def backwards_viterbi_hap(m, V_last, P):
 
     for j in range(m - 2, -1, -1):
         path[j] = P[j + 1, path[j + 1]]
+
+    return path
+
+
+@nb.jit
+def backwards_viterbi_hap_no_pointer(m, V_argmaxes, recombs):
+    """Run a backwards pass to determine the most likely path."""
+    # Initialise
+    path = np.zeros(m).astype(np.int64)
+    path[m - 1] = V_argmaxes[m - 1]
+
+    for j in range(m - 2, -1, -1):
+        current_best_template = path[j + 1]
+        if current_best_template in recombs[j + 1]:
+            current_best_template = V_argmaxes[j]
+        path[j] = current_best_template
 
     return path
 

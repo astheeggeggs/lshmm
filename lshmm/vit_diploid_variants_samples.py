@@ -378,6 +378,107 @@ def forwards_viterbi_dip_low_mem(n, m, G, s, e, r):
     return V, P, ll
 
 
+# @nb.njit
+def forwards_viterbi_dip_low_mem_no_pointer(n, m, G, s, e, r):
+    """LS diploid Viterbi algorithm, with reduced memory."""
+    # Initialise
+    V = np.zeros((n, n))
+    V_previous = np.zeros((n, n))
+    P = np.zeros((m, n, n)).astype(np.int64)
+    c = np.ones(m)
+    r_n = r / n
+    recombs_single = [set() for _ in range(m)]  # Store all single switch recombs
+    recombs_double = [set() for _ in range(m)]  # Store all double switch recombs
+    V_argmaxes = np.zeros(m)
+    V_rowcol_maxes = np.zeros((m, n))
+    V_rowcol_argmaxes = np.zeros((m, n))
+
+    for j1 in range(n):
+        for j2 in range(n):
+            index_tmp = (
+                4 * np.int64(np.equal(G[0, j1, j2], s[0, 0]))
+                + 2 * np.int64((G[0, j1, j2] == 1))
+                + np.int64(s[0, 0] == 1)
+            )
+            V_previous[j1, j2] = 1 / (n ** 2) * e[0, index_tmp]
+
+    # Diploid Viterbi, with smaller memory footprint, rescaling, and using the structure of the HMM.
+    for l in range(1, m):
+
+        index = (
+            4 * np.equal(G[l, :, :], s[0, l]).astype(np.int64)
+            + 2 * (G[l, :, :] == 1).astype(np.int64)
+            + np.int64(s[0, l] == 1)
+        )
+
+        c[l] = np.amax(V_previous)
+        argmax = np.argmax(V_previous)
+        V_argmaxes[l - 1] = argmax  # added
+
+        V_previous *= 1 / c[l]
+        V_rowcol_max = np_amax(V_previous, 0)
+        V_rowcol_maxes[l - 1, :] = V_rowcol_max
+        arg_rowcol_max = np_argmax(V_previous, 0)
+        V_rowcol_argmaxes[l - 1, :] = arg_rowcol_max
+
+        no_switch = (1 - r[l]) ** 2 + 2 * (r_n[l] * (1 - r[l])) + r_n[l] ** 2
+        single_switch = r_n[l] * (1 - r[l]) + r_n[l] ** 2
+        double_switch = r_n[l] ** 2
+
+        j1_j2 = 0
+
+        for j1 in range(n):
+            for j2 in range(n):
+
+                V_single_switch = max(V_rowcol_max[j1], V_rowcol_max[j2])
+                P_single_switch = np.argmax(
+                    np.array([V_rowcol_max[j1], V_rowcol_max[j2]])
+                )
+
+                if P_single_switch == 0:
+                    template_single_switch = j1 * n + arg_rowcol_max[j1]
+                else:
+                    template_single_switch = arg_rowcol_max[j2] * n + j2
+
+                V[j1, j2] = V_previous[j1, j2] * no_switch  # No switch in either
+                P[l, j1, j2] = j1_j2
+
+                # Single or double switch?
+                single_switch_tmp = single_switch * V_single_switch
+                if single_switch_tmp > double_switch:
+                    # Then single switch is the alternative
+                    if V[j1, j2] < single_switch * V_single_switch:
+                        V[j1, j2] = single_switch * V_single_switch
+                        P[l, j1, j2] = template_single_switch
+                        recombs_single[l].add(j1_j2)  # added
+                else:
+                    # Double switch is the alternative
+                    if V[j1, j2] < double_switch:
+                        V[j1, j2] = double_switch
+                        P[l, j1, j2] = argmax
+                        recombs_double[l].add(j1_j2)  # added
+
+                V[j1, j2] *= e[l, index[j1, j2]]
+                j1_j2 += 1
+        V_previous = np.copy(V)
+
+    V_argmaxes[m - 1] = np.argmax(V_previous)
+    V_rowcol_maxes[m - 1, :] = np.amax(V_previous, 0)
+    V_rowcol_argmaxes[m - 1, :] = np.argmax(V_previous, 0)
+    ll = np.sum(np.log10(c)) + np.log10(np.amax(V))
+
+    return (
+        V,
+        V_argmaxes,
+        V_rowcol_maxes,
+        V_rowcol_argmaxes,
+        recombs_single,
+        recombs_double,
+        P,
+        ll,
+    )
+
+
 # def forwards_viterbi_dip_naive_vec(n, m, G, s, e, r):
 
 #     # Initialise
@@ -518,6 +619,48 @@ def backwards_viterbi_dip(m, V_last, P):
     for j in range(m - 2, -1, -1):
         path[j] = P[j + 1, :, :].ravel()[path[j + 1]]
 
+    return path
+
+
+# @nb.jit
+def backwards_viterbi_dip_no_pointer(
+    m,
+    V_argmaxes,
+    V_rowcol_maxes,
+    V_rowcol_argmaxes,
+    recombs_single,
+    recombs_double,
+    V_last,
+    P,
+):
+    """Run a backwards pass to determine the most likely path."""
+    assert V_last.ndim == 2
+    assert V_last.shape[0] == V_last.shape[1]
+    # Initialisation
+    path = np.zeros(m).astype(np.int64)
+    # path2 = np.zeros(m).astype(np.int64)
+    path[m - 1] = np.argmax(V_last)
+    # path2[m - 1] = np.argmax(V_last)
+    n = V_last.shape[0]
+
+    # for j in range(m - 2, -1, -1):
+    #     path[j] = P[j + 1, :, :].ravel()[path[j + 1]]
+
+    # Backtrace
+    for j in range(m - 2, -1, -1):
+        current_best_template = path[j + 1]
+        if current_best_template in recombs_double[j + 1]:
+            current_best_template = V_argmaxes[j]
+        elif current_best_template in recombs_single[j + 1]:
+            (j1, j2) = divmod(current_best_template, n)
+            if V_rowcol_maxes[j, j1] > V_rowcol_maxes[j, j2]:
+                current_best_template = j1 * n + V_rowcol_argmaxes[j, j1]
+            else:
+                current_best_template = V_rowcol_argmaxes[j, j2] * n + j2
+        path[j] = current_best_template
+
+    # print(path)
+    # print(path2)
     return path
 
 
