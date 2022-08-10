@@ -477,10 +477,6 @@ class LsHmmAlgorithm:
             for site in self.tree.sites():
                 self.process_site(site, g[site.id])
 
-        print(self.output.double_recombination_required)
-        print(self.output.single_recombination_required)
-        print(self.T)
-        assert 0 == 1
         return self.output
 
     def compute_normalisation_factor_dict(self):
@@ -576,11 +572,81 @@ class ViterbiMatrix(CompressedMatrix):
         ]  # Tuple containing the site, the pair of nodes in the tree, and whether recombination is required
         self.single_recombination_required = [(-1, 0, 0, False)]
 
+    def add_single_recombination_required(self, site, node_s1, node_s2, required):
+        self.single_recombination_required.append((site, node_s1, node_s2, required))
+
     def add_double_recombination_required(self, site, node_s1, node_s2, required):
         self.double_recombination_required.append((site, node_s1, node_s2, required))
 
-    def add_single_recombination_required(self, site, node_s1, node_s2, required):
-        self.single_recombination_required.append((site, node_s1, node_s2, required))
+    # def choose_sample(self, site_id, tree):
+    #     max_value = -1
+    #     u = -1
+    #     for node, value in self.value_transitions[site_id]:
+    #         if value > max_value:
+    #             max_value = value
+    #             u = node
+    #     assert u != -1
+
+    #     transition_nodes = [u for (u, _) in self.value_transitions[site_id]]
+    #     while not tree.is_sample(u):
+    #         for v in tree.children(u):
+    #             if v not in transition_nodes:
+    #                 u = v
+    #                 break
+    #         else:
+    #             raise AssertionError("could not find path")
+    #     return u
+
+    # def traceback(self):
+    #     # Run the traceback.
+    #     m = self.ts.num_sites
+    #     match = np.zeros(m, dtype=int)
+
+    #     single_recombination_tree = np.zeros(self.ts.num_nodes, self.ts.num_nodes, dtype=int) - 1 # This'll need to change.
+    #     double_recombination_tree = np.zeros(self.ts.num_nodes, self.ts.num_nodes, dtype=int) - 1
+
+    #     tree = tskit.Tree(self.ts)
+    #     tree.last()
+    #     single_current_node = -1
+
+    #     rr_single_index = len(self.single_recombination_required) - 1
+    #     rr_double_index = len(self.double_recombination_required) - 1
+
+    #     for site in reversed(self.ts.sites()):
+    #         while tree.interval.left > site.position:
+    #             tree.prev()
+    #         assert tree.interval.left <= site.position < tree.interval.right
+
+    #         # Fill in the recombination single tree
+    #         j_single = rr_single_index
+    #         while self.single_recombination_required[j][0] == site.id:
+    #             u1, u2, required = self.single_recombination_required[j][1:]
+    #             single_recombination_tree[u1, u2] = required
+    #             j_single -= 1
+
+    #         if single_current_node == -1:
+    #             single_current_node = self.choose_sample(site.id, tree) # This needs to change, as we need to decide whether to single or double switch
+    #         match[site.id] = single_current_node # This needs to change to a tuple
+
+    #         # Now traverse up the tree from the current node. The first marked node
+    #         # we meet tells us whether we need to recombine.
+    #         u = single_current_node
+    #         while u != -1 and single_recombination_tree[u] == -1:
+    #             u = tree.parent(u)
+
+    #         assert u != -1
+    #         if recombination_tree[u] == 1:
+    #             # Need to switch at the next site.
+    #             single_current_node = -1
+    #         # Reset the nodes in the recombination tree.
+    #         j = rr_index
+    #         while self.recombination_required[j][0] == site.id:
+    #             u, required = self.recombination_required[j][1:]
+    #             recombination_tree[u] = -1
+    #             j -= 1
+    #         rr_index = j
+
+    #     return match
 
 
 class ViterbiAlgorithm(LsHmmAlgorithm):
@@ -676,11 +742,9 @@ class ViterbiAlgorithm(LsHmmAlgorithm):
                 p_t = double_switch
                 double_recombination_required = True
 
-        print("single recomb")
         self.output.add_single_recombination_required(
             site_id, node_1, node_2, single_recombination_required
         )
-        print("double recomb")
         self.output.add_double_recombination_required(
             site_id, node_1, node_2, double_recombination_required
         )

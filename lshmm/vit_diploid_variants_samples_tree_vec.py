@@ -515,6 +515,21 @@ class CompressedMatrix:
 class ViterbiMatrix(CompressedMatrix):
     """Class representing the compressed Viterbi matrix."""
 
+    def __init__(self, ts):
+        super().__init__(ts)
+        self.double_recombination_required = [
+            (-1, 0, 0, False)
+        ]  # Tuple containing the site, the pair of nodes in the tree, and whether recombination is required
+        self.single_recombination_required = [(-1, 0, 0, False)]
+
+    def add_single_recombination_required(self, site, node_s1, leaf_s2, required):
+        # Note that here, the second entry is an element of the internal value transition, representing the leaf on the other tree.
+        self.single_recombination_required.append((site, node_s1, leaf_s2, required))
+
+    def add_double_recombination_required(self, site, node_s1, leaf_s2, required):
+        # Note that here, the second entry is an element of the internal value transition, representing the leaf on the other tree.
+        self.double_recombination_required.append((site, node_s1, leaf_s2, required))
+
 
 class ViterbiAlgorithm(LsHmmAlgorithm):
     """
@@ -593,15 +608,28 @@ class ViterbiAlgorithm(LsHmmAlgorithm):
         single_switch_tmp = [single_switch * ss for ss in V_single_switch]
 
         for j2 in range(n):
+
+            double_recombination_required = False
+            single_recombination_required = False
+
             # Single or double switch?
             if single_switch_tmp[j2] > double_switch:
                 # Then single switch is the alternative
                 if p_t[j2] < single_switch * V_single_switch[j2]:
                     p_t[j2] = single_switch * V_single_switch[j2]
+                    single_recombination_required = True
             else:
                 # Double switch is the alternative
                 if p_t[j2] < double_switch:
                     p_t[j2] = double_switch
+                    double_recombination_required = True
+
+            self.output.add_single_recombination_required(
+                site_id, node, j2, single_recombination_required
+            )
+            self.output.add_double_recombination_required(
+                site_id, node, j2, double_recombination_required
+            )
 
         return p_t * p_e
 
