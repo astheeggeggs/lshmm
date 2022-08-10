@@ -427,6 +427,7 @@ class LsHmmAlgorithm:
                             match,
                             template_is_het,
                             query_is_het,
+                            u1,
                             u2,
                         )
 
@@ -476,6 +477,10 @@ class LsHmmAlgorithm:
             for site in self.tree.sites():
                 self.process_site(site, g[site.id])
 
+        print(self.output.double_recombination_required)
+        print(self.output.single_recombination_required)
+        print(self.T)
+        assert 0 == 1
         return self.output
 
     def compute_normalisation_factor_dict(self):
@@ -489,7 +494,8 @@ class LsHmmAlgorithm:
         is_match,
         template_is_het,
         query_is_het,
-        node,
+        node_1,
+        node_2,
     ):
         raise NotImplementedError()
 
@@ -559,7 +565,22 @@ class CompressedMatrix:
 
 
 class ViterbiMatrix(CompressedMatrix):
-    """Class representing the compressed Viterbi matrix."""
+    """
+    Class representing the compressed Viterbi matrix.
+    """
+
+    def __init__(self, ts):
+        super().__init__(ts)
+        self.double_recombination_required = [
+            (-1, 0, 0, False)
+        ]  # Tuple containing the site, the pair of nodes in the tree, and whether recombination is required
+        self.single_recombination_required = [(-1, 0, 0, False)]
+
+    def add_double_recombination_required(self, site, node_s1, node_s2, required):
+        self.double_recombination_required.append((site, node_s1, node_s2, required))
+
+    def add_single_recombination_required(self, site, node_s1, node_s2, required):
+        self.single_recombination_required.append((site, node_s1, node_s2, required))
 
 
 class ViterbiAlgorithm(LsHmmAlgorithm):
@@ -604,12 +625,16 @@ class ViterbiAlgorithm(LsHmmAlgorithm):
         is_match,
         template_is_het,
         query_is_het,
-        node,
+        node_1,
+        node_2,
     ):
         r = self.rho[site_id]
         mu = self.mu[site_id]
         n = self.ts.num_samples
         r_n = r / n
+
+        double_recombination_required = False
+        single_recombination_required = False
 
         template_is_hom = np.logical_not(template_is_het)
         query_is_hom = np.logical_not(query_is_het)
@@ -644,10 +669,21 @@ class ViterbiAlgorithm(LsHmmAlgorithm):
             # Then single switch is the alternative
             if p_t < single_switch * V_single_switch:
                 p_t = single_switch * V_single_switch
+                single_recombination_required = True
         else:
             # Double switch is the alternative
             if p_t < double_switch:
                 p_t = double_switch
+                double_recombination_required = True
+
+        print("single recomb")
+        self.output.add_single_recombination_required(
+            site_id, node_1, node_2, single_recombination_required
+        )
+        print("double recomb")
+        self.output.add_double_recombination_required(
+            site_id, node_1, node_2, double_recombination_required
+        )
 
         return p_t * p_e
 

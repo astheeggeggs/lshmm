@@ -1130,7 +1130,7 @@ class TestTreeViterbiHap(VitAlgorithmBase):
             self.assertAllClose(ll_vs, ll_check)
 
 
-@pytest.mark.skip(reason="DEV: skip for time being")
+# @pytest.mark.skip(reason="DEV: skip for time being")
 class TestTreeViterbiDip(VitAlgorithmBase):
     """Test that we have the same log-likelihood between tree and matrix implementations"""
 

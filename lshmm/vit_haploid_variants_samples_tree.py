@@ -338,7 +338,9 @@ class ViterbiMatrix(CompressedMatrix):
 
     def __init__(self, ts):
         super().__init__(ts)
-        self.recombination_required = [(-1, 0, False)]
+        self.recombination_required = [
+            (-1, 0, False)
+        ]  # Tuple containing the site, the node in the tree, and whether recombination is required
 
     def add_recombination_required(self, site, node, required):
         self.recombination_required.append((site, node, required))
