@@ -142,7 +142,7 @@ def forwards(
         recombination_rate,
         scale_mutation_based_on_n_alleles,
     )
-    # Check alleles should go in here, and mofify e before passing to the algorithm
+    # Check alleles should go in here, and modify e before passing to the algorithm
     # If alleles is not passed, we don't perform a test of alleles, but set n_alleles based on the reference_panel.
 
     if alleles is None:

@@ -21,6 +21,7 @@ BOTH_HET = 7
 REF_HOM_OBS_HET = 1
 REF_HET_OBS_HOM = 2
 
+import numba as nb
 import tskit
 
 
@@ -712,7 +713,7 @@ class TestNonTreeViterbiDip(VitAlgorithmBase):
                 V_rowcol_argmaxes_tmp,
                 recombs_single,
                 recombs_double,
-                P_tmp,
+                # P_tmp,
                 ll_tmp,
             ) = vd_vs.forwards_viterbi_dip_low_mem_no_pointer(n, m, G_vs, s, e_vs, r)
             path_tmp = vd_vs.backwards_viterbi_dip_no_pointer(
@@ -720,10 +721,9 @@ class TestNonTreeViterbiDip(VitAlgorithmBase):
                 V_argmaxes_tmp,
                 V_rowcol_maxes_tmp,
                 V_rowcol_argmaxes_tmp,
-                recombs_single,
-                recombs_double,
+                nb.typed.List(recombs_single),
+                nb.typed.List(recombs_double),
                 V_tmp,
-                P_tmp,
             )
             phased_path_tmp = vd_vs.get_phased_path(n, path_tmp)
             path_ll_tmp = vd_vs.path_ll_dip(n, m, G_vs, phased_path_tmp, s, e_vs, r)
@@ -813,7 +813,6 @@ class TestNonTreeViterbiDip(VitAlgorithmBase):
             V_rowcol_argmaxes_tmp,
             recombs_single,
             recombs_double,
-            P_tmp,
             ll_tmp,
         ) = vd_vs.forwards_viterbi_dip_low_mem_no_pointer(n, m, G_vs, s, e_vs, r)
         path_tmp = vd_vs.backwards_viterbi_dip_no_pointer(
@@ -821,10 +820,9 @@ class TestNonTreeViterbiDip(VitAlgorithmBase):
             V_argmaxes_tmp,
             V_rowcol_maxes_tmp,
             V_rowcol_argmaxes_tmp,
-            recombs_single,
-            recombs_double,
+            nb.typed.List(recombs_single),
+            nb.typed.List(recombs_double),
             V_tmp,
-            P_tmp,
         )
         phased_path_tmp = vd_vs.get_phased_path(n, path_tmp)
         path_ll_tmp = vd_vs.path_ll_dip(n, m, G_vs, phased_path_tmp, s, e_vs, r)
