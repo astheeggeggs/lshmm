@@ -435,6 +435,10 @@ class LsHmmAlgorithm:
             self.update_tree()
             for site in self.tree.sites():
                 self.process_site(site, g[site.id])
+                # A, B = self.decode_site()
+                # print(A)
+                # print(B)
+                # assert 0 == 1
         return self.output
 
     def compute_normalisation_factor(self):
@@ -529,6 +533,214 @@ class ViterbiMatrix(CompressedMatrix):
     def add_double_recombination_required(self, site, node_s1, leaf_s2, required):
         # Note that here, the second entry is an element of the internal value transition, representing the leaf on the other tree.
         self.double_recombination_required.append((site, node_s1, leaf_s2, required))
+
+    def choose_sample_double(self, site_id, tree):
+        max_value = -1
+        u1 = -1
+        # Note, in this initial vector version, u2 is not compressed, so we can just read it off.
+        # print(self.value_transitions[site_id])
+        # print(tree.draw_text())
+        for node, value in self.value_transitions[site_id]:
+            u2_tmp = np.argmax(value)
+            # print(u2_tmp)
+            value_tmp = value[u2_tmp]
+            if value_tmp > max_value:
+                max_value = value_tmp
+                u1 = node
+                u2 = u2_tmp
+        assert u1 != -1
+
+        transition_nodes = [u_tmp for (u_tmp, _) in self.value_transitions[site_id]]
+        # print(u1)
+        while not tree.is_sample(u1):
+            for v in tree.children(u1):
+                if v not in transition_nodes:
+                    u1 = v
+                    # print(u1)
+                    break
+            else:
+                raise AssertionError("could not find path")
+        # print(f"({u1}, {u2})")
+        return (u1, u2)
+
+    def choose_sample_single(self, site_id, tree, current_nodes):
+
+        # I want to find which is the max between any choice if I switch just u1, and any choice if I switch just u2.
+        node_map = {st[0]: st for st in self.value_transitions[site_id]}
+        to_compute = np.zeros(
+            2, dtype=int
+        )  # We have two to compute - one for each single switch set of possibilities.
+
+        u1 = current_nodes[0]
+        u2 = current_nodes[1]
+
+        for i, v in enumerate(current_nodes):  # (u1, u2)
+            while v not in node_map:
+                v = tree.parent(v)
+            to_compute[i] = v
+
+        # Need to go to the (j1 :)th entries, and the (:,j2)the entries, and pick the best.
+        # print(to_compute)
+        # print(tree.draw_text())
+
+        T_index = np.zeros(self.ts.num_nodes, dtype=int) - 1
+        for j, st in enumerate(self.value_transitions[site_id]):
+            T_index[st[0]] = j
+
+        node_single_switch_maxes = [
+            np.argmax(self.value_transitions[site_id][T_index[node]][1])
+            for node in to_compute
+        ]
+        # print(node_single_switch_maxes)
+        single_switch = [
+            np.max(self.value_transitions[site_id][T_index[node]][1])
+            for node in to_compute
+        ]
+        # print(f"u1: {u1} -> to_compute {to_compute[0]}")
+        # print(f"u2: {u2} -> to_compute {to_compute[1]}")
+        # print(tree.draw_text())
+        # print(self.value_transitions[site_id])
+        # print(single_switch)
+        # print(node_single_switch_maxes)
+        # print([np.max(self.value_transitions[site_id][T_index[node]][1]) for node in range(self.ts.num_samples)])
+
+        # In this case, we have a vector of leaves, so don't need to worry about traversing up or down.
+        # print(np.argmax(single_switch))
+        if np.argmax(single_switch) == 0:
+            # u1 is fixed, and we switch u2.
+            current_nodes = (u1, node_single_switch_maxes[0])
+        else:
+            # u2 is fixed, and we switch u1.
+            current_nodes = (node_single_switch_maxes[1], u2)
+
+        return current_nodes
+
+    def traceback(self):
+        # Run the traceback.
+        m = self.ts.num_sites
+        n = self.ts.num_samples
+        match = np.zeros((m, 2), dtype=int)
+
+        single_recombination_tree = np.zeros((self.ts.num_nodes, n), dtype=int) - 1
+        double_recombination_tree = np.zeros((self.ts.num_nodes, n), dtype=int) - 1
+
+        tree = tskit.Tree(self.ts)
+        tree.last()
+        double_switch = True
+        current_nodes = (-1, -1)
+        current_node_outer = current_nodes[0]
+
+        # print("bam")
+        # print(self.single_recombination_required)
+        # print("double")
+        # print(self.double_recombination_required)
+
+        # print(self.decode())
+        # print(self.value_transitions)
+
+        rr_single_index = len(self.single_recombination_required) - 1
+        rr_double_index = len(self.double_recombination_required) - 1
+
+        for site in reversed(self.ts.sites()):
+            # print(current_nodes)
+            while tree.interval.left > site.position:
+                tree.prev()
+            assert tree.interval.left <= site.position < tree.interval.right
+
+            # Fill in the recombination single tree
+            j_single = rr_single_index  # This starts from the end of all the recombination required information, and includes all the information for the current site.
+            while self.single_recombination_required[j_single][0] == site.id:
+                u1, u2, required = self.single_recombination_required[j_single][1:]
+                single_recombination_tree[u1, u2] = required
+                j_single -= 1
+
+            # Fill in the recombination double tree
+            j_double = rr_double_index  # This starts from the end of all the recombination required information, and includes all the information for the current site.
+            while self.double_recombination_required[j_double][0] == site.id:
+                u1, u2, required = self.double_recombination_required[j_double][1:]
+                double_recombination_tree[u1, u2] = required
+                j_double -= 1
+
+            # Note - current nodes are the leaf nodes.
+            if current_node_outer == -1:
+                if double_switch:
+                    # print("unsure, double switch")
+                    current_nodes = self.choose_sample_double(site.id, tree)
+                    # print("switched")
+                    # print(current_nodes)
+                else:
+                    # print("unsure, single switch")
+                    # print(single_recombination_tree[u1,:])
+                    # print(tree.draw_text())
+                    # print("decode site")
+                    # print(self.decode_site(tree, site.id))
+                    # print(f"switched from {current_nodes}")
+                    current_nodes = self.choose_sample_single(
+                        site.id, tree, current_nodes
+                    )
+                    # print(f"to {current_nodes}")
+
+            match[site.id, :] = current_nodes
+
+            # Now traverse up the tree from the current node. The first marked node
+            # we meet tells us whether we need to recombine.
+            current_node_outer = current_nodes[0]
+            u1 = current_node_outer
+            u2 = current_nodes[1]
+
+            # print(double_recombination_tree)
+            # print(single_recombination_tree)
+
+            # Just need to move up the tree to evaluate u1. u2 is fixed (it must be a leaf).
+            if double_switch:
+                while (
+                    u1 != -1 and double_recombination_tree[u1, 0] == -1
+                ):  # If the first entry is -1, all of them are.
+                    u1 = tree.parent(u1)
+            else:
+                while (
+                    u1 != -1 and single_recombination_tree[u1, 0] == -1
+                ):  # If the first entry is -1, all of them are.
+                    u1 = tree.parent(u1)
+
+            assert u1 != -1
+
+            # print(double_recombination_tree[u1])
+            if double_recombination_tree[u1, u2] == 1:
+                # Need to switch at the next site.
+                current_node_outer = -1
+                double_switch = True
+            elif single_recombination_tree[u1, u2] == 1:
+                # Need to single switch at the next site
+                # print("decided single switch at previous position")
+                # print(u2)
+                # print(single_recombination_tree[u1,:])
+                current_node_outer = -1
+                double_switch = False
+
+            # Reset the nodes in the double recombination tree.
+            j = rr_single_index
+            while self.single_recombination_required[j][0] == site.id:
+                u1_tmp, u2_tmp, _ = self.single_recombination_required[j][1:]
+                single_recombination_tree[u1_tmp, u2_tmp] = -1
+                j -= 1
+            rr_single_index = j
+
+            # Reset the nodes in the single recombination tree.
+            j = rr_double_index
+            while self.double_recombination_required[j][0] == site.id:
+                u1_tmp, u2_tmp, _ = self.double_recombination_required[j][1:]
+                double_recombination_tree[u1_tmp, u2_tmp] = -1
+                j -= 1
+            rr_double_index = j
+
+            # single_recombination_tree = np.zeros((self.ts.num_nodes, n), dtype=int) - 1 # This'll need to change.
+            # double_recombination_tree = np.zeros((self.ts.num_nodes, n), dtype=int) - 1
+
+        # print(single_recombination_tree)
+        # print(double_recombination_tree)
+
+        return match
 
 
 class ViterbiAlgorithm(LsHmmAlgorithm):

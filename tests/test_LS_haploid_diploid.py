@@ -27,8 +27,7 @@ BOTH_HET = 7
 REF_HOM_OBS_HET = 1
 REF_HET_OBS_HOM = 2
 
-import contextlib
-
+import numba as nb
 import tskit
 
 
@@ -1149,18 +1148,73 @@ class TestTreeViterbiDip(VitAlgorithmBase):
             ts_check = ts.simplify(range(1, n + 1), filter_sites=False)
             V, P, ll_vs = vd_vs.forwards_viterbi_dip_low_mem(n, m, G_check, s, e_vs, r)
 
+            # Matrix version to get the path
+            (
+                V_no_pointer,
+                V_argmaxes,
+                V_rowcol_maxes,
+                V_rowcol_argmaxes,
+                recombs_single,
+                recombs_double,
+                ll_vs_no_pointer,
+            ) = vd_vs.forwards_viterbi_dip_low_mem_no_pointer(n, m, G_check, s, e_vs, r)
+            path = vd_vs.backwards_viterbi_dip_no_pointer(
+                m,
+                V_argmaxes,
+                V_rowcol_maxes,
+                V_rowcol_argmaxes,
+                nb.typed.List(recombs_single),
+                nb.typed.List(recombs_double),
+                V_no_pointer,
+            )
+            phased_path = vd_vs.get_phased_path(n, path)
+            path_ll_matrix = vd_vs.path_ll_dip(n, m, G_check, phased_path, s, e_vs, r)
+
             cm_v = vd_vstv.ls_viterbi_tree(s[0, :], ts_check, r, mu)
             V_v = cm_v.decode()
             ll_tree_vec = np.sum(np.log10(cm_v.normalisation_factor))
 
-            cm_d = vd_vstd.ls_viterbi_tree(s[0, :], ts_check, r, mu)
-            ll_tree_dict = np.sum(np.log10(cm_d.normalisation_factor))
-            V_d = cm_v.decode()
+            # Attempt to get the path
+            path_tree_vec = cm_v.traceback()
+            # Work out the likelihood of the proposed path
+            path_ll_vsv = vd_vs.path_ll_dip(
+                n, m, G_check, np.transpose(path_tree_vec), s, e_vs, r
+            )
 
+            cm_d = vd_vstd.ls_viterbi_tree(s[0, :], ts_check, r, mu)
+            V_d = cm_d.decode()
+            ll_tree_dict = np.sum(np.log10(cm_d.normalisation_factor))
+
+            # Attempt to get the path
+            path_tree_dict = cm_d.traceback()
+            # Work out the likelihood of the proposed path
+            path_ll_vsd = vd_vs.path_ll_dip(
+                n, m, G_check, np.transpose(path_tree_dict), s, e_vs, r
+            )
+
+            print(path_ll_vsd)
+            print(ll_tree_dict)
             self.assertAllClose(V_d, V_v)
-            # self.assertAllClose(V, V_d)
 
             self.assertAllClose(ll_vs, ll_tree_vec)
             self.assertAllClose(ll_vs, ll_tree_dict)
 
             # Last piece to include is the traceback in the diploid case.
+            # print("likelihood of the proposed path")
+            # print(path_ll_vs)
+            # print("likelihood that it should be")
+            # print(ll_tree_vec)
+
+            # print("original phased path")
+            # print(phased_path[0])
+            # print(phased_path[1])
+
+            path_ll_vs_check = vd_vs.path_ll_dip(n, m, G_check, phased_path, s, e_vs, r)
+            # print(path_ll_vs_check)
+
+            # print("tree vector path")
+            # print(np.transpose(path_tree_vec)[0,:])
+            # print(np.transpose(path_tree_vec)[1,:])
+
+            self.assertAllClose(path_ll_vsv, ll_tree_vec)
+            self.assertAllClose(path_ll_vsd, ll_tree_vec)
