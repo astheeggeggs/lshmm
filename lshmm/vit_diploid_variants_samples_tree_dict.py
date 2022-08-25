@@ -583,8 +583,6 @@ class ViterbiMatrix(CompressedMatrix):
         u1 = -1
         u2 = -1
 
-        print(self.value_transitions[site_id])
-        print(tree.draw_text())
         for node_s1, value_outer in self.value_transitions[site_id]:
             for value_list in value_outer:
                 value_tmp = value_list
@@ -614,19 +612,14 @@ class ViterbiMatrix(CompressedMatrix):
             else:
                 raise AssertionError("could not find path")
 
-        print(f"({u1}, {u2})")
         return (u1, u2)
 
     def choose_sample_single(self, site_id, tree, current_nodes):
-
         # I want to find which is the max between any choice if I switch just u1, and any choice if I switch just u2.
         node_map = {st[0]: st for st in self.value_transitions[site_id]}
         to_compute = (
             np.zeros(2, dtype=int) - 1
         )  # We have two to compute - one for each single switch set of possibilities.
-
-        u1 = current_nodes[0]
-        u2 = current_nodes[1]
 
         for i, v in enumerate(current_nodes):  # (u1, u2)
             while v not in node_map:
@@ -634,24 +627,15 @@ class ViterbiMatrix(CompressedMatrix):
             to_compute[i] = v
 
         # Need to go to the (j1 :)th entries, and the (:,j2)the entries, and pick the best.
-        print("to compute")
-        print(to_compute)
-        # print(tree.draw_text())
-
         T_index = np.zeros(self.ts.num_nodes, dtype=int) - 1
         for j, st in enumerate(self.value_transitions[site_id]):
             T_index[st[0]] = j
-
-        # print(T_index)
-        # print(self.value_transitions[site_id])
 
         node_single_switch_maxes = np.zeros(2, dtype=int) - 1
         single_switch = np.zeros(2) - 1
 
         for i, node in enumerate(to_compute):
             value_list = self.value_transitions[site_id][T_index[node]][1]
-            # print("value list")
-            # print(value_list)
             s_inner = 0
             for st in value_list:
                 j = st.tree_node
@@ -664,50 +648,34 @@ class ViterbiMatrix(CompressedMatrix):
             node_single_switch_maxes[i] = s_arg
             single_switch[i] = s_inner
 
-        print(f"u1: {u1} -> to_compute {to_compute[0]}")
-        print(f"u2: {u2} -> to_compute {to_compute[1]}")
-        # print(self.value_transitions[site_id])
-        print(single_switch)
-        print(node_single_switch_maxes)
-
-        print(np.argmax(single_switch))
         if np.argmax(single_switch) == 0:
             # u1 is fixed, and we switch u2
+            u1 = current_nodes[0]
             current_nodes = (u1, node_single_switch_maxes[0])
         else:
             # u2 is fixed, and we switch u1.
+            u2 = current_nodes[1]
             current_nodes = (node_single_switch_maxes[1], u2)
 
-        print(current_nodes)
         u1 = current_nodes[0]
         u2 = current_nodes[1]
 
         # Find the collection of transition nodes to use to descend down the tree
         transition_nodes = [u for (u, _) in self.value_transitions[site_id]]
 
-        print(transition_nodes)
-        print(tree.draw_text())
-
         # Traverse down to find a leaves.
         while not tree.is_sample(u1):
-            print(u1)
             for v in tree.children(u1):
                 if v not in transition_nodes:
                     u1 = v
-                    print(u1)
                     break
             else:
                 raise AssertionError("could not find path")
 
-        print(f"found u1: {u1}")
         while not tree.is_sample(u2):
-            print(u2)
-            print(tree.children(u2))
             for v in tree.children(u2):
-                print(v)
                 if v not in transition_nodes:
                     u2 = v
-                    print(u2)
                     break
             else:
                 raise AssertionError("could not find path")
@@ -739,7 +707,6 @@ class ViterbiMatrix(CompressedMatrix):
         rr_double_index = len(self.double_recombination_required) - 1
 
         for site in reversed(self.ts.sites()):
-            # print(current_nodes)
             while tree.interval.left > site.position:
                 tree.prev()
             assert tree.interval.left <= site.position < tree.interval.right
@@ -761,21 +728,11 @@ class ViterbiMatrix(CompressedMatrix):
             # Note - current nodes are the leaf nodes.
             if current_node_outer == -1:
                 if double_switch:
-                    print("unsure, double switch")
                     current_nodes = self.choose_sample_double(site.id, tree)
-                    print("switched")
-                    print(current_nodes)
                 else:
-                    print("unsure, single switch")
-                    # print(single_recombination_tree[u1,:])
-                    # print(tree.draw_text())
-                    print("decode site")
-                    print(self.decode_site_dict(tree, site.id))
-                    print(f"switched from {current_nodes}")
                     current_nodes = self.choose_sample_single(
                         site.id, tree, current_nodes
                     )
-                    print(f"to {current_nodes}")
 
             match[site.id, :] = current_nodes
 
@@ -785,10 +742,7 @@ class ViterbiMatrix(CompressedMatrix):
             u1 = current_node_outer
             u2 = current_nodes[1]
 
-            # print(double_recombination_tree)
-            # print(single_recombination_tree)
-
-            # Just need to move up the tree to evaluate u1. u2 is fixed (it must be a leaf).
+            # Just need to move up the tree to evaluate u1 and u2.
             if double_switch:
                 while u1 != -1 and double_recombination_tree[u1, u1] == -1:
                     u1 = tree.parent(u1)
@@ -802,24 +756,15 @@ class ViterbiMatrix(CompressedMatrix):
                 while u2 != -1 and single_recombination_tree[u1, u2] == -1:
                     u2 = tree.parent(u2)
 
-            # print(u1)
-            # print(u2)
             assert u1 != -1
             assert u2 != -1
 
-            # print(site.id)
-            # print(double_recombination_tree[u1, u2])
-            # print(single_recombination_tree[u1, u2])
-            # print(current_node_outer)
             if double_recombination_tree[u1, u2] == 1:
-                # Need to switch at the next site.
+                # Need to double switch at the next site.
                 current_node_outer = -1
                 double_switch = True
             elif single_recombination_tree[u1, u2] == 1:
                 # Need to single switch at the next site
-                # print("decided single switch at previous position")
-                # print(u2)
-                # print(single_recombination_tree[u1,:])
                 current_node_outer = -1
                 double_switch = False
 
@@ -838,18 +783,6 @@ class ViterbiMatrix(CompressedMatrix):
                 double_recombination_tree[u1_tmp, u2_tmp] = -1
                 j -= 1
             rr_double_index = j
-
-            single_recombination_tree = (
-                np.zeros((self.ts.num_nodes, self.ts.num_nodes), dtype=int) - 1
-            )  # This'll need to change.
-            double_recombination_tree = (
-                np.zeros((self.ts.num_nodes, self.ts.num_nodes), dtype=int) - 1
-            )
-
-        # print(single_recombination_tree)
-        # print(double_recombination_tree)
-        print("reached the end!")
-        print(np.transpose(match))
 
         return match
 
