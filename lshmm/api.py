@@ -225,11 +225,15 @@ def forwards(
     )
 
     if ploidy == 1:
-        forward_pass = forwards_ls_hap
+        forward_function = forwards_ls_hap
     else:
-        forward_pass = forward_ls_dip_loop
+        forward_function = forward_ls_dip_loop
 
-    (forward_array, normalisation_factor_from_forward, log_likelihood) = forward_pass(
+    (
+        forward_array,
+        normalisation_factor_from_forward,
+        log_likelihood,
+    ) = forward_function(
         n, m, reference_panel, query, emissions, recombination_rate, norm=True
     )
 
@@ -269,11 +273,11 @@ def backwards(
     )
 
     if ploidy == 1:
-        backward_pass = backwards_ls_hap
+        backward_function = backwards_ls_hap
     else:
-        backward_pass = backward_ls_dip_loop
+        backward_function = backward_ls_dip_loop
 
-    backwards_array = backward_pass(
+    backwards_array = backward_function(
         n,
         m,
         reference_panel,
@@ -318,11 +322,11 @@ def viterbi(
     )
 
     if ploidy == 1:
-        viterbi_forward_backward = viterbi_hap
+        viterbi_function = viterbi_hap
     else:
-        viterbi_forward_backward = viterbi_dip
+        viterbi_function = viterbi_dip
 
-    most_likely_path, log_likelihood = viterbi_forward_backward(
+    most_likely_path, log_likelihood = viterbi_function(
         n, m, reference_panel, query, emissions, recombination_rate
     )
 
@@ -359,15 +363,12 @@ def path_ll(
     )
 
     if ploidy == 1:
-        viterbi = viterbi_hap
+        path_ll_function = path_ll_hap
     else:
-        viterbi = viterbi_dip
+        path_ll_function = path_ll_dip
 
-    if ploidy == 1:
-        path_ll = path_ll_hap
-    else:
-        path_ll = path_ll_dip
-
-    ll = path_ll(n, m, reference_panel, path, query, emissions, recombination_rate)
+    ll = path_ll_function(
+        n, m, reference_panel, path, query, emissions, recombination_rate
+    )
 
     return ll
