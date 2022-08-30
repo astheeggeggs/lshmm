@@ -309,7 +309,7 @@ def backwards(
     else:
         # Diploid
         # Evaluate emission probabilities here, using the mutation rate - this can take a scalar or vector.
-        # DEV: there's a wrinkle here.
+        # DEV: there's a wrinkle here - multiallelics not yet done.
         e = np.zeros((m, 8))
         e[:, EQUAL_BOTH_HOM] = (1 - mutation_rate) ** 2
         e[:, UNEQUAL_BOTH_HOM] = mutation_rate ** 2
@@ -418,7 +418,7 @@ def viterbi(
     else:
         # Diploid
         # Evaluate emission probabilities here, using the mutation rate - this can take a scalar or vector.
-        # DEV: there's a wrinkle here.
+        # DEV: there's a wrinkle here - multiallelics not yet done.
         e = np.zeros((m, 8))
         e[:, EQUAL_BOTH_HOM] = (1 - mutation_rate) ** 2
         e[:, UNEQUAL_BOTH_HOM] = mutation_rate ** 2

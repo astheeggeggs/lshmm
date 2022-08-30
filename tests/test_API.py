@@ -44,7 +44,7 @@ class LSBase:
         e = np.zeros((m, 8))
         e[:, EQUAL_BOTH_HOM] = (1 - mu) ** 2
         e[:, UNEQUAL_BOTH_HOM] = mu ** 2
-        e[:, BOTH_HET] = 1 - mu
+        e[:, BOTH_HET] = (1 - mu) ** 2 + mu ** 2
         e[:, REF_HOM_OBS_HET] = 2 * mu * (1 - mu)
         e[:, REF_HET_OBS_HOM] = mu * (1 - mu)
 
@@ -203,7 +203,6 @@ class FBAlgorithmBase(LSBase):
     """Base for forwards backwards algorithm tests."""
 
 
-# @pytest.mark.skip(reason="DEV: skip for time being")
 class TestMethodsHap(FBAlgorithmBase):
     """Test that we compute the sample likelihoods across all implementations."""
 
@@ -221,7 +220,6 @@ class TestMethodsHap(FBAlgorithmBase):
             B = ls.backwards(H_vs, s, c, r, mu)
 
 
-# @pytest.mark.skip(reason="DEV: skip for time being")
 class TestMethodsDip(FBAlgorithmBase):
     """Test that we compute the sample likelihoods across all implementations."""
 
@@ -243,7 +241,6 @@ class VitAlgorithmBase(LSBase):
     """Base for viterbi algoritm tests."""
 
 
-# @pytest.mark.skip(reason="DEV: skip for time being")
 class TestViterbiHap(VitAlgorithmBase):
     """Test that we have the same log-likelihood across all implementations"""
 
@@ -260,7 +257,6 @@ class TestViterbiHap(VitAlgorithmBase):
             self.assertAllClose(path_vs, path)
 
 
-# @pytest.mark.skip(reason="DEV: skip for time being")
 class TestViterbiDip(VitAlgorithmBase):
     """Test that we have the same log-likelihood across all implementations"""
 

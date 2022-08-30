@@ -2,49 +2,13 @@
 import numba as nb
 import numpy as np
 
-# def forwards_ls_hap(n, m, H, s, e, r, norm=True):
-#     '''
-#     Simple matrix based method for LS forward algorithm using numpy vectorisation.
-#     '''
 
-#     # Initialise
-#     F = np.zeros((m,n))
-#     c = np.ones(m)
-#     F[0,:] = 1/n * e[0, np.equal(H[0, :], s[0,0]).astype(np.int64)]
-#     r_n = r/n
-
-#     if norm:
-
-#         c[0] = np.sum(F[0,:])
-#         F[0,:] *= 1/c[0]
-
-#         # Forwards pass
-#         for l in range(1,m):
-#             F[l,:] = F[l-1,:] * (1 - r[l]) + r_n[l]  # Don't need to multiply by r_n[l] F[:,l-1] as we've normalised.
-#             F[l,:] *= e[l,np.equal(H[l,:], s[0,l]).astype(np.int64)]
-#             c[l] = np.sum(F[l,:])
-#             F[l,:] *= 1/c[l]
-
-#         ll = np.sum(np.log10(c))
-
-#     else:
-#         # Forwards pass
-#         for l in range(1,m):
-#             F[l,:] = F[l-1,:] * (1 - r[l]) + np.sum(F[l-1,:]) * r_n[l]
-#             F[l,:] *= e[l, np.equal(H[l,:], s[0,l]).astype(np.int64)]
-
-#         ll = np.log10(np.sum(F[m-1,:]))
-
-#     return F, c, ll
-
-
-@nb.jit
+@nb.njit
 def forwards_ls_hap(n, m, H, s, e, r, norm=True):
     """Matrix based haploid LS forward algorithm using numpy vectorisation."""
     # Initialise
     F = np.zeros((m, n))
     r_n = r / n
-    print("running")
 
     if norm:
 
@@ -87,26 +51,7 @@ def forwards_ls_hap(n, m, H, s, e, r, norm=True):
     return F, c, ll
 
 
-# def backwards_ls_hap(n, m, H, s, e, c, r):
-#     '''
-#     Simple matrix based method for LS backwards algorithm using numpy vectorisation.
-#     '''
-
-#     # Initialise
-#     B = np.zeros((m,n))
-#     B[m-1,:] = 1
-#     r_n = r/n
-
-#     # Backwards pass
-#     for l in range(m-2, -1, -1):
-#         B[l,:] = r_n[l+1] * np.sum(e[l+1, np.equal(H[l+1,:], s[0,l+1]).astype(np.int64)] * B[l+1,:])
-#         B[l,:] += (1 - r[l+1]) * e[l+1, np.equal(H[l+1,:], s[0,l+1]).astype(np.int64)] * B[l+1,:]
-#         B[l,:] *= 1/c[l+1]
-
-#     return B
-
-
-@nb.jit
+@nb.njit
 def backwards_ls_hap(n, m, H, s, e, c, r):
     """Matrix based haploid LS backward algorithm using numpy vectorisation."""
     # Initialise

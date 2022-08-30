@@ -3,7 +3,7 @@ import numba as nb
 import numpy as np
 
 
-@nb.jit
+@nb.njit
 def forwards_ls_hap(n, m, H, s, e, r, norm=True):
     """Matrix based haploid LS forward algorithm using numpy vectorisation."""
     # Initialise
@@ -39,7 +39,7 @@ def forwards_ls_hap(n, m, H, s, e, r, norm=True):
     return F, c, ll
 
 
-@nb.jit
+@nb.njit
 def backwards_ls_hap(n, m, H, s, e, c, r):
     """Matrix based haploid LS backward algorithm using numpy vectorisation."""
     # Initialise

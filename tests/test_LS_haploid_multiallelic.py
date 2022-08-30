@@ -7,8 +7,8 @@ import numpy as np
 import pytest
 import tskit
 
-import lshmm.forward_backward.fb_haploid_variants_samples_multiallelic as fbh
-import lshmm.vit_haploid_variants_samples_multiallelic as vh
+import lshmm.forward_backward.fb_haploid_variants_samples as fbh
+import lshmm.vit_haploid_variants_samples as vh
 
 
 class LSBase:
@@ -125,46 +125,39 @@ class FBAlgorithmBase(LSBase):
     """Base for forwards backwards algorithm tests."""
 
 
-# @pytest.mark.skip(reason="DEV: skip for time being")
 class TestNonTreeMethodsHap(FBAlgorithmBase):
     """Test that we compute the sample likelihoods across all implementations."""
 
     def verify(self, ts):
         for n, m, alleles, H, s, e, r in self.example_parameters_haplotypes(ts):
-            F, c, ll = fbh.forwards_ls_hap_wrapper(
-                n, m, alleles, H, s, e, r, norm=False
-            )
-            B = fbh.backwards_ls_hap_wrapper(n, m, alleles, H, s, e, c, r)
+            F, c, ll = fbh.forwards_ls_hap(n, m, H, s, e, r, norm=False)
+            B = fbh.backwards_ls_hap(n, m, H, s, e, c, r)
             self.assertAllClose(np.log10(np.sum(F * B, 1)), ll * np.ones(m))
-            F_tmp, c_tmp, ll_tmp = fbh.forwards_ls_hap_wrapper(
-                n, m, alleles, H, s, e, r, norm=True
-            )
-            B_tmp = fbh.backwards_ls_hap_wrapper(n, m, alleles, H, s, e, c_tmp, r)
+            F_tmp, c_tmp, ll_tmp = fbh.forwards_ls_hap(n, m, H, s, e, r, norm=True)
+            B_tmp = fbh.backwards_ls_hap(n, m, H, s, e, c_tmp, r)
             self.assertAllClose(ll, ll_tmp)
             self.assertAllClose(np.sum(F_tmp * B_tmp, 1), np.ones(m))
 
 
-@pytest.mark.skip(reason="DEV: skip for time being")
 class VitAlgorithmBase(LSBase):
     """Base for viterbi algoritm tests."""
 
 
-@pytest.mark.skip(reason="DEV: skip for time being")
 class TestNonTreeViterbiHap(VitAlgorithmBase):
     """Test that we have the same log-likelihood across all implementations"""
 
     def verify(self, ts):
         for n, m, alleles, H, s, e, r in self.example_parameters_haplotypes(ts):
 
-            V, P, ll = vh.forwards_viterbi_hap_naive_wrapper(n, m, H, s, e, r)
-            path = vh.backwards_viterbi_hap_wrapper(m, V[m - 1, :], P)
+            V, P, ll = vh.forwards_viterbi_hap_naive(n, m, H, s, e, r)
+            path = vh.backwards_viterbi_hap(m, V[m - 1, :], P)
             ll_check = vh.path_ll_hap(n, m, H, path, s, e, r)
             self.assertAllClose(ll, ll_check)
 
-            V_tmp, P_tmp, ll_tmp = vh.forwards_viterbi_hap_lower_mem_rescaling_wrapper(
+            V_tmp, P_tmp, ll_tmp = vh.forwards_viterbi_hap_lower_mem_rescaling(
                 n, m, H, s, e, r
             )
-            path_tmp = vh.backwards_viterbi_hap_wrapper(m, V_tmp, P_tmp)
+            path_tmp = vh.backwards_viterbi_hap(m, V_tmp, P_tmp)
             ll_check = vh.path_ll_hap(n, m, H, path_tmp, s, e, r)
             self.assertAllClose(ll_tmp, ll_check)
             self.assertAllClose(ll, ll_tmp)
