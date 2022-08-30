@@ -15,6 +15,7 @@ disable = [
   "C",
   # Do not warn about TODO and FIXME comments
   "fixme",
+  "E1136"
 ]
 
 [tool.pytest.ini_options]
