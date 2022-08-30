@@ -60,11 +60,6 @@ class LSBase:
         n = H.shape[1]
         m = ts.get_num_sites()
 
-        # alleles = []
-        # for variant in ts.variants():
-        #     alleles.append(variant.alleles)
-        # n_alleles = np.int8([(len(alleles_site)) for alleles_site in alleles])
-
         # Must be calculated from the genotype matrix because we can now get back mutations that
         # result in the number of alleles being higher than the number of alleles in the reference panel.
         n_alleles = np.int8(
@@ -160,7 +155,6 @@ class FBAlgorithmBase(LSBase):
     """Base for forwards backwards algorithm tests."""
 
 
-# @pytest.mark.skip(reason="DEV: skip for time being")
 class TestMethodsHap(FBAlgorithmBase):
     """Test that we compute the sample likelihoods across all implementations."""
 
@@ -194,7 +188,6 @@ class VitAlgorithmBase(LSBase):
     """Base for viterbi algoritm tests."""
 
 
-# @pytest.mark.skip(reason="DEV: skip for time being")
 class TestViterbiHap(VitAlgorithmBase):
     """Test that we have the same log-likelihood across all implementations"""
 

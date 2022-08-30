@@ -47,7 +47,7 @@ def np_argmax(array, axis):
     return np_apply_along_axis(np.argmax, axis, array)
 
 
-@nb.jit
+@nb.njit
 def forwards_ls_dip(n, m, G, s, e, r, norm=True):
     """Matrix based diploid LS forward algorithm using numpy vectorisation."""
     # Initialise the forward tensor
@@ -121,7 +121,7 @@ def forwards_ls_dip(n, m, G, s, e, r, norm=True):
     return F, c, ll
 
 
-@nb.jit
+@nb.njit
 def backwards_ls_dip(n, m, G, s, e, c, r):
     """Matrix based diploid LS backward algorithm using numpy vectorisation."""
     # Initialise the backward tensor
@@ -161,7 +161,7 @@ def backwards_ls_dip(n, m, G, s, e, c, r):
     return B
 
 
-@nb.jit
+@nb.njit
 def forward_ls_dip_starting_point(n, m, G, s, e, r):
     """Naive implementation of LS diploid forwards algorithm."""
     # Initialise the forward tensor
@@ -234,7 +234,7 @@ def forward_ls_dip_starting_point(n, m, G, s, e, r):
     return F, ll
 
 
-@nb.jit
+@nb.njit
 def backward_ls_dip_starting_point(n, m, G, s, e, r):
     """Naive implementation of LS diploid backwards algorithm."""
     # Backwards
@@ -310,7 +310,7 @@ def backward_ls_dip_starting_point(n, m, G, s, e, r):
     return B
 
 
-@nb.jit
+@nb.njit
 def forward_ls_dip_loop(n, m, G, s, e, r, norm=True):
     """LS diploid forwards algoritm without vectorisation."""
     # Initialise the forward tensor
@@ -422,7 +422,7 @@ def forward_ls_dip_loop(n, m, G, s, e, r, norm=True):
     return F, c, ll
 
 
-@nb.jit
+@nb.njit
 def backward_ls_dip_loop(n, m, G, s, e, c, r):
     """LS diploid backwards algoritm without vectorisation."""
     # Initialise the backward tensor

@@ -221,7 +221,6 @@ class FBAlgorithmBase(LSBase):
     """Base for forwards backwards algorithm tests."""
 
 
-@pytest.mark.skip(reason="DEV: skip for time being")
 class TestNonTreeMethodsHap(FBAlgorithmBase):
     """Test that we compute the sample likelihoods across all implementations."""
 
@@ -287,7 +286,6 @@ class TestNonTreeMethodsHap(FBAlgorithmBase):
         self.assertAllClose(ll_vs, ll_sv)
 
 
-@pytest.mark.skip(reason="DEV: skip for time being")
 class TestNonTreeMethodsDip(FBAlgorithmBase):
     """Test that we compute the sample likelihoods across all implementations."""
 
@@ -454,12 +452,10 @@ class TestNonTreeMethodsDip(FBAlgorithmBase):
         self.assertAllClose(ll_vs, ll_sv)
 
 
-# @pytest.mark.skip(reason="DEV: skip for time being")
 class VitAlgorithmBase(LSBase):
     """Base for viterbi algoritm tests."""
 
 
-@pytest.mark.skip(reason="DEV: skip for time being")
 class TestNonTreeViterbiHap(VitAlgorithmBase):
     """Test that we have the same log-likelihood across all implementations"""
 
@@ -518,7 +514,9 @@ class TestNonTreeViterbiHap(VitAlgorithmBase):
                 n, m, H_vs, s, e_vs, r
             )
             path_tmp = vh_vs.backwards_viterbi_hap_no_pointer(
-                m, V_argmaxes_tmp, recombs
+                m,
+                V_argmaxes_tmp,
+                nb.typed.List(recombs),
             )
             ll_check = vh_vs.path_ll_hap(n, m, H_vs, path_tmp, s, e_vs, r)
             self.assertAllClose(ll_tmp, ll_check)
@@ -622,7 +620,9 @@ class TestNonTreeViterbiHap(VitAlgorithmBase):
         ) = vh_vs.forwards_viterbi_hap_lower_mem_rescaling_no_pointer(
             n, m, H_vs, s, e_vs, r
         )
-        path_tmp = vh_vs.backwards_viterbi_hap_no_pointer(m, V_argmaxes_tmp, recombs)
+        path_tmp = vh_vs.backwards_viterbi_hap_no_pointer(
+            m, V_argmaxes_tmp, nb.typed.List(recombs)
+        )
         ll_check = vh_vs.path_ll_hap(n, m, H_vs, path_tmp, s, e_vs, r)
         self.assertAllClose(ll_tmp, ll_check)
         self.assertAllClose(ll_vs, ll_tmp)
@@ -672,7 +672,6 @@ class TestNonTreeViterbiHap(VitAlgorithmBase):
         self.assertAllClose(ll_vs, ll_sv)
 
 
-# @pytest.mark.skip(reason="DEV: skip for time being")
 class TestNonTreeViterbiDip(VitAlgorithmBase):
     """Test that we have the same log-likelihood across all implementations"""
 

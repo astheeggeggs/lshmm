@@ -105,48 +105,18 @@ def checks(
     return n, m, ploidy
 
 
-# def forwards(n, m, G_or_H, s, e, r):
-#     """
-#     Run the Li and Stephens forwards algorithm on haplotype or
-#     unphased genotype data.
-#     """
-#     template_dimensions = G_or_H.shape
-#     assert len(template_dimensions) in [2, 3]
-
-#     if len(template_dimensions) == 2:
-#         # Haploid
-#         assert (G_or_H.shape == np.array([m, n])).all()
-#         F, c, ll = forwards_ls_hap(n, m, G_or_H, s, e, r, norm=True)
-#     else:
-#         # Diploid
-#         assert (G_or_H.shape == np.array([m, n, n])).all()
-#         F, c, ll = forward_ls_dip_loop(n, m, G_or_H, s, e, r, norm=True)
-
-#     return F, c, ll
-
-
-def forwards(
+def set_emission_probabilities(
+    n,
+    m,
     reference_panel,
     query,
-    recombination_rate,
-    alleles=None,
-    mutation_rate=None,
-    scale_mutation_based_on_n_alleles=True,
+    alleles,
+    mutation_rate,
+    ploidy,
+    scale_mutation_based_on_n_alleles,
 ):
-    """
-    Run the Li and Stephens forwards algorithm on haplotype or
-    unphased genotype data.
-    """
-    n, m, ploidy = checks(
-        reference_panel,
-        query,
-        mutation_rate,
-        recombination_rate,
-        scale_mutation_based_on_n_alleles,
-    )
     # Check alleles should go in here, and modify e before passing to the algorithm
     # If alleles is not passed, we don't perform a test of alleles, but set n_alleles based on the reference_panel.
-
     if alleles is None:
         n_alleles = np.int8(
             [
@@ -187,14 +157,6 @@ def forwards(
                 else:
                     e[j, 0] = mutation_rate[j] / (n_alleles[j] - 1)
                     e[j, 1] = 1 - mutation_rate[j]
-
-        (
-            forward_array,
-            normalisation_factor_from_forward,
-            log_likelihood,
-        ) = forwards_ls_hap(
-            n, m, reference_panel, query, e, recombination_rate, norm=True
-        )
     else:
         # Diploid
         # Evaluate emission probabilities here, using the mutation rate - this can take a scalar or vector.
@@ -206,35 +168,76 @@ def forwards(
         e[:, REF_HOM_OBS_HET] = 2 * mutation_rate * (1 - mutation_rate)
         e[:, REF_HET_OBS_HOM] = mutation_rate * (1 - mutation_rate)
 
-        (
-            forward_array,
-            normalisation_factor_from_forward,
-            log_likelihood,
-        ) = forward_ls_dip_loop(
-            n, m, reference_panel, query, e, recombination_rate, norm=True
-        )
+    return e
+
+
+def viterbi_hap(n, m, reference_panel, query, emissions, recombination_rate):
+
+    V, P, log_likelihood = forwards_viterbi_hap_lower_mem_rescaling(
+        n, m, reference_panel, query, emissions, recombination_rate
+    )
+    most_likely_path = backwards_viterbi_hap(m, V, P)
+
+    return most_likely_path, log_likelihood
+
+
+def viterbi_dip(n, m, reference_panel, query, emissions, recombination_rate):
+
+    V, P, log_likelihood = forwards_viterbi_dip_low_mem(
+        n, m, reference_panel, query, emissions, recombination_rate
+    )
+    unphased_path = backwards_viterbi_dip(m, V, P)
+    most_likely_path = get_phased_path(n, unphased_path)
+
+    return most_likely_path, log_likelihood
+
+
+def forwards(
+    reference_panel,
+    query,
+    recombination_rate,
+    alleles=None,
+    mutation_rate=None,
+    scale_mutation_based_on_n_alleles=True,
+):
+    """
+    Run the Li and Stephens forwards algorithm on haplotype or
+    unphased genotype data.
+    """
+
+    n, m, ploidy = checks(
+        reference_panel,
+        query,
+        mutation_rate,
+        recombination_rate,
+        scale_mutation_based_on_n_alleles,
+    )
+
+    emissions = set_emission_probabilities(
+        n,
+        m,
+        reference_panel,
+        query,
+        alleles,
+        mutation_rate,
+        ploidy,
+        scale_mutation_based_on_n_alleles,
+    )
+
+    if ploidy == 1:
+        forward_function = forwards_ls_hap
+    else:
+        forward_function = forward_ls_dip_loop
+
+    (
+        forward_array,
+        normalisation_factor_from_forward,
+        log_likelihood,
+    ) = forward_function(
+        n, m, reference_panel, query, emissions, recombination_rate, norm=True
+    )
 
     return forward_array, normalisation_factor_from_forward, log_likelihood
-
-
-# def backwards(n, m, G_or_H, s, e, c, r):
-#     """
-#     Run the Li and Stephens backwards algorithm on haplotype or
-#     unphased genotype data.
-#     """
-#     template_dimensions = G_or_H.shape
-#     assert len(template_dimensions) in [2, 3]
-
-#     if len(template_dimensions) == 2:
-#         # Haploid
-#         assert (G_or_H.shape == np.array([m, n])).all()
-#         B = backwards_ls_hap(n, m, G_or_H, s, e, c, r)
-#     else:
-#         # Diploid
-#         assert (G_or_H.shape == np.array([m, n, n])).all()
-#         B = backward_ls_dip_loop(n, m, G_or_H, s, e, c, r)
-
-#     return B
 
 
 def backwards(
@@ -257,100 +260,34 @@ def backwards(
         recombination_rate,
         scale_mutation_based_on_n_alleles,
     )
-    # Check alleles should go in here, and mofify e before passing to the algorithm
-    # If alleles is not passed, we don't perform a test of alleles, but set n_alleles based on the reference_panel.
-    if alleles is None:
-        n_alleles = np.int8(
-            [
-                len(np.unique(np.append(reference_panel[j, :], query[:, j])))
-                for j in range(reference_panel.shape[0])
-            ]
-        )
-    else:
-        n_alleles = check_alleles(alleles, m)
 
-    if mutation_rate is None:
-        # Set the mutation rate to be the proposed mutation rate in Li and Stephens (2003).
-        theta_tilde = 1 / np.sum([1 / k for k in range(1, n - 1)])
-        mutation_rate = 0.5 * (theta_tilde / (n + theta_tilde))
+    emissions = set_emission_probabilities(
+        n,
+        m,
+        reference_panel,
+        query,
+        alleles,
+        mutation_rate,
+        ploidy,
+        scale_mutation_based_on_n_alleles,
+    )
 
     if ploidy == 1:
-        # Haploid
-        # Evaluate emission probabilities here, using the mutation rate - this can take a scalar or vector.
-        e = np.zeros((m, 2))
-
-        if scale_mutation_based_on_n_alleles:
-            # Scale mutation based on the number of alleles - so the mutation rate is the mutation rate to one of the alleles.
-            # The overall mutation rate is then (n_alleles - 1) * mutation_rate.
-            e[:, 0] = mutation_rate - mutation_rate * np.equal(
-                n_alleles, np.ones(m)
-            )  # Added boolean in case we're at an invariant site
-            e[:, 1] = 1 - (n_alleles - 1) * mutation_rate
-        else:
-            # No scaling based on the number of alleles - so the mutation rate is the mutation rate to anything.
-            # Which means that we must rescale the mutation rate to a different allele, by the number of alleles.
-            for j in range(m):
-                if n_alleles[j] == 1:  # In case we're at an invariant site
-                    e[j, 0] = 0
-                    e[j, 1] = 1
-                else:
-                    e[j, 0] = mutation_rate[j] / (n_alleles[j] - 1)
-                    e[j, 1] = 1 - mutation_rate[j]
-
-        backwards_array = backwards_ls_hap(
-            n,
-            m,
-            reference_panel,
-            query,
-            e,
-            normalisation_factor_from_forward,
-            recombination_rate,
-        )
+        backward_function = backwards_ls_hap
     else:
-        # Diploid
-        # Evaluate emission probabilities here, using the mutation rate - this can take a scalar or vector.
-        # DEV: there's a wrinkle here.
-        e = np.zeros((m, 8))
-        e[:, EQUAL_BOTH_HOM] = (1 - mutation_rate) ** 2
-        e[:, UNEQUAL_BOTH_HOM] = mutation_rate ** 2
-        e[:, BOTH_HET] = (1 - mutation_rate) ** 2 + mutation_rate ** 2
-        e[:, REF_HOM_OBS_HET] = 2 * mutation_rate * (1 - mutation_rate)
-        e[:, REF_HET_OBS_HOM] = mutation_rate * (1 - mutation_rate)
+        backward_function = backward_ls_dip_loop
 
-        backwards_array = backward_ls_dip_loop(
-            n,
-            m,
-            reference_panel,
-            query,
-            e,
-            normalisation_factor_from_forward,
-            recombination_rate,
-        )
+    backwards_array = backward_function(
+        n,
+        m,
+        reference_panel,
+        query,
+        emissions,
+        normalisation_factor_from_forward,
+        recombination_rate,
+    )
 
     return backwards_array
-
-
-# def viterbi(n, m, G_or_H, s, e, r):
-#     """
-#     Run the Li and Stephens Viterbi algorithm on haplotype or
-#     unphased genotype data.
-#     """
-#     template_dimensions = G_or_H.shape
-#     assert len(template_dimensions) in [2, 3]
-
-#     if len(template_dimensions) == 2:
-#         # Haploid
-#         assert (G_or_H.shape == np.array([m, n])).all()
-#         V, P, ll = forwards_viterbi_hap_lower_mem_rescaling(n, m, G_or_H, s, e, r)
-#         path = backwards_viterbi_hap(m, V, P)
-#     else:
-#         # Diploid
-#         assert (G_or_H.shape == np.array([m, n, n])).all()
-#         V, P, ll = forwards_viterbi_dip_low_mem(n, m, G_or_H, s, e, r)
-#         unphased_path = backwards_viterbi_dip(m, V, P)
-#         path = get_phased_path(n, unphased_path)
-
-#     return path, ll
 
 
 def viterbi(
@@ -373,69 +310,27 @@ def viterbi(
         scale_mutation_based_on_n_alleles,
     )
 
-    if alleles is None:
-        n_alleles = np.int8(
-            [
-                len(np.unique(np.append(reference_panel[j, :], query[:, j])))
-                for j in range(reference_panel.shape[0])
-            ]
-        )
-    else:
-        n_alleles = check_alleles(alleles, m)
-
-    if mutation_rate is None:
-        # Set the mutation rate to be the proposed mutation rate in Li and Stephens (2003).
-        theta_tilde = 1 / np.sum([1 / k for k in range(1, n - 1)])
-        mutation_rate = 0.5 * (theta_tilde / (n + theta_tilde))
+    emissions = set_emission_probabilities(
+        n,
+        m,
+        reference_panel,
+        query,
+        alleles,
+        mutation_rate,
+        ploidy,
+        scale_mutation_based_on_n_alleles,
+    )
 
     if ploidy == 1:
-        # Haploid
-        # Evaluate emission probabilities here, using the mutation rate - this can take a scalar or vector.
-        e = np.zeros((m, 2))
-
-        if scale_mutation_based_on_n_alleles:
-            # Scale mutation based on the number of alleles - so the mutation rate is the mutation rate to one of the alleles.
-            # The overall mutation rate is then (n_alleles - 1) * mutation_rate.
-            e[:, 0] = mutation_rate - mutation_rate * np.equal(
-                n_alleles, np.ones(m)
-            )  # Added boolean in case we're at an invariant site
-            e[:, 1] = 1 - (n_alleles - 1) * mutation_rate
-        else:
-            # No scaling based on the number of alleles - so the mutation rate is the mutation rate to anything.
-            # Which means that we must rescale the mutation rate to a different allele, by the number of alleles.
-            for j in range(m):
-                if n_alleles[j] == 1:  # In case we're at an invariant site
-                    e[j, 0] = 0
-                    e[j, 1] = 1
-                else:
-                    e[j, 0] = mutation_rate[j] / (n_alleles[j] - 1)
-                    e[j, 1] = 1 - mutation_rate[j]
-
-        V, P, log_likelihood = forwards_viterbi_hap_lower_mem_rescaling(
-            n, m, reference_panel, query, e, recombination_rate
-        )
-        most_likely_path = backwards_viterbi_hap(m, V, P)
+        viterbi_function = viterbi_hap
     else:
-        # Diploid
-        # Evaluate emission probabilities here, using the mutation rate - this can take a scalar or vector.
-        # DEV: there's a wrinkle here.
-        e = np.zeros((m, 8))
-        e[:, EQUAL_BOTH_HOM] = (1 - mutation_rate) ** 2
-        e[:, UNEQUAL_BOTH_HOM] = mutation_rate ** 2
-        e[:, BOTH_HET] = (1 - mutation_rate) ** 2 + mutation_rate ** 2
-        e[:, REF_HOM_OBS_HET] = 2 * mutation_rate * (1 - mutation_rate)
-        e[:, REF_HET_OBS_HOM] = mutation_rate * (1 - mutation_rate)
+        viterbi_function = viterbi_dip
 
-        V, P, log_likelihood = forwards_viterbi_dip_low_mem(
-            n, m, reference_panel, query, e, recombination_rate
-        )
-        unphased_path = backwards_viterbi_dip(m, V, P)
-        most_likely_path = get_phased_path(n, unphased_path)
+    most_likely_path, log_likelihood = viterbi_function(
+        n, m, reference_panel, query, emissions, recombination_rate
+    )
 
     return most_likely_path, log_likelihood
-
-
-# Finally, need to include a function to evaluate the likelihood of a given path
 
 
 def path_ll(
@@ -455,58 +350,25 @@ def path_ll(
         recombination_rate,
         scale_mutation_based_on_n_alleles,
     )
-    # Check alleles should go in here, and mofify e before passing to the algorithm
-    # If alleles is not passed, we don't perform a test of alleles, but set n_alleles based on the reference_panel.
-    if alleles is None:
-        n_alleles = np.int8(
-            [
-                len(np.unique(np.append(reference_panel[j, :], query[:, j])))
-                for j in range(reference_panel.shape[0])
-            ]
-        )
-    else:
-        n_alleles = check_alleles(alleles, m)
 
-    if mutation_rate is None:
-        # Set the mutation rate to be the proposed mutation rate in Li and Stephens (2003).
-        theta_tilde = 1 / np.sum([1 / k for k in range(1, n - 1)])
-        mutation_rate = 0.5 * (theta_tilde / (n + theta_tilde))
+    emissions = set_emission_probabilities(
+        n,
+        m,
+        reference_panel,
+        query,
+        alleles,
+        mutation_rate,
+        ploidy,
+        scale_mutation_based_on_n_alleles,
+    )
 
     if ploidy == 1:
-        # Haploid
-        # Evaluate emission probabilities here, using the mutation rate - this can take a scalar or vector.
-        e = np.zeros((m, 2))
-
-        if scale_mutation_based_on_n_alleles:
-            # Scale mutation based on the number of alleles - so the mutation rate is the mutation rate to one of the alleles.
-            # The overall mutation rate is then (n_alleles - 1) * mutation_rate.
-            e[:, 0] = mutation_rate - mutation_rate * np.equal(
-                n_alleles, np.ones(m)
-            )  # Added boolean in case we're at an invariant site
-            e[:, 1] = 1 - (n_alleles - 1) * mutation_rate
-        else:
-            # No scaling based on the number of alleles - so the mutation rate is the mutation rate to anything.
-            # Which means that we must rescale the mutation rate to a different allele, by the number of alleles.
-            for j in range(m):
-                if n_alleles[j] == 1:  # In case we're at an invariant site
-                    e[j, 0] = 0
-                    e[j, 1] = 1
-                else:
-                    e[j, 0] = mutation_rate[j] / (n_alleles[j] - 1)
-                    e[j, 1] = 1 - mutation_rate[j]
-
-        ll = path_ll_hap(n, m, reference_panel, path, query, e, recombination_rate)
+        path_ll_function = path_ll_hap
     else:
-        # Diploid
-        # Evaluate emission probabilities here, using the mutation rate - this can take a scalar or vector.
-        # DEV: there's a wrinkle here.
-        e = np.zeros((m, 8))
-        e[:, EQUAL_BOTH_HOM] = (1 - mutation_rate) ** 2
-        e[:, UNEQUAL_BOTH_HOM] = mutation_rate ** 2
-        e[:, BOTH_HET] = (1 - mutation_rate) ** 2 + mutation_rate ** 2
-        e[:, REF_HOM_OBS_HET] = 2 * mutation_rate * (1 - mutation_rate)
-        e[:, REF_HET_OBS_HOM] = mutation_rate * (1 - mutation_rate)
+        path_ll_function = path_ll_dip
 
-        ll = path_ll_dip(n, m, reference_panel, path, query, e, recombination_rate)
+    ll = path_ll_function(
+        n, m, reference_panel, path, query, emissions, recombination_rate
+    )
 
     return ll
