@@ -1,9 +1,10 @@
 """Collection of functions to run Viterbi algorithms on haploid genotype data, where the data is structured as samples x variants."""
-import numba as nb
 import numpy as np
 
+from . import jit
 
-@nb.njit
+
+@jit.numba_njit
 def viterbi_naive_init(n, m, H, s, e, r):
     """Initialise naive implementation of LS viterbi."""
     V = np.zeros((n, m))
@@ -15,7 +16,7 @@ def viterbi_naive_init(n, m, H, s, e, r):
     return V, P, r_n
 
 
-@nb.njit
+@jit.numba_njit
 def viterbi_init(n, m, H, s, e, r):
     """Initialise naive, but more space memory efficient implementation of LS viterbi."""
     V_previous = 1 / n * e[np.equal(H[:, 0], s[0, 0]).astype(np.int64), 0]
@@ -27,7 +28,7 @@ def viterbi_init(n, m, H, s, e, r):
     return V, V_previous, P, r_n
 
 
-@nb.njit
+@jit.numba_njit
 def forwards_viterbi_hap_naive(n, m, H, s, e, r):
     """Naive implementation of LS haploid Viterbi algorithm."""
     # Initialise
@@ -51,7 +52,7 @@ def forwards_viterbi_hap_naive(n, m, H, s, e, r):
     return V, P, ll
 
 
-@nb.njit
+@jit.numba_njit
 def forwards_viterbi_hap_naive_vec(n, m, H, s, e, r):
     """Naive matrix based implementation of LS haploid forward Viterbi algorithm using numpy."""
     # Initialise
@@ -88,7 +89,7 @@ def forwards_viterbi_hap_naive_full_vec(n, m, H, s, e, r):
     return V, P, ll
 
 
-@nb.njit
+@jit.numba_njit
 def forwards_viterbi_hap_naive_low_mem(n, m, H, s, e, r):
     """Naive implementation of LS haploid Viterbi algorithm, with reduced memory."""
     # Initialise
@@ -113,7 +114,7 @@ def forwards_viterbi_hap_naive_low_mem(n, m, H, s, e, r):
     return V, P, ll
 
 
-@nb.njit
+@jit.numba_njit
 def forwards_viterbi_hap_naive_low_mem_rescaling(n, m, H, s, e, r):
     """Naive implementation of LS haploid Viterbi algorithm, with reduced memory and rescaling."""
     # Initialise
@@ -142,7 +143,7 @@ def forwards_viterbi_hap_naive_low_mem_rescaling(n, m, H, s, e, r):
     return V, P, ll
 
 
-@nb.njit
+@jit.numba_njit
 def forwards_viterbi_hap_low_mem_rescaling(n, m, H, s, e, r):
     """LS haploid Viterbi algorithm, with reduced memory and exploits the Markov process structure."""
     # Initialise
@@ -168,7 +169,7 @@ def forwards_viterbi_hap_low_mem_rescaling(n, m, H, s, e, r):
     return V, P, ll
 
 
-@nb.njit
+@jit.numba_njit
 def forwards_viterbi_hap_lower_mem_rescaling(n, m, H, s, e, r):
     """LS haploid Viterbi algorithm with even smaller memory footprint and exploits the Markov process structure."""
     # Initialise
@@ -195,7 +196,7 @@ def forwards_viterbi_hap_lower_mem_rescaling(n, m, H, s, e, r):
     return V, P, ll
 
 
-@nb.njit
+@jit.numba_njit
 def backwards_viterbi_hap(m, V_last, P):
     """Run a backwards pass to determine the most likely path."""
     # Initialise
@@ -209,7 +210,7 @@ def backwards_viterbi_hap(m, V_last, P):
     return path
 
 
-@nb.njit
+@jit.numba_njit
 def path_ll_hap(n, m, H, path, s, e, r):
     """Evaluate log-likelihood path through a reference panel which results in sequence s."""
     index = np.int64(np.equal(H[path[0], 0], s[0, 0]))
