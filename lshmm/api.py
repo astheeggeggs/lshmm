@@ -74,8 +74,6 @@ def checks(
     m = ref_shape[0]
     n = ref_shape[1]
 
-    print(f"Number of sites: {m}, number of samples: {n}\n")
-
     # Ensure that the mutation rate is either a scalar or vector of length m
     if not isinstance(mutation_rate, float) and (mutation_rate is not None):
         if type(mutation_rate is np.ndarray):
