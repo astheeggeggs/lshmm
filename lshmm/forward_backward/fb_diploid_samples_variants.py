@@ -12,6 +12,8 @@ BOTH_HET = 7
 REF_HOM_OBS_HET = 1
 REF_HET_OBS_HOM = 2
 
+MISSING = -1
+
 # https://github.com/numba/numba/issues/1269
 @nb.njit
 def np_apply_along_axis(func1d, axis, arr):
@@ -53,14 +55,21 @@ def forwards_ls_dip(n, m, G, s, e, r, norm=True):
     # Initialise the forward tensor
     F = np.zeros((n, n, m))
     F[:, :, 0] = 1 / (n ** 2)
-    index = 4 * np.equal(G[:, :, 0], s[0, 0]).astype(np.int64) + 2 * (
-        G[:, :, 0] == 1
-    ).astype(np.int64)
-    if s[0, 0] == 1:
-        index += 1
-    F[:, :, 0] *= e[index.ravel(), 0].reshape(n, n)
     c = np.ones(m)
     r_n = r / n
+
+    if s[0, 0] == MISSING:
+        index = np.zeros(
+            (n, n), dtype=np.int64
+        )  # We could have chosen anything here, this just implies a multiplication by a constant.
+    else:
+        index = 4 * np.equal(G[:, :, 0], s[0, 0]).astype(np.int64) + 2 * (
+            G[:, :, 0] == 1
+        ).astype(np.int64)
+        if s[0, 0] == 1:
+            index += 1
+
+    F[:, :, 0] *= e[index.ravel(), 0].reshape(n, n)
 
     if norm:
         c[0] = np.sum(F[:, :, 0])
@@ -68,13 +77,15 @@ def forwards_ls_dip(n, m, G, s, e, r, norm=True):
 
         # Forwards
         for l in range(1, m):
+            if s[0, l] == MISSING:
+                index = np.zeros((n, n), dtype=np.int64)
+            else:
+                index = 4 * np.equal(G[:, :, l], s[0, l]).astype(np.int64) + 2 * (
+                    G[:, :, l] == 1
+                ).astype(np.int64)
 
-            index = 4 * np.equal(G[:, :, l], s[0, l]).astype(np.int64) + 2 * (
-                G[:, :, l] == 1
-            ).astype(np.int64)
-
-            if s[0, l] == 1:
-                index += 1
+                if s[0, l] == 1:
+                    index += 1
 
             # No change in both
             F[:, :, l] = (1 - r[l]) ** 2 * F[:, :, l - 1]
@@ -95,13 +106,15 @@ def forwards_ls_dip(n, m, G, s, e, r, norm=True):
     else:
         # Forwards
         for l in range(1, m):
+            if s[0, l] == MISSING:
+                index = np.zeros((n, n)).astype(np.int64)
+            else:
+                index = 4 * np.equal(G[:, :, l], s[0, l]).astype(np.int64) + 2 * (
+                    G[:, :, l] == 1
+                ).astype(np.int64)
 
-            index = 4 * np.equal(G[:, :, l], s[0, l]).astype(np.int64) + 2 * (
-                G[:, :, l] == 1
-            ).astype(np.int64)
-
-            if s[0, l] == 1:
-                index += 1
+                if s[0, l] == 1:
+                    index += 1
 
             # No change in both
             F[:, :, l] = (1 - r[l]) ** 2 * F[:, :, l - 1]
@@ -134,11 +147,14 @@ def backwards_ls_dip(n, m, G, s, e, c, r):
     # Backwards
     for l in range(m - 2, -1, -1):
 
-        index = (
-            4 * np.equal(G[:, :, l + 1], s[0, l + 1]).astype(np.int64)
-            + 2 * (G[:, :, l + 1] == 1).astype(np.int64)
-            + np.int64(s[0, l + 1] == 1)
-        ).ravel()
+        if s[0, l + 1] == MISSING:
+            index = np.zeros((n, n), dtype=np.int64).ravel()
+        else:
+            index = (
+                4 * np.equal(G[:, :, l + 1], s[0, l + 1]).astype(np.int64)
+                + 2 * (G[:, :, l + 1] == 1).astype(np.int64)
+                + np.int64(s[0, l + 1] == 1)
+            ).ravel()
 
         # Both change
         B[:, :, l] = r_n[l + 1] ** 2 * np.sum(
@@ -161,18 +177,22 @@ def backwards_ls_dip(n, m, G, s, e, c, r):
     return B
 
 
-@nb.njit
+# @nb.jit
 def forward_ls_dip_starting_point(n, m, G, s, e, r):
     """Naive implementation of LS diploid forwards algorithm."""
     # Initialise the forward tensor
     F = np.zeros((n, n, m))
     F[:, :, 0] = 1 / (n ** 2)
-    index = (
-        4 * np.equal(G[:, :, 0], s[0, 0]).astype(np.int64)
-        + 2 * (G[:, :, 0] == 1).astype(np.int64)
-        + np.int64(s[0, 0] == 1)
-    )
-    F[:, :, 0] *= e[index.ravel(), 0].reshape(n, n)
+    if s[0, 0] == MISSING:
+        index = np.zeros((n, n), dtype=np.int64).ravel()
+    else:
+        index = (
+            4 * np.equal(G[:, :, 0], s[0, 0]).astype(np.int64)
+            + 2 * (G[:, :, 0] == 1).astype(np.int64)
+            + np.int64(s[0, 0] == 1)
+        ).ravel()
+
+    F[:, :, 0] *= e[index, 0].reshape((n, n))
     r_n = r / n
 
     for l in range(1, m):
@@ -211,24 +231,27 @@ def forward_ls_dip_starting_point(n, m, G, s, e, r):
             for j2 in range(n):
                 F[j1, j2, l] += F_no_change[j1, j2]
 
-        for j1 in range(n):
-            for j2 in range(n):
-                # What is the emission?
-                if s[0, l] == 1:
-                    # OBS is het
-                    if G[j1, j2, l] == 1:  # REF is het
-                        F[j1, j2, l] *= e[BOTH_HET, l]
-                    else:  # REF is hom
-                        F[j1, j2, l] *= e[REF_HOM_OBS_HET, l]
-                else:
-                    # OBS is hom
-                    if G[j1, j2, l] == 1:  # REF is het
-                        F[j1, j2, l] *= e[REF_HET_OBS_HOM, l]
-                    else:  # REF is hom
-                        if G[j1, j2, l] == s[0, l]:  # Equal
-                            F[j1, j2, l] *= e[EQUAL_BOTH_HOM, l]
-                        else:  # Unequal
-                            F[j1, j2, l] *= e[UNEQUAL_BOTH_HOM, l]
+        if s[0, l] == MISSING:
+            F[:, :, l] *= e[0, l]
+        else:
+            for j1 in range(n):
+                for j2 in range(n):
+                    # What is the emission?
+                    if s[0, l] == 1:
+                        # OBS is het
+                        if G[j1, j2, l] == 1:  # REF is het
+                            F[j1, j2, l] *= e[BOTH_HET, l]
+                        else:  # REF is hom
+                            F[j1, j2, l] *= e[REF_HOM_OBS_HET, l]
+                    else:
+                        # OBS is hom
+                        if G[j1, j2, l] == 1:  # REF is het
+                            F[j1, j2, l] *= e[REF_HET_OBS_HOM, l]
+                        else:  # REF is hom
+                            if G[j1, j2, l] == s[0, l]:  # Equal
+                                F[j1, j2, l] *= e[EQUAL_BOTH_HOM, l]
+                            else:  # Unequal
+                                F[j1, j2, l] *= e[UNEQUAL_BOTH_HOM, l]
 
     ll = np.log10(np.sum(F[:, :, l]))
     return F, ll
@@ -254,24 +277,27 @@ def backward_ls_dip_starting_point(n, m, G, s, e, r):
 
         # Evaluate the emission matrix at this site, for all pairs
         e_tmp = np.zeros((n, n))
-        for j1 in range(n):
-            for j2 in range(n):
-                # What is the emission?
-                if s[0, l + 1] == 1:
-                    # OBS is het
-                    if G[j1, j2, l + 1] == 1:  # REF is het
-                        e_tmp[j1, j2] = e[BOTH_HET, l + 1]
-                    else:  # REF is hom
-                        e_tmp[j1, j2] = e[REF_HOM_OBS_HET, l + 1]
-                else:
-                    # OBS is hom
-                    if G[j1, j2, l + 1] == 1:  # REF is het
-                        e_tmp[j1, j2] = e[REF_HET_OBS_HOM, l + 1]
-                    else:  # REF is hom
-                        if G[j1, j2, l + 1] == s[0, l + 1]:  # Equal
-                            e_tmp[j1, j2] = e[EQUAL_BOTH_HOM, l + 1]
-                        else:  # Unequal
-                            e_tmp[j1, j2] = e[UNEQUAL_BOTH_HOM, l + 1]
+        if s[0, l + 1] == MISSING:
+            e_tmp[:, :] = e[0, l + 1]
+        else:
+            for j1 in range(n):
+                for j2 in range(n):
+                    # What is the emission?
+                    if s[0, l + 1] == 1:
+                        # OBS is het
+                        if G[j1, j2, l + 1] == 1:  # REF is het
+                            e_tmp[j1, j2] = e[BOTH_HET, l + 1]
+                        else:  # REF is hom
+                            e_tmp[j1, j2] = e[REF_HOM_OBS_HET, l + 1]
+                    else:
+                        # OBS is hom
+                        if G[j1, j2, l + 1] == 1:  # REF is het
+                            e_tmp[j1, j2] = e[REF_HET_OBS_HOM, l + 1]
+                        else:  # REF is hom
+                            if G[j1, j2, l + 1] == s[0, l + 1]:  # Equal
+                                e_tmp[j1, j2] = e[EQUAL_BOTH_HOM, l + 1]
+                            else:  # Unequal
+                                e_tmp[j1, j2] = e[UNEQUAL_BOTH_HOM, l + 1]
 
         for j1 in range(n):
             for j2 in range(n):
@@ -310,20 +336,24 @@ def backward_ls_dip_starting_point(n, m, G, s, e, r):
     return B
 
 
-@nb.njit
+# @nb.njit
 def forward_ls_dip_loop(n, m, G, s, e, r, norm=True):
     """LS diploid forwards algoritm without vectorisation."""
     # Initialise the forward tensor
     F = np.zeros((n, n, m))
     F[:, :, 0] = 1 / (n ** 2)
-    index = (
-        4 * np.equal(G[:, :, 0], s[0, 0]).astype(np.int64)
-        + 2 * (G[:, :, 0] == 1).astype(np.int64)
-        + np.int64(s[0, 0] == 1)
-    )
-    F[:, :, 0] *= e[index.ravel(), 0].reshape(n, n)
     r_n = r / n
     c = np.ones(m)
+
+    if s[0, 0] == MISSING:
+        index = np.zeros((n, n), dtype=np.int64)
+    else:
+        index = (
+            4 * np.equal(G[:, :, 0], s[0, 0]).astype(np.int64)
+            + 2 * (G[:, :, 0] == 1).astype(np.int64)
+            + np.int64(s[0, 0] == 1)
+        )
+    F[:, :, 0] *= e[index.ravel(), 0].reshape(n, n)
 
     if norm:
 
@@ -349,24 +379,27 @@ def forward_ls_dip_loop(n, m, G, s, e, r, norm=True):
                 for j2 in range(n):
                     F[j1, j2, l] += F_no_change[j1, j2]
 
-            for j1 in range(n):
-                for j2 in range(n):
-                    # What is the emission?
-                    if s[0, l] == 1:
-                        # OBS is het
-                        if G[j1, j2, l] == 1:  # REF is het
-                            F[j1, j2, l] *= e[BOTH_HET, l]
-                        else:  # REF is hom
-                            F[j1, j2, l] *= e[REF_HOM_OBS_HET, l]
-                    else:
-                        # OBS is hom
-                        if G[j1, j2, l] == 1:  # REF is het
-                            F[j1, j2, l] *= e[REF_HET_OBS_HOM, l]
-                        else:  # REF is hom
-                            if G[j1, j2, l] == s[0, l]:  # Equal
-                                F[j1, j2, l] *= e[EQUAL_BOTH_HOM, l]
-                            else:  # Unequal
-                                F[j1, j2, l] *= e[UNEQUAL_BOTH_HOM, l]
+            if s[0, l] == MISSING:
+                F[:, :, l] *= e[0, l]
+            else:
+                for j1 in range(n):
+                    for j2 in range(n):
+                        # What is the emission?
+                        if s[0, l] == 1:
+                            # OBS is het
+                            if G[j1, j2, l] == 1:  # REF is het
+                                F[j1, j2, l] *= e[BOTH_HET, l]
+                            else:  # REF is hom
+                                F[j1, j2, l] *= e[REF_HOM_OBS_HET, l]
+                        else:
+                            # OBS is hom
+                            if G[j1, j2, l] == 1:  # REF is het
+                                F[j1, j2, l] *= e[REF_HET_OBS_HOM, l]
+                            else:  # REF is hom
+                                if G[j1, j2, l] == s[0, l]:  # Equal
+                                    F[j1, j2, l] *= e[EQUAL_BOTH_HOM, l]
+                                else:  # Unequal
+                                    F[j1, j2, l] *= e[UNEQUAL_BOTH_HOM, l]
 
             c[l] = np.sum(F[:, :, l])
             F[:, :, l] *= 1 / c[l]
@@ -398,24 +431,27 @@ def forward_ls_dip_loop(n, m, G, s, e, r, norm=True):
                 for j2 in range(n):
                     F[j1, j2, l] += F_no_change[j1, j2]
 
-            for j1 in range(n):
-                for j2 in range(n):
-                    # What is the emission?
-                    if s[0, l] == 1:
-                        # OBS is het
-                        if G[j1, j2, l] == 1:  # REF is het
-                            F[j1, j2, l] *= e[BOTH_HET, l]
-                        else:  # REF is hom
-                            F[j1, j2, l] *= e[REF_HOM_OBS_HET, l]
-                    else:
-                        # OBS is hom
-                        if G[j1, j2, l] == 1:  # REF is het
-                            F[j1, j2, l] *= e[REF_HET_OBS_HOM, l]
-                        else:  # REF is hom
-                            if G[j1, j2, l] == s[0, l]:  # Equal
-                                F[j1, j2, l] *= e[EQUAL_BOTH_HOM, l]
-                            else:  # Unequal
-                                F[j1, j2, l] *= e[UNEQUAL_BOTH_HOM, l]
+            if s[0, l] == MISSING:
+                F[:, :, l] *= e[0, l]
+            else:
+                for j1 in range(n):
+                    for j2 in range(n):
+                        # What is the emission?
+                        if s[0, l] == 1:
+                            # OBS is het
+                            if G[j1, j2, l] == 1:  # REF is het
+                                F[j1, j2, l] *= e[BOTH_HET, l]
+                            else:  # REF is hom
+                                F[j1, j2, l] *= e[REF_HOM_OBS_HET, l]
+                        else:
+                            # OBS is hom
+                            if G[j1, j2, l] == 1:  # REF is het
+                                F[j1, j2, l] *= e[REF_HET_OBS_HOM, l]
+                            else:  # REF is hom
+                                if G[j1, j2, l] == s[0, l]:  # Equal
+                                    F[j1, j2, l] *= e[EQUAL_BOTH_HOM, l]
+                                else:  # Unequal
+                                    F[j1, j2, l] *= e[UNEQUAL_BOTH_HOM, l]
 
         ll = np.log10(np.sum(F[:, :, l]))
 
@@ -439,24 +475,27 @@ def backward_ls_dip_loop(n, m, G, s, e, c, r):
 
         # Evaluate the emission matrix at this site, for all pairs
         e_tmp = np.zeros((n, n))
-        for j1 in range(n):
-            for j2 in range(n):
-                # What is the emission?
-                if s[0, l + 1] == 1:
-                    # OBS is het
-                    if G[j1, j2, l + 1] == 1:  # REF is het
-                        e_tmp[j1, j2] = e[BOTH_HET, l + 1]
-                    else:  # REF is hom
-                        e_tmp[j1, j2] = e[REF_HOM_OBS_HET, l + 1]
-                else:
-                    # OBS is hom
-                    if G[j1, j2, l + 1] == 1:  # REF is het
-                        e_tmp[j1, j2] = e[REF_HET_OBS_HOM, l + 1]
-                    else:  # REF is hom
-                        if G[j1, j2, l + 1] == s[0, l + 1]:  # Equal
-                            e_tmp[j1, j2] = e[EQUAL_BOTH_HOM, l + 1]
-                        else:  # Unequal
-                            e_tmp[j1, j2] = e[UNEQUAL_BOTH_HOM, l + 1]
+        if s[0, l + 1] == MISSING:
+            e_tmp[:, :] = e[0, l + 1]
+        else:
+            for j1 in range(n):
+                for j2 in range(n):
+                    # What is the emission?
+                    if s[0, l + 1] == 1:
+                        # OBS is het
+                        if G[j1, j2, l + 1] == 1:  # REF is het
+                            e_tmp[j1, j2] = e[BOTH_HET, l + 1]
+                        else:  # REF is hom
+                            e_tmp[j1, j2] = e[REF_HOM_OBS_HET, l + 1]
+                    else:
+                        # OBS is hom
+                        if G[j1, j2, l + 1] == 1:  # REF is het
+                            e_tmp[j1, j2] = e[REF_HET_OBS_HOM, l + 1]
+                        else:  # REF is hom
+                            if G[j1, j2, l + 1] == s[0, l + 1]:  # Equal
+                                e_tmp[j1, j2] = e[EQUAL_BOTH_HOM, l + 1]
+                            else:  # Unequal
+                                e_tmp[j1, j2] = e[UNEQUAL_BOTH_HOM, l + 1]
 
         for j1 in range(n):
             for j2 in range(n):

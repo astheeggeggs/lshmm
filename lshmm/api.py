@@ -148,6 +148,7 @@ def set_emission_probabilities(
             )  # Added boolean in case we're at an invariant site
             e[:, 1] = 1 - (n_alleles - 1) * mutation_rate
         else:
+            print("hello hello")
             # No scaling based on the number of alleles - so the mutation rate is the mutation rate to anything.
             # Which means that we must rescale the mutation rate to a different allele, by the number of alleles.
             for j in range(m):

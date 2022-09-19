@@ -2,6 +2,9 @@
 import numba as nb
 import numpy as np
 
+MISSING = -1
+EQUAL_BOTH_HOM = 4
+BOTH_HET = 7
 
 # https://github.com/numba/numba/issues/1269
 @nb.njit
@@ -49,19 +52,31 @@ def forwards_viterbi_dip_naive(n, m, G, s, e, r):
 
     for j1 in range(n):
         for j2 in range(n):
-            index_tmp = (
-                4 * np.int64(np.equal(G[0, j1, j2], s[0, 0]))
-                + 2 * np.int64((G[0, j1, j2] == 1))
-                + np.int64(s[0, 0] == 1)
-            )
+            if s[0, 0] == MISSING:
+                if np.int64(G[0, j1, j2]) == 1:
+                    index_tmp = BOTH_HET
+                else:
+                    index_tmp = EQUAL_BOTH_HOM
+            else:
+                index_tmp = (
+                    4 * np.int64(np.equal(G[0, j1, j2], s[0, 0]))
+                    + 2 * np.int64((G[0, j1, j2] == 1))
+                    + np.int64(s[0, 0] == 1)
+                )
             V[0, j1, j2] = 1 / (n ** 2) * e[0, index_tmp]
 
     for l in range(1, m):
-        index = (
-            4 * np.equal(G[l, :, :], s[0, l]).astype(np.int64)
-            + 2 * (G[l, :, :] == 1).astype(np.int64)
-            + np.int64(s[0, l] == 1)
-        )
+        if s[0, l] == MISSING:
+            index = EQUAL_BOTH_HOM * np.ones((n, n), dtype=np.int64) + (
+                BOTH_HET - EQUAL_BOTH_HOM
+            ) * (G[l, :, :] == 1).astype(np.int64)
+        else:
+            index = (
+                4 * np.equal(G[l, :, :], s[0, l]).astype(np.int64)
+                + 2 * (G[l, :, :] == 1).astype(np.int64)
+                + np.int64(s[0, l] == 1)
+            )
+
         for j1 in range(n):
             for j2 in range(n):
                 # Get the vector to maximise over
@@ -99,21 +114,32 @@ def forwards_viterbi_dip_naive_low_mem(n, m, G, s, e, r):
 
     for j1 in range(n):
         for j2 in range(n):
-            index_tmp = (
-                4 * np.int64(np.equal(G[0, j1, j2], s[0, 0]))
-                + 2 * np.int64((G[0, j1, j2] == 1))
-                + np.int64(s[0, 0] == 1)
-            )
+            if s[0, 0] == MISSING:
+                if np.int64(G[0, j1, j2]) == 1:
+                    index_tmp = BOTH_HET
+                else:
+                    index_tmp = EQUAL_BOTH_HOM
+            else:
+                index_tmp = (
+                    4 * np.int64(np.equal(G[0, j1, j2], s[0, 0]))
+                    + 2 * np.int64((G[0, j1, j2] == 1))
+                    + np.int64(s[0, 0] == 1)
+                )
             V_previous[j1, j2] = 1 / (n ** 2) * e[0, index_tmp]
 
     # Take a look at Haploid Viterbi implementation in Jeromes code and see if we can pinch some ideas.
     # Diploid Viterbi, with smaller memory footprint.
     for l in range(1, m):
-        index = (
-            4 * np.equal(G[l, :, :], s[0, l]).astype(np.int64)
-            + 2 * (G[l, :, :] == 1).astype(np.int64)
-            + np.int64(s[0, l] == 1)
-        )
+        if s[0, l] == MISSING:
+            index = EQUAL_BOTH_HOM * np.ones((n, n), dtype=np.int64) + (
+                BOTH_HET - EQUAL_BOTH_HOM
+            ) * (G[l, :, :] == 1).astype(np.int64)
+        else:
+            index = (
+                4 * np.equal(G[l, :, :], s[0, l]).astype(np.int64)
+                + 2 * (G[l, :, :] == 1).astype(np.int64)
+                + np.int64(s[0, l] == 1)
+            )
         for j1 in range(n):
             for j2 in range(n):
                 # Get the vector to maximise over
@@ -151,21 +177,31 @@ def forwards_viterbi_dip_low_mem(n, m, G, s, e, r):
 
     for j1 in range(n):
         for j2 in range(n):
-            index_tmp = (
-                4 * np.int64(np.equal(G[0, j1, j2], s[0, 0]))
-                + 2 * np.int64((G[0, j1, j2] == 1))
-                + np.int64(s[0, 0] == 1)
-            )
+            if s[0, 0] == MISSING:
+                if np.int64(G[0, j1, j2]) == 1:
+                    index_tmp = BOTH_HET
+                else:
+                    index_tmp = EQUAL_BOTH_HOM
+            else:
+                index_tmp = (
+                    4 * np.int64(np.equal(G[0, j1, j2], s[0, 0]))
+                    + 2 * np.int64((G[0, j1, j2] == 1))
+                    + np.int64(s[0, 0] == 1)
+                )
             V_previous[j1, j2] = 1 / (n ** 2) * e[0, index_tmp]
 
     # Diploid Viterbi, with smaller memory footprint, rescaling, and using the structure of the HMM.
     for l in range(1, m):
-
-        index = (
-            4 * np.equal(G[l, :, :], s[0, l]).astype(np.int64)
-            + 2 * (G[l, :, :] == 1).astype(np.int64)
-            + np.int64(s[0, l] == 1)
-        )
+        if s[0, l] == MISSING:
+            index = EQUAL_BOTH_HOM * np.ones((n, n), dtype=np.int64) + (
+                BOTH_HET - EQUAL_BOTH_HOM
+            ) * (G[l, :, :] == 1).astype(np.int64)
+        else:
+            index = (
+                4 * np.equal(G[l, :, :], s[0, l]).astype(np.int64)
+                + 2 * (G[l, :, :] == 1).astype(np.int64)
+                + np.int64(s[0, l] == 1)
+            )
 
         c[l] = np.amax(V_previous)
         argmax = np.argmax(V_previous)
@@ -240,21 +276,31 @@ def forwards_viterbi_dip_low_mem_no_pointer(n, m, G, s, e, r):
 
     for j1 in range(n):
         for j2 in range(n):
-            index_tmp = (
-                4 * np.int64(np.equal(G[0, j1, j2], s[0, 0]))
-                + 2 * np.int64((G[0, j1, j2] == 1))
-                + np.int64(s[0, 0] == 1)
-            )
+            if s[0, 0] == MISSING:
+                if np.int64(G[0, j1, j2]) == 1:
+                    index_tmp = BOTH_HET
+                else:
+                    index_tmp = EQUAL_BOTH_HOM
+            else:
+                index_tmp = (
+                    4 * np.int64(np.equal(G[0, j1, j2], s[0, 0]))
+                    + 2 * np.int64((G[0, j1, j2] == 1))
+                    + np.int64(s[0, 0] == 1)
+                )
             V_previous[j1, j2] = 1 / (n ** 2) * e[0, index_tmp]
 
     # Diploid Viterbi, with smaller memory footprint, rescaling, and using the structure of the HMM.
     for l in range(1, m):
-
-        index = (
-            4 * np.equal(G[l, :, :], s[0, l]).astype(np.int64)
-            + 2 * (G[l, :, :] == 1).astype(np.int64)
-            + np.int64(s[0, l] == 1)
-        )
+        if s[0, l] == MISSING:
+            index = EQUAL_BOTH_HOM * np.ones((n, n), dtype=np.int64) + (
+                BOTH_HET - EQUAL_BOTH_HOM
+            ) * (G[l, :, :] == 1).astype(np.int64)
+        else:
+            index = (
+                4 * np.equal(G[l, :, :], s[0, l]).astype(np.int64)
+                + 2 * (G[l, :, :] == 1).astype(np.int64)
+                + np.int64(s[0, l] == 1)
+            )
 
         c[l] = np.amax(V_previous)
         argmax = np.argmax(V_previous)
@@ -322,21 +368,31 @@ def forwards_viterbi_dip_naive_vec(n, m, G, s, e, r):
 
     for j1 in range(n):
         for j2 in range(n):
-            index_tmp = (
-                4 * np.int64(np.equal(G[0, j1, j2], s[0, 0]))
-                + 2 * np.int64((G[0, j1, j2] == 1))
-                + np.int64(s[0, 0] == 1)
-            )
+            if s[0, 0] == MISSING:
+                if np.int64(G[0, j1, j2]) == 1:
+                    index_tmp = BOTH_HET
+                else:
+                    index_tmp = EQUAL_BOTH_HOM
+            else:
+                index_tmp = (
+                    4 * np.int64(np.equal(G[0, j1, j2], s[0, 0]))
+                    + 2 * np.int64((G[0, j1, j2] == 1))
+                    + np.int64(s[0, 0] == 1)
+                )
             V[0, j1, j2] = 1 / (n ** 2) * e[0, index_tmp]
 
     # Jumped the gun - vectorising.
     for l in range(1, m):
-
-        index = (
-            4 * np.equal(G[l, :, :], s[0, l]).astype(np.int64)
-            + 2 * (G[l, :, :] == 1).astype(np.int64)
-            + np.int64(s[0, l] == 1)
-        )
+        if s[0, l] == MISSING:
+            index = EQUAL_BOTH_HOM * np.ones((n, n), dtype=np.int64) + (
+                BOTH_HET - EQUAL_BOTH_HOM
+            ) * (G[l, :, :] == 1).astype(np.int64)
+        else:
+            index = (
+                4 * np.equal(G[l, :, :], s[0, l]).astype(np.int64)
+                + 2 * (G[l, :, :] == 1).astype(np.int64)
+                + np.int64(s[0, l] == 1)
+            )
 
         for j1 in range(n):
             for j2 in range(n):
@@ -367,20 +423,30 @@ def forwards_viterbi_dip_naive_full_vec(n, m, G, s, e, r):
     V = np.zeros((m, n, n))
     P = np.zeros((m, n, n)).astype(np.int64)
     c = np.ones(m)
-    index = (
-        4 * np.equal(G[0, :, :], s[0, 0]).astype(np.int64)
-        + 2 * (G[0, :, :] == 1).astype(np.int64)
-        + np.int64(s[0, 0] == 1)
-    )
+    if s[0, 0] == MISSING:
+        index = EQUAL_BOTH_HOM * np.ones((n, n), dtype=np.int64) + (
+            BOTH_HET - EQUAL_BOTH_HOM
+        ) * (G[0, :, :] == 1).astype(np.int64)
+    else:
+        index = (
+            4 * np.equal(G[0, :, :], s[0, 0]).astype(np.int64)
+            + 2 * (G[0, :, :] == 1).astype(np.int64)
+            + np.int64(s[0, 0] == 1)
+        )
     V[0, :, :] = 1 / (n ** 2) * e[0, index]
     r_n = r / n
 
     for l in range(1, m):
-        index = (
-            4 * np.equal(G[l, :, :], s[0, l]).astype(np.int64)
-            + 2 * (G[l, :, :] == 1).astype(np.int64)
-            + np.int64(s[0, l] == 1)
-        )
+        if s[0, l] == MISSING:
+            index = EQUAL_BOTH_HOM * np.ones((n, n), dtype=np.int64) + (
+                BOTH_HET - EQUAL_BOTH_HOM
+            ) * (G[l, :, :] == 1).astype(np.int64)
+        else:
+            index = (
+                4 * np.equal(G[l, :, :], s[0, l]).astype(np.int64)
+                + 2 * (G[l, :, :] == 1).astype(np.int64)
+                + np.int64(s[0, l] == 1)
+            )
         v = (
             (r_n[l] ** 2)
             + (1 - r[l]) ** 2 * char_both
@@ -463,25 +529,40 @@ def get_phased_path(n, path):
     return np.unravel_index(path, (n, n))
 
 
-@nb.njit
+# @nb.jit
 def path_ll_dip(n, m, G, phased_path, s, e, r):
     """Evaluate log-likelihood path through a reference panel which results in sequence s."""
-    index = (
-        4 * np.int64(np.equal(G[0, phased_path[0][0], phased_path[1][0]], s[0, 0]))
-        + 2 * np.int64(G[0, phased_path[0][0], phased_path[1][0]] == 1)
-        + np.int64(s[0, 0] == 1)
-    )
+    if s[0, 0] == MISSING:
+        if np.int64(G[0, phased_path[0][0], phased_path[1][0]]) == 1:
+            index = BOTH_HET
+        else:
+            index = EQUAL_BOTH_HOM
+    else:
+        index = (
+            4 * np.int64(np.equal(G[0, phased_path[0][0], phased_path[1][0]], s[0, 0]))
+            + 2 * np.int64(G[0, phased_path[0][0], phased_path[1][0]] == 1)
+            + np.int64(s[0, 0] == 1)
+        )
     log_prob_path = np.log10(1 / (n ** 2) * e[0, index])
     old_phase = np.array([phased_path[0][0], phased_path[1][0]])
     r_n = r / n
 
     for l in range(1, m):
 
-        index = (
-            4 * np.int64(np.equal(G[l, phased_path[0][l], phased_path[1][l]], s[0, l]))
-            + 2 * np.int64(G[l, phased_path[0][l], phased_path[1][l]] == 1)
-            + np.int64(s[0, l] == 1)
-        )
+        if s[0, l] == MISSING:
+            if np.int64(G[l, phased_path[0][l], phased_path[1][l]]) == 1:
+                index = BOTH_HET
+            else:
+                index = EQUAL_BOTH_HOM
+        else:
+            index = (
+                4
+                * np.int64(
+                    np.equal(G[l, phased_path[0][l], phased_path[1][l]], s[0, l])
+                )
+                + 2 * np.int64(G[l, phased_path[0][l], phased_path[1][l]] == 1)
+                + np.int64(s[0, l] == 1)
+            )
 
         current_phase = np.array([phased_path[0][l], phased_path[1][l]])
         phase_diff = np.sum(~np.equal(current_phase, old_phase))

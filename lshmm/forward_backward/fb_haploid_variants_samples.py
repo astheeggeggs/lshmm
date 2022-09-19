@@ -2,6 +2,8 @@
 import numba as nb
 import numpy as np
 
+MISSING = -1
+
 
 @nb.njit
 def forwards_ls_hap(n, m, H, s, e, r, norm=True):
@@ -14,8 +16,9 @@ def forwards_ls_hap(n, m, H, s, e, r, norm=True):
 
         c = np.zeros(m)
         for i in range(n):
-            print(e[0, np.int64(np.equal(H[0, i], s[0, 0]))])
-            F[0, i] = 1 / n * e[0, np.int64(np.equal(H[0, i], s[0, 0]))]
+            F[0, i] = (
+                1 / n * e[0, np.int64(np.equal(H[0, i], s[0, 0]) or s[0, 0] == MISSING)]
+            )
             c[0] += F[0, i]
 
         for i in range(n):
@@ -25,29 +28,37 @@ def forwards_ls_hap(n, m, H, s, e, r, norm=True):
         for l in range(1, m):
             for i in range(n):
                 F[l, i] = F[l - 1, i] * (1 - r[l]) + r_n[l]
-                F[l, i] *= e[l, np.int64(np.equal(H[l, i], s[0, l]))]
+                F[l, i] *= e[
+                    l, np.int64(np.equal(H[l, i], s[0, l]) or s[0, l] == MISSING)
+                ]
                 c[l] += F[l, i]
 
             for i in range(n):
                 F[l, i] *= 1 / c[l]
 
         ll = np.sum(np.log10(c))
+        print(c)
 
     else:
 
         c = np.ones(m)
 
         for i in range(n):
-            F[0, i] = 1 / n * e[0, np.int64(np.equal(H[0, i], s[0, 0]))]
+            F[0, i] = (
+                1 / n * e[0, np.int64(np.equal(H[0, i], s[0, 0]) or s[0, 0] == MISSING)]
+            )
 
         # Forwards pass
         for l in range(1, m):
             for i in range(n):
                 F[l, i] = F[l - 1, i] * (1 - r[l]) + np.sum(F[l - 1, :]) * r_n[l]
-                F[l, i] *= e[l, np.int64(np.equal(H[l, i], s[0, l]))]
+                F[l, i] *= e[
+                    l, np.int64(np.equal(H[l, i], s[0, l]) or s[0, l] == MISSING)
+                ]
 
         ll = np.log10(np.sum(F[m - 1, :]))
 
+    # print(c)
     return F, c, ll
 
 
@@ -66,7 +77,13 @@ def backwards_ls_hap(n, m, H, s, e, c, r):
         tmp_B_sum = 0
         for i in range(n):
             tmp_B[i] = (
-                e[l + 1, np.int64(np.equal(H[l + 1, i], s[0, l + 1]))] * B[l + 1, i]
+                e[
+                    l + 1,
+                    np.int64(
+                        np.equal(H[l + 1, i], s[0, l + 1]) or s[0, l + 1] == MISSING
+                    ),
+                ]
+                * B[l + 1, i]
             )
             tmp_B_sum += tmp_B[i]
         for i in range(n):
