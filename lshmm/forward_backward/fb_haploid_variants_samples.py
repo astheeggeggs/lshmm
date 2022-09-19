@@ -14,7 +14,6 @@ def forwards_ls_hap(n, m, H, s, e, r, norm=True):
 
         c = np.zeros(m)
         for i in range(n):
-            print(e[0, np.int64(np.equal(H[0, i], s[0, 0]))])
             F[0, i] = 1 / n * e[0, np.int64(np.equal(H[0, i], s[0, 0]))]
             c[0] += F[0, i]
 
