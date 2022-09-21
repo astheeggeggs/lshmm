@@ -20,6 +20,7 @@ REF_HOM_OBS_HET = 1
 REF_HET_OBS_HOM = 2
 
 MISSING = -1
+MISSING_INDEX = 3
 
 
 class LSBase:

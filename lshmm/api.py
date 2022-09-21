@@ -28,6 +28,7 @@ UNEQUAL_BOTH_HOM = 0
 BOTH_HET = 7
 REF_HOM_OBS_HET = 1
 REF_HET_OBS_HOM = 2
+MISSING_INDEX = 3
 
 
 def check_alleles(alleles, m):
@@ -73,8 +74,6 @@ def checks(
 
     m = ref_shape[0]
     n = ref_shape[1]
-
-    print(f"Number of sites: {m}, number of samples: {n}\n")
 
     # Ensure that the mutation rate is either a scalar or vector of length m
     if not isinstance(mutation_rate, float) and (mutation_rate is not None):
@@ -148,7 +147,6 @@ def set_emission_probabilities(
             )  # Added boolean in case we're at an invariant site
             e[:, 1] = 1 - (n_alleles - 1) * mutation_rate
         else:
-            print("hello hello")
             # No scaling based on the number of alleles - so the mutation rate is the mutation rate to anything.
             # Which means that we must rescale the mutation rate to a different allele, by the number of alleles.
             for j in range(m):
@@ -168,6 +166,7 @@ def set_emission_probabilities(
         e[:, BOTH_HET] = (1 - mutation_rate) ** 2 + mutation_rate ** 2
         e[:, REF_HOM_OBS_HET] = 2 * mutation_rate * (1 - mutation_rate)
         e[:, REF_HET_OBS_HOM] = mutation_rate * (1 - mutation_rate)
+        e[:, MISSING_INDEX] = 1
 
     return e
 

@@ -3,8 +3,7 @@ import numba as nb
 import numpy as np
 
 MISSING = -1
-EQUAL_BOTH_HOM = 4
-BOTH_HET = 7
+MISSING_INDEX = 3
 
 # https://github.com/numba/numba/issues/1269
 @nb.njit
@@ -53,10 +52,7 @@ def forwards_viterbi_dip_naive(n, m, G, s, e, r):
     for j1 in range(n):
         for j2 in range(n):
             if s[0, 0] == MISSING:
-                if np.int64(G[0, j1, j2]) == 1:
-                    index_tmp = BOTH_HET
-                else:
-                    index_tmp = EQUAL_BOTH_HOM
+                index_tmp = MISSING_INDEX
             else:
                 index_tmp = (
                     4 * np.int64(np.equal(G[0, j1, j2], s[0, 0]))
@@ -67,9 +63,7 @@ def forwards_viterbi_dip_naive(n, m, G, s, e, r):
 
     for l in range(1, m):
         if s[0, l] == MISSING:
-            index = EQUAL_BOTH_HOM * np.ones((n, n), dtype=np.int64) + (
-                BOTH_HET - EQUAL_BOTH_HOM
-            ) * (G[l, :, :] == 1).astype(np.int64)
+            index = MISSING_INDEX * np.ones((n, n), dtype=np.int64)
         else:
             index = (
                 4 * np.equal(G[l, :, :], s[0, l]).astype(np.int64)
@@ -115,10 +109,7 @@ def forwards_viterbi_dip_naive_low_mem(n, m, G, s, e, r):
     for j1 in range(n):
         for j2 in range(n):
             if s[0, 0] == MISSING:
-                if np.int64(G[0, j1, j2]) == 1:
-                    index_tmp = BOTH_HET
-                else:
-                    index_tmp = EQUAL_BOTH_HOM
+                index_tmp = MISSING_INDEX
             else:
                 index_tmp = (
                     4 * np.int64(np.equal(G[0, j1, j2], s[0, 0]))
@@ -131,9 +122,7 @@ def forwards_viterbi_dip_naive_low_mem(n, m, G, s, e, r):
     # Diploid Viterbi, with smaller memory footprint.
     for l in range(1, m):
         if s[0, l] == MISSING:
-            index = EQUAL_BOTH_HOM * np.ones((n, n), dtype=np.int64) + (
-                BOTH_HET - EQUAL_BOTH_HOM
-            ) * (G[l, :, :] == 1).astype(np.int64)
+            index = MISSING_INDEX * np.ones((n, n), dtype=np.int64)
         else:
             index = (
                 4 * np.equal(G[l, :, :], s[0, l]).astype(np.int64)
@@ -178,10 +167,7 @@ def forwards_viterbi_dip_low_mem(n, m, G, s, e, r):
     for j1 in range(n):
         for j2 in range(n):
             if s[0, 0] == MISSING:
-                if np.int64(G[0, j1, j2]) == 1:
-                    index_tmp = BOTH_HET
-                else:
-                    index_tmp = EQUAL_BOTH_HOM
+                index_tmp = MISSING_INDEX
             else:
                 index_tmp = (
                     4 * np.int64(np.equal(G[0, j1, j2], s[0, 0]))
@@ -193,9 +179,7 @@ def forwards_viterbi_dip_low_mem(n, m, G, s, e, r):
     # Diploid Viterbi, with smaller memory footprint, rescaling, and using the structure of the HMM.
     for l in range(1, m):
         if s[0, l] == MISSING:
-            index = EQUAL_BOTH_HOM * np.ones((n, n), dtype=np.int64) + (
-                BOTH_HET - EQUAL_BOTH_HOM
-            ) * (G[l, :, :] == 1).astype(np.int64)
+            index = MISSING_INDEX * np.ones((n, n), dtype=np.int64)
         else:
             index = (
                 4 * np.equal(G[l, :, :], s[0, l]).astype(np.int64)
@@ -277,10 +261,7 @@ def forwards_viterbi_dip_low_mem_no_pointer(n, m, G, s, e, r):
     for j1 in range(n):
         for j2 in range(n):
             if s[0, 0] == MISSING:
-                if np.int64(G[0, j1, j2]) == 1:
-                    index_tmp = BOTH_HET
-                else:
-                    index_tmp = EQUAL_BOTH_HOM
+                index_tmp = MISSING_INDEX
             else:
                 index_tmp = (
                     4 * np.int64(np.equal(G[0, j1, j2], s[0, 0]))
@@ -292,9 +273,7 @@ def forwards_viterbi_dip_low_mem_no_pointer(n, m, G, s, e, r):
     # Diploid Viterbi, with smaller memory footprint, rescaling, and using the structure of the HMM.
     for l in range(1, m):
         if s[0, l] == MISSING:
-            index = EQUAL_BOTH_HOM * np.ones((n, n), dtype=np.int64) + (
-                BOTH_HET - EQUAL_BOTH_HOM
-            ) * (G[l, :, :] == 1).astype(np.int64)
+            index = MISSING_INDEX * np.ones((n, n), dtype=np.int64)
         else:
             index = (
                 4 * np.equal(G[l, :, :], s[0, l]).astype(np.int64)
@@ -369,10 +348,7 @@ def forwards_viterbi_dip_naive_vec(n, m, G, s, e, r):
     for j1 in range(n):
         for j2 in range(n):
             if s[0, 0] == MISSING:
-                if np.int64(G[0, j1, j2]) == 1:
-                    index_tmp = BOTH_HET
-                else:
-                    index_tmp = EQUAL_BOTH_HOM
+                index_tmp = MISSING_INDEX
             else:
                 index_tmp = (
                     4 * np.int64(np.equal(G[0, j1, j2], s[0, 0]))
@@ -384,9 +360,7 @@ def forwards_viterbi_dip_naive_vec(n, m, G, s, e, r):
     # Jumped the gun - vectorising.
     for l in range(1, m):
         if s[0, l] == MISSING:
-            index = EQUAL_BOTH_HOM * np.ones((n, n), dtype=np.int64) + (
-                BOTH_HET - EQUAL_BOTH_HOM
-            ) * (G[l, :, :] == 1).astype(np.int64)
+            index = MISSING_INDEX * np.ones((n, n), dtype=np.int64)
         else:
             index = (
                 4 * np.equal(G[l, :, :], s[0, l]).astype(np.int64)
@@ -424,9 +398,7 @@ def forwards_viterbi_dip_naive_full_vec(n, m, G, s, e, r):
     P = np.zeros((m, n, n)).astype(np.int64)
     c = np.ones(m)
     if s[0, 0] == MISSING:
-        index = EQUAL_BOTH_HOM * np.ones((n, n), dtype=np.int64) + (
-            BOTH_HET - EQUAL_BOTH_HOM
-        ) * (G[0, :, :] == 1).astype(np.int64)
+        index = MISSING_INDEX * np.ones((n, n), dtype=np.int64)
     else:
         index = (
             4 * np.equal(G[0, :, :], s[0, 0]).astype(np.int64)
@@ -438,9 +410,7 @@ def forwards_viterbi_dip_naive_full_vec(n, m, G, s, e, r):
 
     for l in range(1, m):
         if s[0, l] == MISSING:
-            index = EQUAL_BOTH_HOM * np.ones((n, n), dtype=np.int64) + (
-                BOTH_HET - EQUAL_BOTH_HOM
-            ) * (G[l, :, :] == 1).astype(np.int64)
+            index = MISSING_INDEX * np.ones((n, n), dtype=np.int64)
         else:
             index = (
                 4 * np.equal(G[l, :, :], s[0, l]).astype(np.int64)
@@ -529,14 +499,11 @@ def get_phased_path(n, path):
     return np.unravel_index(path, (n, n))
 
 
-# @nb.jit
+@nb.njit
 def path_ll_dip(n, m, G, phased_path, s, e, r):
     """Evaluate log-likelihood path through a reference panel which results in sequence s."""
     if s[0, 0] == MISSING:
-        if np.int64(G[0, phased_path[0][0], phased_path[1][0]]) == 1:
-            index = BOTH_HET
-        else:
-            index = EQUAL_BOTH_HOM
+        index = MISSING_INDEX
     else:
         index = (
             4 * np.int64(np.equal(G[0, phased_path[0][0], phased_path[1][0]], s[0, 0]))
@@ -550,10 +517,7 @@ def path_ll_dip(n, m, G, phased_path, s, e, r):
     for l in range(1, m):
 
         if s[0, l] == MISSING:
-            if np.int64(G[l, phased_path[0][l], phased_path[1][l]]) == 1:
-                index = BOTH_HET
-            else:
-                index = EQUAL_BOTH_HOM
+            index = MISSING_INDEX
         else:
             index = (
                 4

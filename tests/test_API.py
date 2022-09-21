@@ -20,6 +20,7 @@ REF_HOM_OBS_HET = 1
 REF_HET_OBS_HOM = 2
 
 MISSING = -1
+MISSING_INDEX = 3
 
 
 class LSBase:
@@ -73,6 +74,7 @@ class LSBase:
         e[:, BOTH_HET] = (1 - mu) ** 2 + mu ** 2
         e[:, REF_HOM_OBS_HET] = 2 * mu * (1 - mu)
         e[:, REF_HET_OBS_HOM] = mu * (1 - mu)
+        e[:, MISSING_INDEX] = 1
 
         return e
 
@@ -111,21 +113,6 @@ class LSBase:
                 mu, m, n_alleles, scale_mutation_based_on_n_alleles=scale_mutation
             )
             yield n, m, H, s, e, r, mu
-
-    # def example_genotypes(self, ts):
-
-    #     H = ts.genotype_matrix()
-    #     s = H[:, 0].reshape(1, H.shape[0]) + H[:, 1].reshape(1, H.shape[0])
-    #     H = H[:, 2:]
-
-    #     m = ts.get_num_sites()
-    #     n = H.shape[1]
-
-    #     G = np.zeros((m, n, n))
-    #     for i in range(m):
-    #         G[i, :, :] = np.add.outer(H[i, :], H[i, :])
-
-    #     return H, G, s
 
     def example_genotypes(self, ts, seed=42):
 

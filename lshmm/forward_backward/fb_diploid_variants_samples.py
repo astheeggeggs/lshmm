@@ -9,6 +9,7 @@ REF_HOM_OBS_HET = 1
 REF_HET_OBS_HOM = 2
 
 MISSING = -1
+MISSING_INDEX = 3
 
 # https://github.com/numba/numba/issues/1269
 @nb.njit
@@ -54,7 +55,7 @@ def forwards_ls_dip(n, m, G, s, e, r, norm=True):
     r_n = r / n
 
     if s[0, 0] == MISSING:
-        index = np.zeros(
+        index = MISSING_INDEX * np.ones(
             (n, n), dtype=np.int64
         )  # We could have chosen anything here, this just implies a multiplication by a constant.
     else:
@@ -73,7 +74,7 @@ def forwards_ls_dip(n, m, G, s, e, r, norm=True):
         # Forwards
         for l in range(1, m):
             if s[0, l] == MISSING:
-                index = np.zeros((n, n), dtype=np.int64)
+                index = MISSING_INDEX * np.ones((n, n), dtype=np.int64)
             else:
                 index = 4 * np.equal(G[l, :, :], s[0, l]).astype(np.int64) + 2 * (
                     G[l, :, :] == 1
@@ -102,7 +103,7 @@ def forwards_ls_dip(n, m, G, s, e, r, norm=True):
         # Forwards
         for l in range(1, m):
             if s[0, l] == MISSING:
-                index = np.zeros((n, n), dtype=np.int64)
+                index = MISSING_INDEX * np.ones((n, n), dtype=np.int64)
             else:
                 index = 4 * np.equal(G[l, :, :], s[0, l]).astype(np.int64) + 2 * (
                     G[l, :, :] == 1
@@ -143,7 +144,7 @@ def backwards_ls_dip(n, m, G, s, e, c, r):
     for l in range(m - 2, -1, -1):
 
         if s[0, l + 1] == MISSING:
-            index = np.zeros(
+            index = MISSING_INDEX * np.ones(
                 (n, n), dtype=np.int64
             )  # We could have chosen anything here, this just implies a multiplication by a constant.
         else:
@@ -181,7 +182,7 @@ def forward_ls_dip_starting_point(n, m, G, s, e, r):
         for j2 in range(n):
             F[0, j1, j2] = 1 / (n ** 2)
             if s[0, 0] == MISSING:
-                index_tmp = 0
+                index_tmp = MISSING_INDEX
             else:
                 index_tmp = (
                     4 * np.int64(np.equal(G[0, j1, j2], s[0, 0]))
@@ -230,7 +231,7 @@ def forward_ls_dip_starting_point(n, m, G, s, e, r):
             for j2 in range(n):
                 # What is the emission?
                 if s[0, l] == MISSING:
-                    F[l, j1, j2] *= e[l, 0]
+                    F[l, j1, j2] *= e[l, MISSING_INDEX]
                 else:
                     if s[0, l] == 1:
                         # OBS is het
@@ -274,7 +275,7 @@ def backward_ls_dip_starting_point(n, m, G, s, e, r):
         # Evaluate the emission matrix at this site, for all pairs
         e_tmp = np.zeros((n, n))
         if s[0, l + 1] == MISSING:
-            e_tmp[:, :] = e[l + 1, 0]
+            e_tmp[:, :] = e[l + 1, MISSING_INDEX]
         else:
             for j1 in range(n):
                 for j2 in range(n):
@@ -341,7 +342,7 @@ def forward_ls_dip_loop(n, m, G, s, e, r, norm=True):
         for j2 in range(n):
             F[0, j1, j2] = 1 / (n ** 2)
             if s[0, 0] == MISSING:
-                index_tmp = 0
+                index_tmp = MISSING_INDEX
             else:
                 index_tmp = (
                     4 * np.int64(np.equal(G[0, j1, j2], s[0, 0]))
@@ -377,7 +378,7 @@ def forward_ls_dip_loop(n, m, G, s, e, r, norm=True):
                     F[l, j1, j2] += F_no_change[j1, j2]
 
             if s[0, l] == MISSING:
-                F[l, :, :] *= e[l, 0]
+                F[l, :, :] *= e[l, MISSING_INDEX]
             else:
                 for j1 in range(n):
                     for j2 in range(n):
@@ -429,7 +430,7 @@ def forward_ls_dip_loop(n, m, G, s, e, r, norm=True):
                     F[l, j1, j2] += F_no_change[j1, j2]
 
             if s[0, l] == MISSING:
-                F[l, :, :] *= e[l, 0]
+                F[l, :, :] *= e[l, MISSING_INDEX]
             else:
                 for j1 in range(n):
                     for j2 in range(n):
@@ -474,11 +475,12 @@ def backward_ls_dip_loop(n, m, G, s, e, c, r):
         # Evaluate the emission matrix at this site, for all pairs
         e_tmp = np.zeros((n, n))
         if s[0, l + 1] == MISSING:
-            e_tmp[:, :] = e[l + 1, 0]
+            e_tmp[:, :] = e[l + 1, MISSING_INDEX]
         else:
             for j1 in range(n):
                 for j2 in range(n):
                     # What is the emission?
+                    # else:
                     if s[0, l + 1] == 1:
                         # OBS is het
                         if G[l + 1, j1, j2] == 1:  # REF is het

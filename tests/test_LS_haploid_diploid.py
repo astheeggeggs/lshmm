@@ -22,6 +22,7 @@ REF_HOM_OBS_HET = 1
 REF_HET_OBS_HOM = 2
 
 MISSING = -1
+MISSING_INDEX = 3
 
 import numba as nb
 import tskit
@@ -65,6 +66,7 @@ class LSBase:
         e[:, BOTH_HET] = 1 - mu
         e[:, REF_HOM_OBS_HET] = 2 * mu * (1 - mu)
         e[:, REF_HET_OBS_HOM] = mu * (1 - mu)
+        e[:, MISSING_INDEX] = 1
 
         return e
 
@@ -198,7 +200,8 @@ class LSBase:
 
     def assertAllClose(self, A, B):
         """Assert that all entries of two matrices are 'close'"""
-        assert np.allclose(A, B, rtol=1e-9, atol=0.0)
+        # assert np.allclose(A, B, rtol=1e-9, atol=0.0)
+        assert np.allclose(A, B, rtol=1e-09, atol=1e-08)
 
     # Define a bunch of very small tree-sequences for testing a collection of parameters on
     def test_simple_n_10_no_recombination(self):
@@ -341,16 +344,19 @@ class TestNonTreeMethodsDip(FBAlgorithmBase):
             F_tmp, c_tmp, ll_tmp = fbd_vs.forwards_ls_dip(
                 n, m, G_vs, s, e_vs, r, norm=False
             )
+            print(ll_tmp)
             if ll_tmp != -np.inf:
                 B_tmp = fbd_vs.backwards_ls_dip(n, m, G_vs, s, e_vs, c_tmp, r)
                 self.assertAllClose(ll_vs, ll_tmp)
                 self.assertAllClose(
                     np.log10(np.sum(F_tmp * B_tmp, (1, 2))), ll_tmp * np.ones(m)
                 )
+                print(ll_tmp)
 
             F_tmp, ll_tmp = fbd_vs.forward_ls_dip_starting_point(n, m, G_vs, s, e_vs, r)
             if ll_tmp != -np.inf:
                 B_tmp = fbd_vs.backward_ls_dip_starting_point(n, m, G_vs, s, e_vs, r)
+                print(ll_tmp)
                 self.assertAllClose(ll_vs, ll_tmp)
                 self.assertAllClose(
                     np.log10(np.sum(F_tmp * B_tmp, (1, 2))), ll_tmp * np.ones(m)
