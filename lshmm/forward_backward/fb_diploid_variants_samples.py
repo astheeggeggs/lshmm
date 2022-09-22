@@ -1,6 +1,7 @@
 """Collection of functions to run forwards and backwards algorithms on haploid genotype data, where the data is structured as variants x samples."""
-import numba as nb
 import numpy as np
+
+from lshmm import jit
 
 EQUAL_BOTH_HOM = 4
 UNEQUAL_BOTH_HOM = 0
@@ -12,7 +13,7 @@ MISSING = -1
 MISSING_INDEX = 3
 
 # https://github.com/numba/numba/issues/1269
-@nb.njit
+@jit.numba_njit
 def np_apply_along_axis(func1d, axis, arr):
     """Create numpy-like functions for max, sum etc."""
     assert arr.ndim == 2
@@ -28,19 +29,19 @@ def np_apply_along_axis(func1d, axis, arr):
     return result
 
 
-@nb.njit
+@jit.numba_njit
 def np_amax(array, axis):
     """Numba implementation of numpy vectorised maximum."""
     return np_apply_along_axis(np.amax, axis, array)
 
 
-@nb.njit
+@jit.numba_njit
 def np_sum(array, axis):
     """Numba implementation of numpy vectorised sum."""
     return np_apply_along_axis(np.sum, axis, array)
 
 
-@nb.njit
+@jit.numba_njit
 def np_argmax(array, axis):
     """Numba implementation of numpy vectorised argmax."""
     return np_apply_along_axis(np.argmax, axis, array)
@@ -172,7 +173,7 @@ def backwards_ls_dip(n, m, G, s, e, c, r):
     return B
 
 
-@nb.njit
+@jit.numba_njit
 def forward_ls_dip_starting_point(n, m, G, s, e, r):
     """Naive implementation of LS diploid forwards algorithm."""
     # Initialise the forward tensor
@@ -254,7 +255,7 @@ def forward_ls_dip_starting_point(n, m, G, s, e, r):
     return F, ll
 
 
-@nb.njit
+@jit.numba_njit
 def backward_ls_dip_starting_point(n, m, G, s, e, r):
     """Naive implementation of LS diploid backwards algorithm."""
     # Backwards
@@ -333,7 +334,7 @@ def backward_ls_dip_starting_point(n, m, G, s, e, r):
     return B
 
 
-@nb.njit
+@jit.numba_njit
 def forward_ls_dip_loop(n, m, G, s, e, r, norm=True):
     """LS diploid forwards algoritm without vectorisation."""
     # Initialise the forward tensor
@@ -456,7 +457,7 @@ def forward_ls_dip_loop(n, m, G, s, e, r, norm=True):
     return F, c, ll
 
 
-@nb.njit
+@jit.numba_njit
 def backward_ls_dip_loop(n, m, G, s, e, c, r):
     """LS diploid backwards algoritm without vectorisation."""
     # Initialise the backward tensor
