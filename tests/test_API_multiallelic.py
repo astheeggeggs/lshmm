@@ -19,17 +19,31 @@ BOTH_HET = 7
 REF_HOM_OBS_HET = 1
 REF_HET_OBS_HOM = 2
 
+MISSING = -1
+MISSING_INDEX = 3
+
 
 class LSBase:
     """Superclass of Li and Stephens tests."""
 
-    def example_haplotypes(self, ts):
+    def example_haplotypes(self, ts, num_random=10, seed=42):
 
         H = ts.genotype_matrix()
         s = H[:, 0].reshape(1, H.shape[0])
         H = H[:, 1:]
 
-        return H, s
+        haplotypes = [s, H[:, -1].reshape(1, H.shape[0])]
+        s_tmp = s.copy()
+        s_tmp[0, -1] = MISSING
+        haplotypes.append(s_tmp)
+        s_tmp = s.copy()
+        s_tmp[0, ts.num_sites // 2] = MISSING
+        haplotypes.append(s_tmp)
+        s_tmp = s.copy()
+        s_tmp[0, :] = MISSING
+        haplotypes.append(s_tmp)
+
+        return H, haplotypes
 
     def haplotype_emission(self, mu, m, n_alleles, scale_mutation_based_on_n_alleles):
         # Define the emission probability matrix
@@ -56,38 +70,39 @@ class LSBase:
         """Returns an iterator over combinations of haplotype, recombination and
         mutation rates."""
         np.random.seed(seed)
-        H, s = self.example_haplotypes(ts)
+        H, haplotypes = self.example_haplotypes(ts)
         n = H.shape[1]
         m = ts.get_num_sites()
-
-        # Must be calculated from the genotype matrix because we can now get back mutations that
-        # result in the number of alleles being higher than the number of alleles in the reference panel.
-        n_alleles = np.int8(
-            [len(np.unique(np.append(H[j, :], s[:, j]))) for j in range(m)]
-        )
 
         # Here we have equal mutation and recombination
         r = np.zeros(m) + 0.01
         mu = np.zeros(m) + 0.01
         r[0] = 0
 
-        e = self.haplotype_emission(
-            mu, m, n_alleles, scale_mutation_based_on_n_alleles=scale_mutation
-        )
-
-        yield n, m, H, s, e, r, mu
+        for s in haplotypes:
+            # Must be calculated from the genotype matrix because we can now get back mutations that
+            # result in the number of alleles being higher than the number of alleles in the reference panel.
+            n_alleles = np.int8(
+                [len(np.unique(np.append(H[j, :], s[:, j]))) for j in range(m)]
+            )
+            e = self.haplotype_emission(
+                mu, m, n_alleles, scale_mutation_based_on_n_alleles=scale_mutation
+            )
+            yield n, m, H, s, e, r, mu
 
         # Mixture of random and extremes
         rs = [np.zeros(m) + 0.999, np.zeros(m) + 1e-6, np.random.rand(m)]
-
-        mus = [np.zeros(m) + 0.33, np.zeros(m) + 1e-6, np.random.rand(m) * 0.33]
+        mus = [np.zeros(m) + 0.2, np.zeros(m) + 1e-6, np.random.rand(m) * 0.2]
 
         e = self.haplotype_emission(
             mu, m, n_alleles, scale_mutation_based_on_n_alleles=scale_mutation
         )
 
-        for r, mu in itertools.product(rs, mus):
+        for s, r, mu in itertools.product(haplotypes, rs, mus):
             r[0] = 0
+            n_alleles = np.int8(
+                [len(np.unique(np.append(H[j, :], s[:, j]))) for j in range(H.shape[0])]
+            )
             e = self.haplotype_emission(
                 mu, m, n_alleles, scale_mutation_based_on_n_alleles=scale_mutation
             )
@@ -166,6 +181,7 @@ class TestMethodsHap(FBAlgorithmBase):
             B = ls.backwards(H_vs, s, c, r, mutation_rate=mu)
             self.assertAllClose(F, F_vs)
             self.assertAllClose(B, B_vs)
+            # print(e_vs)
             self.assertAllClose(ll_vs, ll)
 
         for n, m, H_vs, s, e_vs, r, mu in self.example_parameters_haplotypes(
