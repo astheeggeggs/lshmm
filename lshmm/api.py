@@ -55,53 +55,78 @@ def checks(
     recombination_rate,
     scale_mutation_based_on_n_alleles,
 ):
+    """
+    Checks that the input data and parameters are valid.
 
-    ref_shape = reference_panel.shape
-    ploidy = len(ref_shape) - 1
+    The reference panel must be a matrix of size (m, n) or (m, n, n).
+    The query must be a matrix of size (k, m) or (k, m, 2).
 
-    if ploidy not in (1, 2):
-        raise ValueError("Ploidy not supported.")
+    m = number of sites.
+    n = number of samples in the reference panel (haplotypes, not individuals).
+    k = number of samples in the query (haplotypes, not individuals).
 
-    if not (query.shape[1] == ref_shape[0]):
+    :param numpy.ndarray(dtype=int) reference_panel: Matrix of size (m, n) or (m, n, n).
+    :param numpy.ndarray(dtype=int) query: Matrix of size (k, m) or (k, m, 2).
+    :param numpy.ndarray(dtype=float) mutation_rate: Scalar or vector of length m.
+    :param numpy.ndarray(dtype=float) recombination_rate: Scalar or vector of length m.
+    :param bool scale_mutation_based_on_n_alleles: Whether to scale mutation rate based on the number of alleles (True) or not (False).
+    :return: n, m, ploidy
+    :rtype: tuple
+    """
+    # Check reference panel
+    if not len(reference_panel.shape) in (2, 3):
+        raise ValueError("Reference panel array must have 2 or 3 dimensions.")
+
+    if len(reference_panel.shape) == 2:
+        m, n = reference_panel.shape
+        ploidy = 1
+    else:
+        m, n, _ = reference_panel.shape
+        ploidy = 2
+
+    if ploidy == 2 and (reference_panel.shape[1] != reference_panel.shape[2]):
         raise ValueError(
-            "Number of variants in query does not match reference_panel. If haploid, ensure variant x sample matrices are passed."
+            "Reference_panel dimensions are incorrect, "
+            "perhaps a sample x sample x variant matrix was passed. "
+            "Expected sites x samples x samples."
         )
 
-    if (ploidy == 2) and (not (ref_shape[1] == ref_shape[2])):
+    # Check query sequence(s)
+    if query.shape[1] != m:
         raise ValueError(
-            "reference_panel dimensions incorrect, perhaps a sample x sample x variant matrix was passed. Expected variant x sample x sample."
+            "Number of sites in query does not match reference panel. "
+            "If haploid, ensure a sites x samples matrix is passed."
         )
-
-    m = ref_shape[0]
-    n = ref_shape[1]
 
     # Ensure that the mutation rate is either a scalar or vector of length m
-    if not isinstance(mutation_rate, float) and (mutation_rate is not None):
-        if type(mutation_rate is np.ndarray):
-            if mutation_rate.shape[0] is not m:
-                raise ValueError(
-                    f"mutation_rate is not a scalar or vector of length m: {m}"
-                )
-        else:
-            raise ValueError(
-                f"mutation_rate is not a scalar or vector of length m: {m}"
+    if isinstance(mutation_rate, (int, float)):
+        if not scale_mutation_based_on_n_alleles:
+            warnings.warn(
+                "Passed a scalar mutation rate, "
+                "but not rescaling this mutation rate conditional on the number of alleles at the site."
             )
-
-    # Ensure that the recombination probabilities is either a scalar or a vector of length m
-    if recombination_rate.shape[0] != m:
-        raise ValueError(f"recombination_rate is not a vector of length m: {m}")
-
-    if isinstance(mutation_rate, float) and not (scale_mutation_based_on_n_alleles):
+    elif isinstance(mutation_rate, np.ndarray) and mutation_rate.shape[0] == m:
+        if scale_mutation_based_on_n_alleles:
+            warnings.warn(
+                "Passed a vector of mutation rates, "
+                "but rescaling each mutation rate conditional on the number of alleles at each site."
+            )
+    elif mutation_rate is None:
         warnings.warn(
-            "Passed a scalar mutation rate, but not rescaling this mutation rate conditional on the number of alleles at the site"
+          "No mutation rate passed, setting mutation rate based on Li and Stephens 2003, "
+          "equations (A2) and (A3)"
         )
+    else:
+        raise ValueError(f"Mutation rate is not None, a scalar, or vector of length m: {m}")
 
-    if type(mutation_rate is np.ndarray) and (scale_mutation_based_on_n_alleles):
-        warnings.warn(
-            "Passed a vector of mutation rates, but rescaling each mutation rate conditional on the number of alleles at each site"
-        )
+    # Ensure that the recombination rate is either a scalar or a vector of length m
+    if not (
+        isinstance(recombination_rate, (int, float)) or \
+        (isinstance(recombination_rate, np.ndarray) and recombination_rate.shape[0] == m)
+    ):
+        raise ValueError(f"Recombination_rate is not a scalar or vector of length m: {m}")
 
-    return n, m, ploidy
+    return (n, m, ploidy)
 
 
 def set_emission_probabilities(
