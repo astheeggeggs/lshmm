@@ -126,15 +126,20 @@ def checks(
                 "Passed a vector of mutation rates, "
                 "but rescaling each mutation rate conditional on the number of alleles at each site."
             )
+    elif mutation_rate is None:
+        warnings.warn(
+          "No mutation rate passed, setting mutation rate based on Li and Stephens 2003, "
+          "equations (A2) and (A3)"
+        )
     else:
-        raise ValueError(f"Mutation rate is not a scalar or vector of length m: {m}")
+        raise ValueError(f"Mutation rate is not None, a scalar, or vector of length m: {m}")
 
     # Ensure that the recombination rate is either a scalar or a vector of length m
     if not (
         isinstance(recombination_rate, (int, float)) or \
         (isinstance(recombination_rate, np.ndarray) and recombination_rate.shape[0] == m)
     ):
-        raise ValueError(f"Recombination_rate is not a vector of length m: {m}")
+        raise ValueError(f"Recombination_rate is not a scalar or vector of length m: {m}")
 
     return (n, m, ploidy)
 

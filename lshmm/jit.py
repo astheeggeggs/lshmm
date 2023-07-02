@@ -19,8 +19,7 @@ except KeyError as e:  # pragma: no cover
 
 if not ENABLE_NUMBA:
     logger.warning(
-        "numba globally disabled for lshmm; performance will be drastically"
-        " reduced."
+        "numba globally disabled for lshmm; performance will be drastically" " reduced."
     )
 
 
