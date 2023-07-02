@@ -84,34 +84,19 @@ def checks(
         m, n, _ = reference_panel.shape
         ploidy = 2
 
-    if ploidy == 2 and reference_panel.shape[1] != reference_panel.shape[2]:
+    if ploidy == 2 and (reference_panel.shape[1] != reference_panel.shape[2]):
         raise ValueError(
             "Reference_panel dimensions are incorrect, "
             "perhaps a sample x sample x variant matrix was passed. "
             "Expected sites x samples x samples."
         )
 
-    # Check query
-    if not len(query.shape) in (2, 3):
-        raise ValueError("Query array must have 2 or 3 dimensions.")
-
-    if len(query.shape) == 2:
-        _, m_query = query.shape
-        ploidy_query = 1
-    else:
-        _, m_query, z = query.shape
-        if z != 2:
-            raise ValueError(f"Query array is expected to have a ploidy of 2, but has {z}")
-        ploidy_query = 2
-
-    if m_query != m:
+    # Check query sequence(s)
+    if query.shape[1] != m:
         raise ValueError(
             "Number of sites in query does not match reference panel. "
             "If haploid, ensure a sites x samples matrix is passed."
         )
-
-    if ploidy != ploidy_query:
-        raise ValueError(f"Ploidy {ploidy} of reference panel does not match ploidy {ploidy_query} of query.")
 
     # Ensure that the mutation rate is either a scalar or vector of length m
     if isinstance(mutation_rate, (int, float)):
