@@ -1,8 +1,10 @@
 """Collection of functions to run forwards and backwards algorithms on haploid genotype data, where the data is structured as variants x samples."""
 import numpy as np
+
 from lshmm import jit
 
 MISSING = -1
+
 
 @jit.numba_njit
 def forwards_ls_hap(n, m, H, s, e, r, norm=True):

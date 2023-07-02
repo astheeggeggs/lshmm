@@ -1,5 +1,6 @@
 """Collection of functions to run Viterbi algorithms on dipoid genotype data, where the data is structured as samples x variants."""
 import numpy as np
+
 from . import jit
 
 MISSING = -1

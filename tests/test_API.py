@@ -26,7 +26,7 @@ MISSING_INDEX = 3
 class LSBase:
     """Superclass of Li and Stephens tests."""
 
-    def example_haplotypes(self, ts, num_random=10, seed=42):
+    def example_haplotypes(self, ts, seed=42):
 
         H = ts.genotype_matrix()
         s = H[:, 0].reshape(1, H.shape[0])
@@ -115,7 +115,7 @@ class LSBase:
             yield n, m, H, s, e, r, mu
 
     def example_genotypes(self, ts, seed=42):
-
+        np.random.seed(seed)
         H = ts.genotype_matrix()
         s = H[:, 0].reshape(1, H.shape[0]) + H[:, 1].reshape(1, H.shape[0])
         H = H[:, 2:]
@@ -174,7 +174,6 @@ class LSBase:
     def example_parameters_genotypes_larger(
         self, ts, seed=42, mean_r=1e-5, mean_mu=1e-5
     ):
-
         np.random.seed(seed)
         H, G, genotypes = self.example_genotypes(ts)
 
@@ -246,7 +245,6 @@ class TestMethodsHap(FBAlgorithmBase):
             self.assertAllClose(F, F_vs)
             self.assertAllClose(B, B_vs)
             self.assertAllClose(ll_vs, ll)
-
             mu = None
             F, c, ll = ls.forwards(H_vs, s, r, mu)
             B = ls.backwards(H_vs, s, c, r, mu)

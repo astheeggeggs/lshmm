@@ -1,8 +1,10 @@
 """Collection of functions to run Viterbi algorithms on haploid genotype data, where the data is structured as samples x variants."""
 import numpy as np
+
 from . import jit
 
 MISSING = -1
+
 
 @jit.numba_njit
 def viterbi_naive_init(n, m, H, s, e, r):

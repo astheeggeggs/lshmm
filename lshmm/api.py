@@ -88,7 +88,7 @@ def checks(
             )
 
     # Ensure that the recombination probabilities is either a scalar or a vector of length m
-    if recombination_rate.shape[0] is not m:
+    if recombination_rate.shape[0] != m:
         raise ValueError(f"recombination_rate is not a vector of length m: {m}")
 
     if isinstance(mutation_rate, float) and not (scale_mutation_based_on_n_alleles):
