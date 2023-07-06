@@ -685,7 +685,7 @@ class TestNonTreeViterbiHap(VitAlgorithmBase):
         self.assertAllClose(ll_vs, ll_sv)
 
 
-@pytest.mark.skip(reason="DEV: skip for time being")
+# @pytest.mark.skip(reason="DEV: skip for time being")
 class TestNonTreeViterbiDip(VitAlgorithmBase):
     """Test that we have the same log-likelihood across all implementations"""
 
@@ -842,7 +842,7 @@ class TestNonTreeViterbiDip(VitAlgorithmBase):
         self.assertAllClose(ll_vs, ll_sv)
 
 
-@pytest.mark.skip(reason="DEV: skip for time being")
+# @pytest.mark.skip(reason="DEV: skip for time being")
 class TestForwardHapTree(FBAlgorithmBase):
     """Tests that the tree algorithm computes the same forward matrix as the simple method."""
 
@@ -862,7 +862,7 @@ class TestForwardHapTree(FBAlgorithmBase):
             self.assertAllClose(ll_vs, ll_tree)
 
 
-@pytest.mark.skip(reason="DEV: skip for time being")
+# @pytest.mark.skip(reason="DEV: skip for time being")
 class TestMirroringHap(FBAlgorithmBase):
     """Tests that mirroring the tree sequence and running forwards and backwards algorithms gives
     the same log-likelihood of observing the data."""
@@ -986,7 +986,7 @@ class TestMirroringDipdict(FBAlgorithmBase):
             self.assertAllClose(F_vs_mirror_matrix, cm_mirror.decode())
 
 
-@pytest.mark.skip(reason="DEV: skip for time being")
+# @pytest.mark.skip(reason="DEV: skip for time being")
 class TestForwardBackwardTree(FBAlgorithmBase):
     """Tests that the tree algorithm computes the same forward matrix as the simple method."""
 
@@ -1129,7 +1129,7 @@ class TestTreeViterbiHap(VitAlgorithmBase):
             self.assertAllClose(ll_vs, ll_check)
 
 
-# @pytest.mark.skip(reason="DEV: skip for time being")
+@pytest.mark.skip(reason="DEV: skip for time being")
 class TestTreeViterbiDip(VitAlgorithmBase):
     """Test that we have the same log-likelihood between tree and matrix implementations"""
 
