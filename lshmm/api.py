@@ -86,45 +86,46 @@ def checks(
 
     if ploidy == 2 and (reference_panel.shape[1] != reference_panel.shape[2]):
         raise ValueError(
-            "Reference_panel dimensions are incorrect, "
-            "perhaps a sample x sample x variant matrix was passed. "
-            "Expected sites x samples x samples."
+            "Reference_panel dimensions are incorrect, perhaps a sample x sample x variant matrix was passed. Expected sites x samples x samples."
         )
 
     # Check query sequence(s)
     if query.shape[1] != m:
         raise ValueError(
-            "Number of sites in query does not match reference panel. "
-            "If haploid, ensure a sites x samples matrix is passed."
+            "Number of sites in query does not match reference panel. If haploid, ensure a sites x samples matrix is passed."
         )
 
     # Ensure that the mutation rate is either a scalar or vector of length m
     if isinstance(mutation_rate, (int, float)):
         if not scale_mutation_based_on_n_alleles:
             warnings.warn(
-                "Passed a scalar mutation rate, "
-                "but not rescaling this mutation rate conditional on the number of alleles at the site."
+                "Passed a scalar mutation rate, but not rescaling this mutation rate conditional on the number of alleles at the site."
             )
     elif isinstance(mutation_rate, np.ndarray) and mutation_rate.shape[0] == m:
         if scale_mutation_based_on_n_alleles:
             warnings.warn(
-                "Passed a vector of mutation rates, "
-                "but rescaling each mutation rate conditional on the number of alleles at each site."
+                "Passed a vector of mutation rates, but rescaling each mutation rate conditional on the number of alleles at each site."
             )
     elif mutation_rate is None:
         warnings.warn(
-          "No mutation rate passed, setting mutation rate based on Li and Stephens 2003, "
-          "equations (A2) and (A3)"
+            "No mutation rate passed, setting mutation rate based on Li and Stephens 2003, equations (A2) and (A3)"
         )
     else:
-        raise ValueError(f"Mutation rate is not None, a scalar, or vector of length m: {m}")
+        raise ValueError(
+            f"Mutation rate is not None, a scalar, or vector of length m: {m}"
+        )
 
     # Ensure that the recombination rate is either a scalar or a vector of length m
     if not (
-        isinstance(recombination_rate, (int, float)) or \
-        (isinstance(recombination_rate, np.ndarray) and recombination_rate.shape[0] == m)
+        isinstance(recombination_rate, (int, float))
+        or (
+            isinstance(recombination_rate, np.ndarray)
+            and recombination_rate.shape[0] == m
+        )
     ):
-        raise ValueError(f"Recombination_rate is not a scalar or vector of length m: {m}")
+        raise ValueError(
+            f"Recombination_rate is not a scalar or vector of length m: {m}"
+        )
 
     return (n, m, ploidy)
 
@@ -148,6 +149,9 @@ def set_emission_probabilities(
                 for j in range(reference_panel.shape[0])
             ]
         )
+        print(n_alleles)
+        print(reference_panel)
+        print(query)
     else:
         n_alleles = check_alleles(alleles, m)
 
@@ -193,6 +197,7 @@ def set_emission_probabilities(
         e[:, REF_HET_OBS_HOM] = mutation_rate * (1 - mutation_rate)
         e[:, MISSING_INDEX] = 1
 
+    print(e)
     return e
 
 
@@ -224,12 +229,13 @@ def forwards(
     alleles=None,
     mutation_rate=None,
     scale_mutation_based_on_n_alleles=True,
+    norm=True,
 ):
     """
     Run the Li and Stephens forwards algorithm on haplotype or
     unphased genotype data.
     """
-
+    print("BAAAAM")
     n, m, ploidy = checks(
         reference_panel,
         query,
@@ -259,7 +265,7 @@ def forwards(
         normalisation_factor_from_forward,
         log_likelihood,
     ) = forward_function(
-        n, m, reference_panel, query, emissions, recombination_rate, norm=True
+        n, m, reference_panel, query, emissions, recombination_rate, norm=norm
     )
 
     return forward_array, normalisation_factor_from_forward, log_likelihood

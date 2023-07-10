@@ -169,7 +169,7 @@ class LSBase:
         rs = [np.zeros(m) + 0.999, np.zeros(m) + 1e-6, np.random.rand(m)]
         mus = [np.zeros(m) + 0.33, np.zeros(m) + 1e-6, np.random.rand(m) * 0.33]
 
-        e = self.genotype_emission(mu, m)
+        # e = self.genotype_emission(mu, m)
 
         for s, r, mu in itertools.product(genotypes, rs, mus):
             r[0] = 0
@@ -195,7 +195,6 @@ class LSBase:
         e = self.genotype_emission(mu, m)
 
         for s in genotypes:
-            print("hello")
             yield n, m, G, s, e, r
 
     def assertAllClose(self, A, B):
@@ -338,25 +337,21 @@ class TestNonTreeMethodsDip(FBAlgorithmBase):
             F_vs, c_vs, ll_vs = fbd_vs.forwards_ls_dip(
                 n, m, G_vs, s, e_vs, r, norm=True
             )
-            print(ll_vs)
             B_vs = fbd_vs.backwards_ls_dip(n, m, G_vs, s, e_vs, c_vs, r)
             self.assertAllClose(np.sum(F_vs * B_vs, (1, 2)), np.ones(m))
             F_tmp, c_tmp, ll_tmp = fbd_vs.forwards_ls_dip(
                 n, m, G_vs, s, e_vs, r, norm=False
             )
-            print(ll_tmp)
             if ll_tmp != -np.inf:
                 B_tmp = fbd_vs.backwards_ls_dip(n, m, G_vs, s, e_vs, c_tmp, r)
                 self.assertAllClose(ll_vs, ll_tmp)
                 self.assertAllClose(
                     np.log10(np.sum(F_tmp * B_tmp, (1, 2))), ll_tmp * np.ones(m)
                 )
-                print(ll_tmp)
 
             F_tmp, ll_tmp = fbd_vs.forward_ls_dip_starting_point(n, m, G_vs, s, e_vs, r)
             if ll_tmp != -np.inf:
                 B_tmp = fbd_vs.backward_ls_dip_starting_point(n, m, G_vs, s, e_vs, r)
-                print(ll_tmp)
                 self.assertAllClose(ll_vs, ll_tmp)
                 self.assertAllClose(
                     np.log10(np.sum(F_tmp * B_tmp, (1, 2))), ll_tmp * np.ones(m)
@@ -380,7 +375,6 @@ class TestNonTreeMethodsDip(FBAlgorithmBase):
             self.assertAllClose(np.sum(F_tmp * B_tmp, (1, 2)), np.ones(m))
 
             # samples x variants
-
             F_sv, c_sv, ll_sv = fbd_sv.forwards_ls_dip(
                 n, m, G_sv, s, e_sv, r, norm=True
             )
@@ -407,7 +401,6 @@ class TestNonTreeMethodsDip(FBAlgorithmBase):
             F_tmp, c_tmp, ll_tmp = fbd_sv.forward_ls_dip_loop(
                 n, m, G_sv, s, e_sv, r, norm=True
             )
-            print(ll_tmp)
             B_tmp = fbd_sv.backward_ls_dip_loop(n, m, G_sv, s, e_sv, c_tmp, r)
             self.assertAllClose(ll_sv, ll_tmp)
             self.assertAllClose(np.sum(F_tmp * B_tmp, (0, 1)), np.ones(m))
@@ -415,7 +408,6 @@ class TestNonTreeMethodsDip(FBAlgorithmBase):
                 n, m, G_sv, s, e_sv, r, norm=False
             )
             if ll_tmp != -np.inf:
-                print(ll_tmp)
                 B_tmp = fbd_sv.backward_ls_dip_loop(n, m, G_sv, s, e_sv, c_tmp, r)
                 self.assertAllClose(ll_sv, ll_tmp)
                 self.assertAllClose(

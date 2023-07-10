@@ -38,7 +38,9 @@ def forwards_ls_hap(n, m, H, s, e, r, norm=True):
                 F[l, i] *= 1 / c[l]
 
         ll = np.sum(np.log10(c))
-        print(c)
+        print(np.log10(c))
+        print("emission")
+        print(e)
 
     else:
 
@@ -59,7 +61,6 @@ def forwards_ls_hap(n, m, H, s, e, r, norm=True):
 
         ll = np.log10(np.sum(F[m - 1, :]))
 
-    # print(c)
     return F, c, ll
 
 
