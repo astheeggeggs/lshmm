@@ -149,9 +149,6 @@ def set_emission_probabilities(
                 for j in range(reference_panel.shape[0])
             ]
         )
-        print(n_alleles)
-        print(reference_panel)
-        print(query)
     else:
         n_alleles = check_alleles(alleles, m)
 
@@ -197,7 +194,6 @@ def set_emission_probabilities(
         e[:, REF_HET_OBS_HOM] = mutation_rate * (1 - mutation_rate)
         e[:, MISSING_INDEX] = 1
 
-    print(e)
     return e
 
 
@@ -235,7 +231,6 @@ def forwards(
     Run the Li and Stephens forwards algorithm on haplotype or
     unphased genotype data.
     """
-    print("BAAAAM")
     n, m, ploidy = checks(
         reference_panel,
         query,
