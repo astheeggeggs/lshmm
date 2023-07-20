@@ -68,7 +68,7 @@ class LSBase:
 
     def example_parameters_haplotypes(self, ts, seed=42, scale_mutation=True):
         """Returns an iterator over combinations of haplotype, recombination and
-        mutation rates."""
+        mutation probabilities."""
         np.random.seed(seed)
         H, haplotypes = self.example_haplotypes(ts)
         n = H.shape[1]
@@ -177,8 +177,8 @@ class TestMethodsHap(FBAlgorithmBase):
         for n, m, H_vs, s, e_vs, r, mu in self.example_parameters_haplotypes(ts):
             F_vs, c_vs, ll_vs = fbh_vs.forwards_ls_hap(n, m, H_vs, s, e_vs, r)
             B_vs = fbh_vs.backwards_ls_hap(n, m, H_vs, s, e_vs, c_vs, r)
-            F, c, ll = ls.forwards(H_vs, s, r, mutation_rate=mu)
-            B = ls.backwards(H_vs, s, c, r, mutation_rate=mu)
+            F, c, ll = ls.forwards(H_vs, s, r, p_mutation=mu)
+            B = ls.backwards(H_vs, s, c, r, p_mutation=mu)
             self.assertAllClose(F, F_vs)
             self.assertAllClose(B, B_vs)
             # print(e_vs)
@@ -190,10 +190,10 @@ class TestMethodsHap(FBAlgorithmBase):
             F_vs, c_vs, ll_vs = fbh_vs.forwards_ls_hap(n, m, H_vs, s, e_vs, r)
             B_vs = fbh_vs.backwards_ls_hap(n, m, H_vs, s, e_vs, c_vs, r)
             F, c, ll = ls.forwards(
-                H_vs, s, r, mutation_rate=mu, scale_mutation_based_on_n_alleles=False
+                H_vs, s, r, p_mutation=mu, scale_mutation_based_on_n_alleles=False
             )
             B = ls.backwards(
-                H_vs, s, c, r, mutation_rate=mu, scale_mutation_based_on_n_alleles=False
+                H_vs, s, c, r, p_mutation=mu, scale_mutation_based_on_n_alleles=False
             )
             self.assertAllClose(F, F_vs)
             self.assertAllClose(B, B_vs)
@@ -215,7 +215,7 @@ class TestViterbiHap(VitAlgorithmBase):
             )
             path_vs = vh_vs.backwards_viterbi_hap(m, V_vs, P_vs)
             path_ll_hap = vh_vs.path_ll_hap(n, m, H_vs, path_vs, s, e_vs, r)
-            path, ll = ls.viterbi(H_vs, s, r, mutation_rate=mu)
+            path, ll = ls.viterbi(H_vs, s, r, p_mutation=mu)
 
             self.assertAllClose(ll_vs, ll)
             self.assertAllClose(ll_vs, path_ll_hap)
