@@ -6,14 +6,10 @@ import msprime
 import numpy as np
 import pytest
 
-import lshmm.forward_backward.fb_diploid_samples_variants as fbd_sv
-import lshmm.forward_backward.fb_diploid_variants_samples as fbd_vs
-import lshmm.forward_backward.fb_haploid_samples_variants as fbh_sv
-import lshmm.forward_backward.fb_haploid_variants_samples as fbh_vs
-import lshmm.vit_diploid_samples_variants as vd_sv
-import lshmm.vit_diploid_variants_samples as vd_vs
-import lshmm.vit_haploid_samples_variants as vh_sv
-import lshmm.vit_haploid_variants_samples as vh_vs
+import lshmm.forward_backward.fb_diploid as fbd
+import lshmm.forward_backward.fb_haploid as fbh
+import lshmm.vit_diploid as vd
+import lshmm.vit_haploid as vh
 
 EQUAL_BOTH_HOM = 4
 UNEQUAL_BOTH_HOM = 0
@@ -260,33 +256,15 @@ class TestNonTreeMethodsHap(FBAlgorithmBase):
             H_sv = H_vs.T
 
             # variants x samples
-            F_vs, c_vs, ll_vs = fbh_vs.forwards_ls_hap(
-                n, m, H_vs, s, e_vs, r, norm=False
-            )
-            B_vs = fbh_vs.backwards_ls_hap(n, m, H_vs, s, e_vs, c_vs, r)
+            F_vs, c_vs, ll_vs = fbh.forwards_ls_hap(n, m, H_vs, s, e_vs, r, norm=False)
+            B_vs = fbh.backwards_ls_hap(n, m, H_vs, s, e_vs, c_vs, r)
             self.assertAllClose(np.log10(np.sum(F_vs * B_vs, 1)), ll_vs * np.ones(m))
-            F_tmp, c_tmp, ll_tmp = fbh_vs.forwards_ls_hap(
+            F_tmp, c_tmp, ll_tmp = fbh.forwards_ls_hap(
                 n, m, H_vs, s, e_vs, r, norm=True
             )
-            B_tmp = fbh_vs.backwards_ls_hap(n, m, H_vs, s, e_vs, c_tmp, r)
+            B_tmp = fbh.backwards_ls_hap(n, m, H_vs, s, e_vs, c_tmp, r)
             self.assertAllClose(ll_vs, ll_tmp)
             self.assertAllClose(np.sum(F_tmp * B_tmp, 1), np.ones(m))
-
-            # samples x variants
-            F_sv, c_sv, ll_sv = fbh_sv.forwards_ls_hap(
-                n, m, H_sv, s, e_sv, r, norm=False
-            )
-            B_sv = fbh_sv.backwards_ls_hap(n, m, H_sv, s, e_sv, c_sv, r)
-            self.assertAllClose(np.log10(np.sum(F_sv * B_sv, 0)), ll_sv * np.ones(m))
-            F_tmp, c_tmp, ll_tmp = fbh_sv.forwards_ls_hap(
-                n, m, H_sv, s, e_sv, r, norm=True
-            )
-            B_tmp = fbh_sv.backwards_ls_hap(n, m, H_sv, s, e_sv, c_tmp, r)
-            self.assertAllClose(ll_sv, ll_tmp)
-            self.assertAllClose(np.sum(F_tmp * B_tmp, 0), np.ones(m))
-
-            # samples x variants agrees with variants x samples
-            self.assertAllClose(ll_vs, ll_sv)
 
     def verify_larger(self, ts):
         # variants x samples
@@ -294,33 +272,15 @@ class TestNonTreeMethodsHap(FBAlgorithmBase):
             e_sv = e_vs.T
             H_sv = H_vs.T
 
-            F_vs, c_vs, ll_vs = fbh_vs.forwards_ls_hap(
-                n, m, H_vs, s, e_vs, r, norm=False
-            )
-            B_vs = fbh_vs.backwards_ls_hap(n, m, H_vs, s, e_vs, c_vs, r)
+            F_vs, c_vs, ll_vs = fbh.forwards_ls_hap(n, m, H_vs, s, e_vs, r, norm=False)
+            B_vs = fbh.backwards_ls_hap(n, m, H_vs, s, e_vs, c_vs, r)
             self.assertAllClose(np.log10(np.sum(F_vs * B_vs, 1)), ll_vs * np.ones(m))
-            F_tmp, c_tmp, ll_tmp = fbh_vs.forwards_ls_hap(
+            F_tmp, c_tmp, ll_tmp = fbh.forwards_ls_hap(
                 n, m, H_vs, s, e_vs, r, norm=True
             )
-            B_tmp = fbh_vs.backwards_ls_hap(n, m, H_vs, s, e_vs, c_tmp, r)
+            B_tmp = fbh.backwards_ls_hap(n, m, H_vs, s, e_vs, c_tmp, r)
             self.assertAllClose(ll_vs, ll_tmp)
             self.assertAllClose(np.sum(F_tmp * B_tmp, 1), np.ones(m))
-
-            # samples x variants
-            F_sv, c_sv, ll_sv = fbh_sv.forwards_ls_hap(
-                n, m, H_sv, s, e_sv, r, norm=False
-            )
-            B_sv = fbh_sv.backwards_ls_hap(n, m, H_sv, s, e_sv, c_sv, r)
-            self.assertAllClose(np.log10(np.sum(F_sv * B_sv, 0)), ll_sv * np.ones(m))
-            F_tmp, c_tmp, ll_tmp = fbh_sv.forwards_ls_hap(
-                n, m, H_sv, s, e_sv, r, norm=True
-            )
-            B_tmp = fbh_sv.backwards_ls_hap(n, m, H_sv, s, e_sv, c_tmp, r)
-            self.assertAllClose(ll_sv, ll_tmp)
-            self.assertAllClose(np.sum(F_tmp * B_tmp, 0), np.ones(m))
-
-            # samples x variants agrees with variants x samples
-            self.assertAllClose(ll_vs, ll_sv)
 
 
 class TestNonTreeMethodsDip(FBAlgorithmBase):
@@ -328,183 +288,84 @@ class TestNonTreeMethodsDip(FBAlgorithmBase):
 
     def verify(self, ts):
         for n, m, G_vs, s, e_vs, r in self.example_parameters_genotypes(ts):
-            e_sv = e_vs.T
-            G_sv = G_vs.T
 
-            # variants x samples
-            F_vs, c_vs, ll_vs = fbd_vs.forwards_ls_dip(
-                n, m, G_vs, s, e_vs, r, norm=True
-            )
-            B_vs = fbd_vs.backwards_ls_dip(n, m, G_vs, s, e_vs, c_vs, r)
+            F_vs, c_vs, ll_vs = fbd.forwards_ls_dip(n, m, G_vs, s, e_vs, r, norm=True)
+            B_vs = fbd.backwards_ls_dip(n, m, G_vs, s, e_vs, c_vs, r)
             self.assertAllClose(np.sum(F_vs * B_vs, (1, 2)), np.ones(m))
-            F_tmp, c_tmp, ll_tmp = fbd_vs.forwards_ls_dip(
+            F_tmp, c_tmp, ll_tmp = fbd.forwards_ls_dip(
                 n, m, G_vs, s, e_vs, r, norm=False
             )
             if ll_tmp != -np.inf:
-                B_tmp = fbd_vs.backwards_ls_dip(n, m, G_vs, s, e_vs, c_tmp, r)
+                B_tmp = fbd.backwards_ls_dip(n, m, G_vs, s, e_vs, c_tmp, r)
                 self.assertAllClose(ll_vs, ll_tmp)
                 self.assertAllClose(
                     np.log10(np.sum(F_tmp * B_tmp, (1, 2))), ll_tmp * np.ones(m)
                 )
 
-            F_tmp, ll_tmp = fbd_vs.forward_ls_dip_starting_point(n, m, G_vs, s, e_vs, r)
+            F_tmp, ll_tmp = fbd.forward_ls_dip_starting_point(n, m, G_vs, s, e_vs, r)
             if ll_tmp != -np.inf:
-                B_tmp = fbd_vs.backward_ls_dip_starting_point(n, m, G_vs, s, e_vs, r)
+                B_tmp = fbd.backward_ls_dip_starting_point(n, m, G_vs, s, e_vs, r)
                 self.assertAllClose(ll_vs, ll_tmp)
                 self.assertAllClose(
                     np.log10(np.sum(F_tmp * B_tmp, (1, 2))), ll_tmp * np.ones(m)
                 )
 
-            F_tmp, c_tmp, ll_tmp = fbd_vs.forward_ls_dip_loop(
+            F_tmp, c_tmp, ll_tmp = fbd.forward_ls_dip_loop(
                 n, m, G_vs, s, e_vs, r, norm=False
             )
             if ll_tmp != -np.inf:
-                B_tmp = fbd_vs.backward_ls_dip_loop(n, m, G_vs, s, e_vs, c_tmp, r)
+                B_tmp = fbd.backward_ls_dip_loop(n, m, G_vs, s, e_vs, c_tmp, r)
                 self.assertAllClose(ll_vs, ll_tmp)
                 self.assertAllClose(
                     np.log10(np.sum(F_tmp * B_tmp, (1, 2))), ll_tmp * np.ones(m)
                 )
 
-            F_tmp, c_tmp, ll_tmp = fbd_vs.forward_ls_dip_loop(
+            F_tmp, c_tmp, ll_tmp = fbd.forward_ls_dip_loop(
                 n, m, G_vs, s, e_vs, r, norm=True
             )
-            B_tmp = fbd_vs.backward_ls_dip_loop(n, m, G_vs, s, e_vs, c_tmp, r)
+            B_tmp = fbd.backward_ls_dip_loop(n, m, G_vs, s, e_vs, c_tmp, r)
             self.assertAllClose(ll_vs, ll_tmp)
             self.assertAllClose(np.sum(F_tmp * B_tmp, (1, 2)), np.ones(m))
-
-            # samples x variants
-            F_sv, c_sv, ll_sv = fbd_sv.forwards_ls_dip(
-                n, m, G_sv, s, e_sv, r, norm=True
-            )
-            B_sv = fbd_sv.backwards_ls_dip(n, m, G_sv, s, e_sv, c_sv, r)
-            self.assertAllClose(np.sum(F_sv * B_sv, (0, 1)), np.ones(m))
-            F_tmp, c_tmp, ll_tmp = fbd_sv.forwards_ls_dip(
-                n, m, G_sv, s, e_sv, r, norm=False
-            )
-            if ll_tmp != -np.inf:
-                B_tmp = fbd_sv.backwards_ls_dip(n, m, G_sv, s, e_sv, c_tmp, r)
-                self.assertAllClose(
-                    np.log10(np.sum(F_tmp * B_tmp, (0, 1))), ll_tmp * np.ones(m)
-                )
-                self.assertAllClose(ll_sv, ll_tmp)
-
-            F_tmp, ll_tmp = fbd_sv.forward_ls_dip_starting_point(n, m, G_sv, s, e_sv, r)
-            if ll_tmp != -np.inf:
-                B_tmp = fbd_sv.backward_ls_dip_starting_point(n, m, G_sv, s, e_sv, r)
-                self.assertAllClose(ll_sv, ll_tmp)
-                self.assertAllClose(
-                    np.log10(np.sum(F_tmp * B_tmp, (0, 1))), ll_tmp * np.ones(m)
-                )
-
-            F_tmp, c_tmp, ll_tmp = fbd_sv.forward_ls_dip_loop(
-                n, m, G_sv, s, e_sv, r, norm=True
-            )
-            B_tmp = fbd_sv.backward_ls_dip_loop(n, m, G_sv, s, e_sv, c_tmp, r)
-            self.assertAllClose(ll_sv, ll_tmp)
-            self.assertAllClose(np.sum(F_tmp * B_tmp, (0, 1)), np.ones(m))
-            F_tmp, c_tmp, ll_tmp = fbd_sv.forward_ls_dip_loop(
-                n, m, G_sv, s, e_sv, r, norm=False
-            )
-            if ll_tmp != -np.inf:
-                B_tmp = fbd_sv.backward_ls_dip_loop(n, m, G_sv, s, e_sv, c_tmp, r)
-                self.assertAllClose(ll_sv, ll_tmp)
-                self.assertAllClose(
-                    np.log10(np.sum(F_tmp * B_tmp, (0, 1))), ll_tmp * np.ones(m)
-                )
-
-            # compare sample x variants to variants x samples
-            self.assertAllClose(ll_vs, ll_sv)
 
     def verify_larger(self, ts):
-        # variants x samples
         for n, m, G_vs, s, e_vs, r in self.example_parameters_genotypes_larger(ts):
 
-            e_sv = e_vs.T
-            G_sv = G_vs.T
-
-            # variants x samples
-            F_vs, c_vs, ll_vs = fbd_vs.forwards_ls_dip(
-                n, m, G_vs, s, e_vs, r, norm=True
-            )
-            B_vs = fbd_vs.backwards_ls_dip(n, m, G_vs, s, e_vs, c_vs, r)
+            F_vs, c_vs, ll_vs = fbd.forwards_ls_dip(n, m, G_vs, s, e_vs, r, norm=True)
+            B_vs = fbd.backwards_ls_dip(n, m, G_vs, s, e_vs, c_vs, r)
             self.assertAllClose(np.sum(F_vs * B_vs, (1, 2)), np.ones(m))
-            F_tmp, c_tmp, ll_tmp = fbd_vs.forwards_ls_dip(
+            F_tmp, c_tmp, ll_tmp = fbd.forwards_ls_dip(
                 n, m, G_vs, s, e_vs, r, norm=False
             )
             if ll_tmp != -np.inf:
-                B_tmp = fbd_vs.backwards_ls_dip(n, m, G_vs, s, e_vs, c_tmp, r)
+                B_tmp = fbd.backwards_ls_dip(n, m, G_vs, s, e_vs, c_tmp, r)
                 self.assertAllClose(ll_vs, ll_tmp)
                 self.assertAllClose(
                     np.log10(np.sum(F_tmp * B_tmp, (1, 2))), ll_tmp * np.ones(m)
                 )
 
-            F_tmp, ll_tmp = fbd_vs.forward_ls_dip_starting_point(n, m, G_vs, s, e_vs, r)
+            F_tmp, ll_tmp = fbd.forward_ls_dip_starting_point(n, m, G_vs, s, e_vs, r)
             if ll_tmp != -np.inf:
-                B_tmp = fbd_vs.backward_ls_dip_starting_point(n, m, G_vs, s, e_vs, r)
+                B_tmp = fbd.backward_ls_dip_starting_point(n, m, G_vs, s, e_vs, r)
                 self.assertAllClose(ll_vs, ll_tmp)
                 self.assertAllClose(
                     np.log10(np.sum(F_tmp * B_tmp, (1, 2))), ll_tmp * np.ones(m)
                 )
 
-            F_tmp, c_tmp, ll_tmp = fbd_vs.forward_ls_dip_loop(
+            F_tmp, c_tmp, ll_tmp = fbd.forward_ls_dip_loop(
                 n, m, G_vs, s, e_vs, r, norm=False
             )
             if ll_tmp != -np.inf:
-                B_tmp = fbd_vs.backward_ls_dip_loop(n, m, G_vs, s, e_vs, c_tmp, r)
+                B_tmp = fbd.backward_ls_dip_loop(n, m, G_vs, s, e_vs, c_tmp, r)
                 self.assertAllClose(ll_vs, ll_tmp)
                 self.assertAllClose(
                     np.log10(np.sum(F_tmp * B_tmp, (1, 2))), ll_tmp * np.ones(m)
                 )
-            F_tmp, c_tmp, ll_tmp = fbd_vs.forward_ls_dip_loop(
+            F_tmp, c_tmp, ll_tmp = fbd.forward_ls_dip_loop(
                 n, m, G_vs, s, e_vs, r, norm=True
             )
-            B_tmp = fbd_vs.backward_ls_dip_loop(n, m, G_vs, s, e_vs, c_tmp, r)
+            B_tmp = fbd.backward_ls_dip_loop(n, m, G_vs, s, e_vs, c_tmp, r)
             self.assertAllClose(ll_vs, ll_tmp)
             self.assertAllClose(np.sum(F_tmp * B_tmp, (1, 2)), np.ones(m))
-
-            # samples x variants
-
-            F_sv, c_sv, ll_sv = fbd_sv.forwards_ls_dip(
-                n, m, G_sv, s, e_sv, r, norm=True
-            )
-            B_sv = fbd_sv.backwards_ls_dip(n, m, G_sv, s, e_sv, c_sv, r)
-            self.assertAllClose(np.sum(F_sv * B_sv, (0, 1)), np.ones(m))
-            F_tmp, c_tmp, ll_tmp = fbd_sv.forwards_ls_dip(
-                n, m, G_sv, s, e_sv, r, norm=False
-            )
-            if ll_tmp != -np.inf:
-                B_tmp = fbd_sv.backwards_ls_dip(n, m, G_sv, s, e_sv, c_tmp, r)
-                self.assertAllClose(
-                    np.log10(np.sum(F_tmp * B_tmp, (0, 1))), ll_tmp * np.ones(m)
-                )
-                self.assertAllClose(ll_sv, ll_tmp)
-
-            F_tmp, ll_tmp = fbd_sv.forward_ls_dip_starting_point(n, m, G_sv, s, e_sv, r)
-            if ll_tmp != -np.inf:
-                B_tmp = fbd_sv.backward_ls_dip_starting_point(n, m, G_sv, s, e_sv, r)
-                self.assertAllClose(ll_sv, ll_tmp)
-                self.assertAllClose(
-                    np.log10(np.sum(F_tmp * B_tmp, (0, 1))), ll_tmp * np.ones(m)
-                )
-
-            F_tmp, c_tmp, ll_tmp = fbd_sv.forward_ls_dip_loop(
-                n, m, G_sv, s, e_sv, r, norm=True
-            )
-            B_tmp = fbd_sv.backward_ls_dip_loop(n, m, G_sv, s, e_sv, c_tmp, r)
-            self.assertAllClose(ll_sv, ll_tmp)
-            self.assertAllClose(np.sum(F_tmp * B_tmp, (0, 1)), np.ones(m))
-            F_tmp, c_tmp, ll_tmp = fbd_sv.forward_ls_dip_loop(
-                n, m, G_sv, s, e_sv, r, norm=False
-            )
-            if ll_tmp != -np.inf:
-                B_tmp = fbd_sv.backward_ls_dip_loop(n, m, G_sv, s, e_sv, c_tmp, r)
-                self.assertAllClose(ll_sv, ll_tmp)
-                self.assertAllClose(
-                    np.log10(np.sum(F_tmp * B_tmp, (0, 1))), ll_tmp * np.ones(m)
-                )
-
-            # compare sample x variants to variants x samples
-            self.assertAllClose(ll_vs, ll_sv)
 
 
 class VitAlgorithmBase(LSBase):
@@ -516,47 +377,44 @@ class TestNonTreeViterbiHap(VitAlgorithmBase):
 
     def verify(self, ts):
         for n, m, H_vs, s, e_vs, r in self.example_parameters_haplotypes(ts):
-            e_sv = e_vs.T
-            H_sv = H_vs.T
 
-            # variants x samples
-            V_vs, P_vs, ll_vs = vh_vs.forwards_viterbi_hap_naive(n, m, H_vs, s, e_vs, r)
-            path_vs = vh_vs.backwards_viterbi_hap(m, V_vs[m - 1, :], P_vs)
-            ll_check = vh_vs.path_ll_hap(n, m, H_vs, path_vs, s, e_vs, r)
+            V_vs, P_vs, ll_vs = vh.forwards_viterbi_hap_naive(n, m, H_vs, s, e_vs, r)
+            path_vs = vh.backwards_viterbi_hap(m, V_vs[m - 1, :], P_vs)
+            ll_check = vh.path_ll_hap(n, m, H_vs, path_vs, s, e_vs, r)
             self.assertAllClose(ll_vs, ll_check)
-            V_tmp, P_tmp, ll_tmp = vh_vs.forwards_viterbi_hap_naive_vec(
+            V_tmp, P_tmp, ll_tmp = vh.forwards_viterbi_hap_naive_vec(
                 n, m, H_vs, s, e_vs, r
             )
-            path_tmp = vh_vs.backwards_viterbi_hap(m, V_tmp[m - 1, :], P_tmp)
-            ll_check = vh_vs.path_ll_hap(n, m, H_vs, path_tmp, s, e_vs, r)
+            path_tmp = vh.backwards_viterbi_hap(m, V_tmp[m - 1, :], P_tmp)
+            ll_check = vh.path_ll_hap(n, m, H_vs, path_tmp, s, e_vs, r)
             self.assertAllClose(ll_tmp, ll_check)
             self.assertAllClose(ll_vs, ll_tmp)
-            V_tmp, P_tmp, ll_tmp = vh_vs.forwards_viterbi_hap_naive_low_mem(
+            V_tmp, P_tmp, ll_tmp = vh.forwards_viterbi_hap_naive_low_mem(
                 n, m, H_vs, s, e_vs, r
             )
-            path_tmp = vh_vs.backwards_viterbi_hap(m, V_tmp, P_tmp)
-            ll_check = vh_vs.path_ll_hap(n, m, H_vs, path_tmp, s, e_vs, r)
+            path_tmp = vh.backwards_viterbi_hap(m, V_tmp, P_tmp)
+            ll_check = vh.path_ll_hap(n, m, H_vs, path_tmp, s, e_vs, r)
             self.assertAllClose(ll_tmp, ll_check)
             self.assertAllClose(ll_vs, ll_tmp)
-            V_tmp, P_tmp, ll_tmp = vh_vs.forwards_viterbi_hap_naive_low_mem_rescaling(
+            V_tmp, P_tmp, ll_tmp = vh.forwards_viterbi_hap_naive_low_mem_rescaling(
                 n, m, H_vs, s, e_vs, r
             )
-            path_tmp = vh_vs.backwards_viterbi_hap(m, V_tmp, P_tmp)
-            ll_check = vh_vs.path_ll_hap(n, m, H_vs, path_tmp, s, e_vs, r)
+            path_tmp = vh.backwards_viterbi_hap(m, V_tmp, P_tmp)
+            ll_check = vh.path_ll_hap(n, m, H_vs, path_tmp, s, e_vs, r)
             self.assertAllClose(ll_tmp, ll_check)
             self.assertAllClose(ll_vs, ll_tmp)
-            V_tmp, P_tmp, ll_tmp = vh_vs.forwards_viterbi_hap_low_mem_rescaling(
+            V_tmp, P_tmp, ll_tmp = vh.forwards_viterbi_hap_low_mem_rescaling(
                 n, m, H_vs, s, e_vs, r
             )
-            path_tmp = vh_vs.backwards_viterbi_hap(m, V_tmp, P_tmp)
-            ll_check = vh_vs.path_ll_hap(n, m, H_vs, path_tmp, s, e_vs, r)
+            path_tmp = vh.backwards_viterbi_hap(m, V_tmp, P_tmp)
+            ll_check = vh.path_ll_hap(n, m, H_vs, path_tmp, s, e_vs, r)
             self.assertAllClose(ll_tmp, ll_check)
             self.assertAllClose(ll_vs, ll_tmp)
-            V_tmp, P_tmp, ll_tmp = vh_vs.forwards_viterbi_hap_lower_mem_rescaling(
+            V_tmp, P_tmp, ll_tmp = vh.forwards_viterbi_hap_lower_mem_rescaling(
                 n, m, H_vs, s, e_vs, r
             )
-            path_tmp = vh_vs.backwards_viterbi_hap(m, V_tmp, P_tmp)
-            ll_check = vh_vs.path_ll_hap(n, m, H_vs, path_tmp, s, e_vs, r)
+            path_tmp = vh.backwards_viterbi_hap(m, V_tmp, P_tmp)
+            ll_check = vh.path_ll_hap(n, m, H_vs, path_tmp, s, e_vs, r)
             self.assertAllClose(ll_tmp, ll_check)
             self.assertAllClose(ll_vs, ll_tmp)
 
@@ -565,105 +423,58 @@ class TestNonTreeViterbiHap(VitAlgorithmBase):
                 V_argmaxes_tmp,
                 recombs,
                 ll_tmp,
-            ) = vh_vs.forwards_viterbi_hap_lower_mem_rescaling_no_pointer(
+            ) = vh.forwards_viterbi_hap_lower_mem_rescaling_no_pointer(
                 n, m, H_vs, s, e_vs, r
             )
-            path_tmp = vh_vs.backwards_viterbi_hap_no_pointer(
+            path_tmp = vh.backwards_viterbi_hap_no_pointer(
                 m,
                 V_argmaxes_tmp,
                 nb.typed.List(recombs),
             )
-            ll_check = vh_vs.path_ll_hap(n, m, H_vs, path_tmp, s, e_vs, r)
+            ll_check = vh.path_ll_hap(n, m, H_vs, path_tmp, s, e_vs, r)
             self.assertAllClose(ll_tmp, ll_check)
             self.assertAllClose(ll_vs, ll_tmp)
-
-            # samples x variants
-            V_sv, P_sv, ll_sv = vh_sv.forwards_viterbi_hap_naive(n, m, H_sv, s, e_sv, r)
-            path_tmp = vh_sv.backwards_viterbi_hap(m, V_sv[:, m - 1], P_sv)
-            ll_check = vh_sv.path_ll_hap(n, m, H_sv, path_tmp, s, e_sv, r)
-            self.assertAllClose(ll_sv, ll_check)
-            V_tmp, P_tmp, ll_tmp = vh_sv.forwards_viterbi_hap_naive_vec(
-                n, m, H_sv, s, e_sv, r
-            )
-            path_tmp = vh_sv.backwards_viterbi_hap(m, V_tmp[:, m - 1], P_tmp)
-            ll_check = vh_sv.path_ll_hap(n, m, H_sv, path_tmp, s, e_sv, r)
-            self.assertAllClose(ll_tmp, ll_check)
-            self.assertAllClose(ll_sv, ll_tmp)
-            V_tmp, P_tmp, ll_tmp = vh_sv.forwards_viterbi_hap_naive_low_mem(
-                n, m, H_sv, s, e_sv, r
-            )
-            path_tmp = vh_sv.backwards_viterbi_hap(m, V_tmp, P_tmp)
-            ll_check = vh_sv.path_ll_hap(n, m, H_sv, path_tmp, s, e_sv, r)
-            self.assertAllClose(ll_tmp, ll_check)
-            self.assertAllClose(ll_sv, ll_tmp)
-            V_tmp, P_tmp, ll_tmp = vh_sv.forwards_viterbi_hap_naive_low_mem_rescaling(
-                n, m, H_sv, s, e_sv, r
-            )
-            path_tmp = vh_sv.backwards_viterbi_hap(m, V_tmp, P_tmp)
-            ll_check = vh_sv.path_ll_hap(n, m, H_sv, path_tmp, s, e_sv, r)
-            self.assertAllClose(ll_tmp, ll_check)
-            self.assertAllClose(ll_sv, ll_tmp)
-            V_tmp, P_tmp, ll_tmp = vh_sv.forwards_viterbi_hap_low_mem_rescaling(
-                n, m, H_sv, s, e_sv, r
-            )
-            path_tmp = vh_sv.backwards_viterbi_hap(m, V_tmp, P_tmp)
-            ll_check = vh_sv.path_ll_hap(n, m, H_sv, path_tmp, s, e_sv, r)
-            self.assertAllClose(ll_tmp, ll_check)
-            self.assertAllClose(ll_sv, ll_tmp)
-            V_tmp, P_tmp, ll_tmp = vh_sv.forwards_viterbi_hap_lower_mem_rescaling(
-                n, m, H_sv, s, e_sv, r
-            )
-            path_tmp = vh_sv.backwards_viterbi_hap(m, V_tmp, P_tmp)
-            ll_check = vh_sv.path_ll_hap(n, m, H_sv, path_tmp, s, e_sv, r)
-            self.assertAllClose(ll_tmp, ll_check)
-            self.assertAllClose(ll_vs, ll_tmp)
-
-            # samples x variants agrees with variants x samples
-            self.assertAllClose(ll_vs, ll_sv)
 
     def verify_larger(self, ts):
         for n, m, H_vs, s, e_vs, r in self.example_parameters_haplotypes_larger(ts):
-            e_sv = e_vs.T
-            H_sv = H_vs.T
 
-            # variants x samples
-            V_vs, P_vs, ll_vs = vh_vs.forwards_viterbi_hap_naive(n, m, H_vs, s, e_vs, r)
-            path_vs = vh_vs.backwards_viterbi_hap(m, V_vs[m - 1, :], P_vs)
-            ll_check = vh_vs.path_ll_hap(n, m, H_vs, path_vs, s, e_vs, r)
+            V_vs, P_vs, ll_vs = vh.forwards_viterbi_hap_naive(n, m, H_vs, s, e_vs, r)
+            path_vs = vh.backwards_viterbi_hap(m, V_vs[m - 1, :], P_vs)
+            ll_check = vh.path_ll_hap(n, m, H_vs, path_vs, s, e_vs, r)
             self.assertAllClose(ll_vs, ll_check)
-            V_tmp, P_tmp, ll_tmp = vh_vs.forwards_viterbi_hap_naive_vec(
+            V_tmp, P_tmp, ll_tmp = vh.forwards_viterbi_hap_naive_vec(
                 n, m, H_vs, s, e_vs, r
             )
-            path_tmp = vh_vs.backwards_viterbi_hap(m, V_tmp[m - 1, :], P_tmp)
-            ll_check = vh_vs.path_ll_hap(n, m, H_vs, path_tmp, s, e_vs, r)
+            path_tmp = vh.backwards_viterbi_hap(m, V_tmp[m - 1, :], P_tmp)
+            ll_check = vh.path_ll_hap(n, m, H_vs, path_tmp, s, e_vs, r)
             self.assertAllClose(ll_tmp, ll_check)
             self.assertAllClose(ll_vs, ll_tmp)
-            V_tmp, P_tmp, ll_tmp = vh_vs.forwards_viterbi_hap_naive_low_mem(
+            V_tmp, P_tmp, ll_tmp = vh.forwards_viterbi_hap_naive_low_mem(
                 n, m, H_vs, s, e_vs, r
             )
-            path_tmp = vh_vs.backwards_viterbi_hap(m, V_tmp, P_tmp)
-            ll_check = vh_vs.path_ll_hap(n, m, H_vs, path_tmp, s, e_vs, r)
+            path_tmp = vh.backwards_viterbi_hap(m, V_tmp, P_tmp)
+            ll_check = vh.path_ll_hap(n, m, H_vs, path_tmp, s, e_vs, r)
             self.assertAllClose(ll_tmp, ll_check)
             self.assertAllClose(ll_vs, ll_tmp)
-            V_tmp, P_tmp, ll_tmp = vh_vs.forwards_viterbi_hap_naive_low_mem_rescaling(
+            V_tmp, P_tmp, ll_tmp = vh.forwards_viterbi_hap_naive_low_mem_rescaling(
                 n, m, H_vs, s, e_vs, r
             )
-            path_tmp = vh_vs.backwards_viterbi_hap(m, V_tmp, P_tmp)
-            ll_check = vh_vs.path_ll_hap(n, m, H_vs, path_tmp, s, e_vs, r)
+            path_tmp = vh.backwards_viterbi_hap(m, V_tmp, P_tmp)
+            ll_check = vh.path_ll_hap(n, m, H_vs, path_tmp, s, e_vs, r)
             self.assertAllClose(ll_tmp, ll_check)
             self.assertAllClose(ll_vs, ll_tmp)
-            V_tmp, P_tmp, ll_tmp = vh_vs.forwards_viterbi_hap_low_mem_rescaling(
+            V_tmp, P_tmp, ll_tmp = vh.forwards_viterbi_hap_low_mem_rescaling(
                 n, m, H_vs, s, e_vs, r
             )
-            path_tmp = vh_vs.backwards_viterbi_hap(m, V_tmp, P_tmp)
-            ll_check = vh_vs.path_ll_hap(n, m, H_vs, path_tmp, s, e_vs, r)
+            path_tmp = vh.backwards_viterbi_hap(m, V_tmp, P_tmp)
+            ll_check = vh.path_ll_hap(n, m, H_vs, path_tmp, s, e_vs, r)
             self.assertAllClose(ll_tmp, ll_check)
             self.assertAllClose(ll_vs, ll_tmp)
-            V_tmp, P_tmp, ll_tmp = vh_vs.forwards_viterbi_hap_lower_mem_rescaling(
+            V_tmp, P_tmp, ll_tmp = vh.forwards_viterbi_hap_lower_mem_rescaling(
                 n, m, H_vs, s, e_vs, r
             )
-            path_tmp = vh_vs.backwards_viterbi_hap(m, V_tmp, P_tmp)
-            ll_check = vh_vs.path_ll_hap(n, m, H_vs, path_tmp, s, e_vs, r)
+            path_tmp = vh.backwards_viterbi_hap(m, V_tmp, P_tmp)
+            ll_check = vh.path_ll_hap(n, m, H_vs, path_tmp, s, e_vs, r)
             self.assertAllClose(ll_tmp, ll_check)
             self.assertAllClose(ll_vs, ll_tmp)
 
@@ -672,59 +483,15 @@ class TestNonTreeViterbiHap(VitAlgorithmBase):
                 V_argmaxes_tmp,
                 recombs,
                 ll_tmp,
-            ) = vh_vs.forwards_viterbi_hap_lower_mem_rescaling_no_pointer(
+            ) = vh.forwards_viterbi_hap_lower_mem_rescaling_no_pointer(
                 n, m, H_vs, s, e_vs, r
             )
-            path_tmp = vh_vs.backwards_viterbi_hap_no_pointer(
+            path_tmp = vh.backwards_viterbi_hap_no_pointer(
                 m, V_argmaxes_tmp, nb.typed.List(recombs)
             )
-            ll_check = vh_vs.path_ll_hap(n, m, H_vs, path_tmp, s, e_vs, r)
+            ll_check = vh.path_ll_hap(n, m, H_vs, path_tmp, s, e_vs, r)
             self.assertAllClose(ll_tmp, ll_check)
             self.assertAllClose(ll_vs, ll_tmp)
-
-            # samples x variants
-            V_sv, P_sv, ll_sv = vh_sv.forwards_viterbi_hap_naive(n, m, H_sv, s, e_sv, r)
-            path_tmp = vh_sv.backwards_viterbi_hap(m, V_sv[:, m - 1], P_sv)
-            ll_check = vh_sv.path_ll_hap(n, m, H_sv, path_tmp, s, e_sv, r)
-            self.assertAllClose(ll_sv, ll_check)
-            V_tmp, P_tmp, ll_tmp = vh_sv.forwards_viterbi_hap_naive_vec(
-                n, m, H_sv, s, e_sv, r
-            )
-            path_tmp = vh_sv.backwards_viterbi_hap(m, V_tmp[:, m - 1], P_tmp)
-            ll_check = vh_sv.path_ll_hap(n, m, H_sv, path_tmp, s, e_sv, r)
-            self.assertAllClose(ll_tmp, ll_check)
-            self.assertAllClose(ll_sv, ll_tmp)
-            V_tmp, P_tmp, ll_tmp = vh_sv.forwards_viterbi_hap_naive_low_mem(
-                n, m, H_sv, s, e_sv, r
-            )
-            path_tmp = vh_sv.backwards_viterbi_hap(m, V_tmp, P_tmp)
-            ll_check = vh_sv.path_ll_hap(n, m, H_sv, path_tmp, s, e_sv, r)
-            self.assertAllClose(ll_tmp, ll_check)
-            self.assertAllClose(ll_sv, ll_tmp)
-            V_tmp, P_tmp, ll_tmp = vh_sv.forwards_viterbi_hap_naive_low_mem_rescaling(
-                n, m, H_sv, s, e_sv, r
-            )
-            path_tmp = vh_sv.backwards_viterbi_hap(m, V_tmp, P_tmp)
-            ll_check = vh_sv.path_ll_hap(n, m, H_sv, path_tmp, s, e_sv, r)
-            self.assertAllClose(ll_tmp, ll_check)
-            self.assertAllClose(ll_sv, ll_tmp)
-            V_tmp, P_tmp, ll_tmp = vh_sv.forwards_viterbi_hap_low_mem_rescaling(
-                n, m, H_sv, s, e_sv, r
-            )
-            path_tmp = vh_sv.backwards_viterbi_hap(m, V_tmp, P_tmp)
-            ll_check = vh_sv.path_ll_hap(n, m, H_sv, path_tmp, s, e_sv, r)
-            self.assertAllClose(ll_tmp, ll_check)
-            self.assertAllClose(ll_sv, ll_tmp)
-            V_tmp, P_tmp, ll_tmp = vh_sv.forwards_viterbi_hap_lower_mem_rescaling(
-                n, m, H_sv, s, e_sv, r
-            )
-            path_tmp = vh_sv.backwards_viterbi_hap(m, V_tmp, P_tmp)
-            ll_check = vh_sv.path_ll_hap(n, m, H_sv, path_tmp, s, e_sv, r)
-            self.assertAllClose(ll_tmp, ll_check)
-            self.assertAllClose(ll_vs, ll_tmp)
-
-            # samples x variants agrees with variants x samples
-            self.assertAllClose(ll_vs, ll_sv)
 
 
 class TestNonTreeViterbiDip(VitAlgorithmBase):
@@ -732,31 +499,28 @@ class TestNonTreeViterbiDip(VitAlgorithmBase):
 
     def verify(self, ts):
         for n, m, G_vs, s, e_vs, r in self.example_parameters_genotypes(ts):
-            e_sv = e_vs.T
-            G_sv = G_vs.T
 
-            # variants x samples
-            V_vs, P_vs, ll_vs = vd_vs.forwards_viterbi_dip_naive(n, m, G_vs, s, e_vs, r)
-            path_vs = vd_vs.backwards_viterbi_dip(m, V_vs[m - 1, :, :], P_vs)
-            phased_path_vs = vd_vs.get_phased_path(n, path_vs)
-            path_ll_vs = vd_vs.path_ll_dip(n, m, G_vs, phased_path_vs, s, e_vs, r)
+            V_vs, P_vs, ll_vs = vd.forwards_viterbi_dip_naive(n, m, G_vs, s, e_vs, r)
+            path_vs = vd.backwards_viterbi_dip(m, V_vs[m - 1, :, :], P_vs)
+            phased_path_vs = vd.get_phased_path(n, path_vs)
+            path_ll_vs = vd.path_ll_dip(n, m, G_vs, phased_path_vs, s, e_vs, r)
             self.assertAllClose(ll_vs, path_ll_vs)
 
-            V_tmp, P_tmp, ll_tmp = vd_vs.forwards_viterbi_dip_naive_low_mem(
+            V_tmp, P_tmp, ll_tmp = vd.forwards_viterbi_dip_naive_low_mem(
                 n, m, G_vs, s, e_vs, r
             )
-            path_tmp = vd_vs.backwards_viterbi_dip(m, V_tmp, P_tmp)
-            phased_path_tmp = vd_vs.get_phased_path(n, path_tmp)
-            path_ll_tmp = vd_vs.path_ll_dip(n, m, G_vs, phased_path_tmp, s, e_vs, r)
+            path_tmp = vd.backwards_viterbi_dip(m, V_tmp, P_tmp)
+            phased_path_tmp = vd.get_phased_path(n, path_tmp)
+            path_ll_tmp = vd.path_ll_dip(n, m, G_vs, phased_path_tmp, s, e_vs, r)
             self.assertAllClose(ll_tmp, path_ll_tmp)
             self.assertAllClose(ll_vs, ll_tmp)
 
-            V_tmp, P_tmp, ll_tmp = vd_vs.forwards_viterbi_dip_low_mem(
+            V_tmp, P_tmp, ll_tmp = vd.forwards_viterbi_dip_low_mem(
                 n, m, G_vs, s, e_vs, r
             )
-            path_tmp = vd_vs.backwards_viterbi_dip(m, V_tmp, P_tmp)
-            phased_path_tmp = vd_vs.get_phased_path(n, path_tmp)
-            path_ll_tmp = vd_vs.path_ll_dip(n, m, G_vs, phased_path_tmp, s, e_vs, r)
+            path_tmp = vd.backwards_viterbi_dip(m, V_tmp, P_tmp)
+            phased_path_tmp = vd.get_phased_path(n, path_tmp)
+            path_ll_tmp = vd.path_ll_dip(n, m, G_vs, phased_path_tmp, s, e_vs, r)
             self.assertAllClose(ll_tmp, path_ll_tmp)
             self.assertAllClose(ll_vs, ll_tmp)
 
@@ -767,10 +531,9 @@ class TestNonTreeViterbiDip(VitAlgorithmBase):
                 V_rowcol_argmaxes_tmp,
                 recombs_single,
                 recombs_double,
-                # P_tmp,
                 ll_tmp,
-            ) = vd_vs.forwards_viterbi_dip_low_mem_no_pointer(n, m, G_vs, s, e_vs, r)
-            path_tmp = vd_vs.backwards_viterbi_dip_no_pointer(
+            ) = vd.forwards_viterbi_dip_low_mem_no_pointer(n, m, G_vs, s, e_vs, r)
+            path_tmp = vd.backwards_viterbi_dip_no_pointer(
                 m,
                 V_argmaxes_tmp,
                 V_rowcol_maxes_tmp,
@@ -779,85 +542,44 @@ class TestNonTreeViterbiDip(VitAlgorithmBase):
                 nb.typed.List(recombs_double),
                 V_tmp,
             )
-            phased_path_tmp = vd_vs.get_phased_path(n, path_tmp)
-            path_ll_tmp = vd_vs.path_ll_dip(n, m, G_vs, phased_path_tmp, s, e_vs, r)
+            phased_path_tmp = vd.get_phased_path(n, path_tmp)
+            path_ll_tmp = vd.path_ll_dip(n, m, G_vs, phased_path_tmp, s, e_vs, r)
             self.assertAllClose(ll_tmp, path_ll_tmp)
             self.assertAllClose(ll_vs, ll_tmp)
 
-            V_tmp, P_tmp, ll_tmp = vd_vs.forwards_viterbi_dip_naive_vec(
+            V_tmp, P_tmp, ll_tmp = vd.forwards_viterbi_dip_naive_vec(
                 n, m, G_vs, s, e_vs, r
             )
-            path_tmp = vd_vs.backwards_viterbi_dip(m, V_tmp[m - 1, :, :], P_tmp)
-            phased_path_tmp = vd_vs.get_phased_path(n, path_tmp)
-            path_ll_tmp = vd_vs.path_ll_dip(n, m, G_vs, phased_path_tmp, s, e_vs, r)
+            path_tmp = vd.backwards_viterbi_dip(m, V_tmp[m - 1, :, :], P_tmp)
+            phased_path_tmp = vd.get_phased_path(n, path_tmp)
+            path_ll_tmp = vd.path_ll_dip(n, m, G_vs, phased_path_tmp, s, e_vs, r)
             self.assertAllClose(ll_tmp, path_ll_tmp)
             self.assertAllClose(ll_vs, ll_tmp)
-
-            # samples x variants
-            V_sv, P_sv, ll_sv = vd_sv.forwards_viterbi_dip_naive(n, m, G_sv, s, e_sv, r)
-            path_sv = vd_sv.backwards_viterbi_dip(m, V_sv[:, :, m - 1], P_sv)
-            phased_path_sv = vd_sv.get_phased_path(n, path_sv)
-            path_ll_sv = vd_sv.path_ll_dip(n, m, G_sv, phased_path_sv, s, e_sv, r)
-            self.assertAllClose(ll_sv, path_ll_sv)
-
-            V_tmp, P_tmp, ll_tmp = vd_sv.forwards_viterbi_dip_naive_low_mem(
-                n, m, G_sv, s, e_sv, r
-            )
-            path_tmp = vd_sv.backwards_viterbi_dip(m, V_tmp, P_tmp)
-            phased_path_tmp = vd_sv.get_phased_path(n, path_tmp)
-            path_ll_tmp = vd_sv.path_ll_dip(n, m, G_sv, phased_path_tmp, s, e_sv, r)
-            self.assertAllClose(ll_tmp, path_ll_tmp)
-            self.assertAllClose(ll_sv, ll_tmp)
-
-            V_tmp, P_tmp, ll_tmp = vd_sv.forwards_viterbi_dip_low_mem(
-                n, m, G_sv, s, e_sv, r
-            )
-            path_tmp = vd_sv.backwards_viterbi_dip(m, V_tmp, P_tmp)
-            phased_path_tmp = vd_sv.get_phased_path(n, path_tmp)
-            path_ll_tmp = vd_sv.path_ll_dip(n, m, G_sv, phased_path_tmp, s, e_sv, r)
-            self.assertAllClose(ll_tmp, path_ll_tmp)
-            self.assertAllClose(ll_sv, ll_tmp)
-
-            V_tmp, P_tmp, ll_tmp = vd_sv.forwards_viterbi_dip_naive_vec(
-                n, m, G_sv, s, e_sv, r
-            )
-            path_tmp = vd_sv.backwards_viterbi_dip(m, V_tmp[:, :, m - 1], P_tmp)
-            phased_path_tmp = vd_sv.get_phased_path(n, path_tmp)
-            path_ll_tmp = vd_sv.path_ll_dip(n, m, G_sv, phased_path_tmp, s, e_sv, r)
-            self.assertAllClose(ll_tmp, path_ll_tmp)
-            self.assertAllClose(ll_sv, ll_tmp)
-            self.assertAllClose(path_ll_sv, path_ll_vs)
-
-            # samples x variants agrees with variants x samples
-            self.assertAllClose(ll_vs, ll_sv)
 
     def verify_larger(self, ts):
         for n, m, G_vs, s, e_vs, r in self.example_parameters_genotypes_larger(ts):
-            e_sv = e_vs.T
-            G_sv = G_vs.T
 
-            # variants x samples
-            V_vs, P_vs, ll_vs = vd_vs.forwards_viterbi_dip_naive(n, m, G_vs, s, e_vs, r)
-            path_vs = vd_vs.backwards_viterbi_dip(m, V_vs[m - 1, :, :], P_vs)
-            phased_path_vs = vd_vs.get_phased_path(n, path_vs)
-            path_ll_vs = vd_vs.path_ll_dip(n, m, G_vs, phased_path_vs, s, e_vs, r)
+            V_vs, P_vs, ll_vs = vd.forwards_viterbi_dip_naive(n, m, G_vs, s, e_vs, r)
+            path_vs = vd.backwards_viterbi_dip(m, V_vs[m - 1, :, :], P_vs)
+            phased_path_vs = vd.get_phased_path(n, path_vs)
+            path_ll_vs = vd.path_ll_dip(n, m, G_vs, phased_path_vs, s, e_vs, r)
             self.assertAllClose(ll_vs, path_ll_vs)
 
-            V_tmp, P_tmp, ll_tmp = vd_vs.forwards_viterbi_dip_naive_low_mem(
+            V_tmp, P_tmp, ll_tmp = vd.forwards_viterbi_dip_naive_low_mem(
                 n, m, G_vs, s, e_vs, r
             )
-            path_tmp = vd_vs.backwards_viterbi_dip(m, V_tmp, P_tmp)
-            phased_path_tmp = vd_vs.get_phased_path(n, path_tmp)
-            path_ll_tmp = vd_vs.path_ll_dip(n, m, G_vs, phased_path_tmp, s, e_vs, r)
+            path_tmp = vd.backwards_viterbi_dip(m, V_tmp, P_tmp)
+            phased_path_tmp = vd.get_phased_path(n, path_tmp)
+            path_ll_tmp = vd.path_ll_dip(n, m, G_vs, phased_path_tmp, s, e_vs, r)
             self.assertAllClose(ll_tmp, path_ll_tmp)
             self.assertAllClose(ll_vs, ll_tmp)
 
-            V_tmp, P_tmp, ll_tmp = vd_vs.forwards_viterbi_dip_low_mem(
+            V_tmp, P_tmp, ll_tmp = vd.forwards_viterbi_dip_low_mem(
                 n, m, G_vs, s, e_vs, r
             )
-            path_tmp = vd_vs.backwards_viterbi_dip(m, V_tmp, P_tmp)
-            phased_path_tmp = vd_vs.get_phased_path(n, path_tmp)
-            path_ll_tmp = vd_vs.path_ll_dip(n, m, G_vs, phased_path_tmp, s, e_vs, r)
+            path_tmp = vd.backwards_viterbi_dip(m, V_tmp, P_tmp)
+            phased_path_tmp = vd.get_phased_path(n, path_tmp)
+            path_ll_tmp = vd.path_ll_dip(n, m, G_vs, phased_path_tmp, s, e_vs, r)
             self.assertAllClose(ll_tmp, path_ll_tmp)
             self.assertAllClose(ll_vs, ll_tmp)
 
@@ -869,8 +591,8 @@ class TestNonTreeViterbiDip(VitAlgorithmBase):
                 recombs_single,
                 recombs_double,
                 ll_tmp,
-            ) = vd_vs.forwards_viterbi_dip_low_mem_no_pointer(n, m, G_vs, s, e_vs, r)
-            path_tmp = vd_vs.backwards_viterbi_dip_no_pointer(
+            ) = vd.forwards_viterbi_dip_low_mem_no_pointer(n, m, G_vs, s, e_vs, r)
+            path_tmp = vd.backwards_viterbi_dip_no_pointer(
                 m,
                 V_argmaxes_tmp,
                 V_rowcol_maxes_tmp,
@@ -879,53 +601,16 @@ class TestNonTreeViterbiDip(VitAlgorithmBase):
                 nb.typed.List(recombs_double),
                 V_tmp,
             )
-            phased_path_tmp = vd_vs.get_phased_path(n, path_tmp)
-            path_ll_tmp = vd_vs.path_ll_dip(n, m, G_vs, phased_path_tmp, s, e_vs, r)
+            phased_path_tmp = vd.get_phased_path(n, path_tmp)
+            path_ll_tmp = vd.path_ll_dip(n, m, G_vs, phased_path_tmp, s, e_vs, r)
             self.assertAllClose(ll_tmp, path_ll_tmp)
             self.assertAllClose(ll_vs, ll_tmp)
 
-            V_tmp, P_tmp, ll_tmp = vd_vs.forwards_viterbi_dip_naive_vec(
+            V_tmp, P_tmp, ll_tmp = vd.forwards_viterbi_dip_naive_vec(
                 n, m, G_vs, s, e_vs, r
             )
-            path_tmp = vd_vs.backwards_viterbi_dip(m, V_tmp[m - 1, :, :], P_tmp)
-            phased_path_tmp = vd_vs.get_phased_path(n, path_tmp)
-            path_ll_tmp = vd_vs.path_ll_dip(n, m, G_vs, phased_path_tmp, s, e_vs, r)
+            path_tmp = vd.backwards_viterbi_dip(m, V_tmp[m - 1, :, :], P_tmp)
+            phased_path_tmp = vd.get_phased_path(n, path_tmp)
+            path_ll_tmp = vd.path_ll_dip(n, m, G_vs, phased_path_tmp, s, e_vs, r)
             self.assertAllClose(ll_tmp, path_ll_tmp)
             self.assertAllClose(ll_vs, ll_tmp)
-
-            # samples x variants
-            V_sv, P_sv, ll_sv = vd_sv.forwards_viterbi_dip_naive(n, m, G_sv, s, e_sv, r)
-            path_sv = vd_sv.backwards_viterbi_dip(m, V_sv[:, :, m - 1], P_sv)
-            phased_path_sv = vd_sv.get_phased_path(n, path_sv)
-            path_ll_sv = vd_sv.path_ll_dip(n, m, G_sv, phased_path_sv, s, e_sv, r)
-            self.assertAllClose(ll_sv, path_ll_sv)
-
-            V_tmp, P_tmp, ll_tmp = vd_sv.forwards_viterbi_dip_naive_low_mem(
-                n, m, G_sv, s, e_sv, r
-            )
-            path_tmp = vd_sv.backwards_viterbi_dip(m, V_tmp, P_tmp)
-            phased_path_tmp = vd_sv.get_phased_path(n, path_tmp)
-            path_ll_tmp = vd_sv.path_ll_dip(n, m, G_sv, phased_path_tmp, s, e_sv, r)
-            self.assertAllClose(ll_tmp, path_ll_tmp)
-            self.assertAllClose(ll_sv, ll_tmp)
-
-            V_tmp, P_tmp, ll_tmp = vd_sv.forwards_viterbi_dip_low_mem(
-                n, m, G_sv, s, e_sv, r
-            )
-            path_tmp = vd_sv.backwards_viterbi_dip(m, V_tmp, P_tmp)
-            phased_path_tmp = vd_sv.get_phased_path(n, path_tmp)
-            path_ll_tmp = vd_sv.path_ll_dip(n, m, G_sv, phased_path_tmp, s, e_sv, r)
-            self.assertAllClose(ll_tmp, path_ll_tmp)
-            self.assertAllClose(ll_sv, ll_tmp)
-
-            V_tmp, P_tmp, ll_tmp = vd_sv.forwards_viterbi_dip_naive_vec(
-                n, m, G_sv, s, e_sv, r
-            )
-            path_tmp = vd_sv.backwards_viterbi_dip(m, V_tmp[:, :, m - 1], P_tmp)
-            phased_path_tmp = vd_sv.get_phased_path(n, path_tmp)
-            path_ll_tmp = vd_sv.path_ll_dip(n, m, G_sv, phased_path_tmp, s, e_sv, r)
-            self.assertAllClose(ll_tmp, path_ll_tmp)
-            self.assertAllClose(ll_sv, ll_tmp)
-
-            # samples x variants agrees with variants x samples
-            self.assertAllClose(ll_vs, ll_sv)

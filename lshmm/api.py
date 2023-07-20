@@ -3,21 +3,15 @@ import warnings
 
 import numpy as np
 
-from .forward_backward.fb_diploid_variants_samples import (
-    backward_ls_dip_loop,
-    forward_ls_dip_loop,
-)
-from .forward_backward.fb_haploid_variants_samples import (
-    backwards_ls_hap,
-    forwards_ls_hap,
-)
-from .vit_diploid_variants_samples import (
+from .forward_backward.fb_diploid import backward_ls_dip_loop, forward_ls_dip_loop
+from .forward_backward.fb_haploid import backwards_ls_hap, forwards_ls_hap
+from .vit_diploid import (
     backwards_viterbi_dip,
     forwards_viterbi_dip_low_mem,
     get_phased_path,
     path_ll_dip,
 )
-from .vit_haploid_variants_samples import (
+from .vit_haploid import (
     backwards_viterbi_hap,
     forwards_viterbi_hap_lower_mem_rescaling,
     path_ll_hap,
