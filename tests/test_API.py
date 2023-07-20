@@ -80,7 +80,7 @@ class LSBase:
 
     def example_parameters_haplotypes(self, ts, seed=42, scale_mutation=True):
         """Returns an iterator over combinations of haplotype, recombination and
-        mutation rates."""
+        mutation probabilities."""
         np.random.seed(seed)
         H, haplotypes = self.example_haplotypes(ts)
         n = H.shape[1]
@@ -240,8 +240,8 @@ class TestMethodsHap(FBAlgorithmBase):
         for n, m, H_vs, s, e_vs, r, mu in self.example_parameters_haplotypes(ts):
             F_vs, c_vs, ll_vs = fbh_vs.forwards_ls_hap(n, m, H_vs, s, e_vs, r)
             B_vs = fbh_vs.backwards_ls_hap(n, m, H_vs, s, e_vs, c_vs, r)
-            F, c, ll = ls.forwards(H_vs, s, r, mutation_rate=mu)
-            B = ls.backwards(H_vs, s, c, r, mutation_rate=mu)
+            F, c, ll = ls.forwards(H_vs, s, r, p_mutation=mu)
+            B = ls.backwards(H_vs, s, c, r, p_mutation=mu)
             self.assertAllClose(F, F_vs)
             self.assertAllClose(B, B_vs)
             self.assertAllClose(ll_vs, ll)
@@ -259,9 +259,9 @@ class TestMethodsDip(FBAlgorithmBase):
             F_vs, c_vs, ll_vs = fbd_vs.forward_ls_dip_loop(
                 n, m, G_vs, s, e_vs, r, norm=True
             )
-            F, c, ll = ls.forwards(G_vs, s, r, mutation_rate=mu)
+            F, c, ll = ls.forwards(G_vs, s, r, p_mutation=mu)
             B_vs = fbd_vs.backward_ls_dip_loop(n, m, G_vs, s, e_vs, c_vs, r)
-            B = ls.backwards(G_vs, s, c, r, mutation_rate=mu)
+            B = ls.backwards(G_vs, s, c, r, p_mutation=mu)
             self.assertAllClose(F, F_vs)
             self.assertAllClose(B, B_vs)
             self.assertAllClose(ll_vs, ll)
@@ -281,7 +281,7 @@ class TestViterbiHap(VitAlgorithmBase):
                 n, m, H_vs, s, e_vs, r
             )
             path_vs = vh_vs.backwards_viterbi_hap(m, V_vs, P_vs)
-            path, ll = ls.viterbi(H_vs, s, r, mutation_rate=mu)
+            path, ll = ls.viterbi(H_vs, s, r, p_mutation=mu)
 
             self.assertAllClose(ll_vs, ll)
             self.assertAllClose(path_vs, path)
@@ -298,7 +298,7 @@ class TestViterbiDip(VitAlgorithmBase):
             )
             path_vs = vd_vs.backwards_viterbi_dip(m, V_vs, P_vs)
             phased_path_vs = vd_vs.get_phased_path(n, path_vs)
-            path, ll = ls.viterbi(G_vs, s, r, mutation_rate=mu)
+            path, ll = ls.viterbi(G_vs, s, r, p_mutation=mu)
 
             self.assertAllClose(ll_vs, ll)
             self.assertAllClose(phased_path_vs, path)

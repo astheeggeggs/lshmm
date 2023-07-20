@@ -71,7 +71,7 @@ class LSBase:
         return e
 
     def example_parameters_haplotypes(self, ts, seed=42):
-        """Returns an iterator over combinations of haplotype, recombination and mutation rates."""
+        """Returns an iterator over combinations of haplotype, recombination and mutation probabilities."""
         np.random.seed(seed)
         H, haplotypes = self.example_haplotypes(ts)
         n = H.shape[1]
@@ -168,8 +168,6 @@ class LSBase:
         # Mixture of random and extremes
         rs = [np.zeros(m) + 0.999, np.zeros(m) + 1e-6, np.random.rand(m)]
         mus = [np.zeros(m) + 0.33, np.zeros(m) + 1e-6, np.random.rand(m) * 0.33]
-
-        # e = self.genotype_emission(mu, m)
 
         for s, r, mu in itertools.product(genotypes, rs, mus):
             r[0] = 0
