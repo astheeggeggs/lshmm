@@ -8,10 +8,10 @@ import pytest
 import tskit
 
 import lshmm as ls
-import lshmm.forward_backward.fb_diploid_variants_samples as fbd_vs
-import lshmm.forward_backward.fb_haploid_variants_samples as fbh_vs
-import lshmm.vit_diploid_variants_samples as vd_vs
-import lshmm.vit_haploid_variants_samples as vh_vs
+import lshmm.forward_backward.fb_diploid as fbd
+import lshmm.forward_backward.fb_haploid as fbh
+import lshmm.vit_diploid as vd
+import lshmm.vit_haploid as vh
 
 EQUAL_BOTH_HOM = 4
 UNEQUAL_BOTH_HOM = 0
@@ -238,8 +238,8 @@ class TestMethodsHap(FBAlgorithmBase):
 
     def verify(self, ts):
         for n, m, H_vs, s, e_vs, r, mu in self.example_parameters_haplotypes(ts):
-            F_vs, c_vs, ll_vs = fbh_vs.forwards_ls_hap(n, m, H_vs, s, e_vs, r)
-            B_vs = fbh_vs.backwards_ls_hap(n, m, H_vs, s, e_vs, c_vs, r)
+            F_vs, c_vs, ll_vs = fbh.forwards_ls_hap(n, m, H_vs, s, e_vs, r)
+            B_vs = fbh.backwards_ls_hap(n, m, H_vs, s, e_vs, c_vs, r)
             F, c, ll = ls.forwards(H_vs, s, r, p_mutation=mu)
             B = ls.backwards(H_vs, s, c, r, p_mutation=mu)
             self.assertAllClose(F, F_vs)
@@ -256,11 +256,11 @@ class TestMethodsDip(FBAlgorithmBase):
     def verify(self, ts):
         for n, m, G_vs, s, e_vs, r, mu in self.example_parameters_genotypes(ts):
 
-            F_vs, c_vs, ll_vs = fbd_vs.forward_ls_dip_loop(
+            F_vs, c_vs, ll_vs = fbd.forward_ls_dip_loop(
                 n, m, G_vs, s, e_vs, r, norm=True
             )
             F, c, ll = ls.forwards(G_vs, s, r, p_mutation=mu)
-            B_vs = fbd_vs.backward_ls_dip_loop(n, m, G_vs, s, e_vs, c_vs, r)
+            B_vs = fbd.backward_ls_dip_loop(n, m, G_vs, s, e_vs, c_vs, r)
             B = ls.backwards(G_vs, s, c, r, p_mutation=mu)
             self.assertAllClose(F, F_vs)
             self.assertAllClose(B, B_vs)
@@ -277,10 +277,10 @@ class TestViterbiHap(VitAlgorithmBase):
     def verify(self, ts):
         for n, m, H_vs, s, e_vs, r, mu in self.example_parameters_haplotypes(ts):
 
-            V_vs, P_vs, ll_vs = vh_vs.forwards_viterbi_hap_lower_mem_rescaling(
+            V_vs, P_vs, ll_vs = vh.forwards_viterbi_hap_lower_mem_rescaling(
                 n, m, H_vs, s, e_vs, r
             )
-            path_vs = vh_vs.backwards_viterbi_hap(m, V_vs, P_vs)
+            path_vs = vh.backwards_viterbi_hap(m, V_vs, P_vs)
             path, ll = ls.viterbi(H_vs, s, r, p_mutation=mu)
 
             self.assertAllClose(ll_vs, ll)
@@ -293,11 +293,9 @@ class TestViterbiDip(VitAlgorithmBase):
     def verify(self, ts):
         for n, m, G_vs, s, e_vs, r, mu in self.example_parameters_genotypes(ts):
 
-            V_vs, P_vs, ll_vs = vd_vs.forwards_viterbi_dip_low_mem(
-                n, m, G_vs, s, e_vs, r
-            )
-            path_vs = vd_vs.backwards_viterbi_dip(m, V_vs, P_vs)
-            phased_path_vs = vd_vs.get_phased_path(n, path_vs)
+            V_vs, P_vs, ll_vs = vd.forwards_viterbi_dip_low_mem(n, m, G_vs, s, e_vs, r)
+            path_vs = vd.backwards_viterbi_dip(m, V_vs, P_vs)
+            phased_path_vs = vd.get_phased_path(n, path_vs)
             path, ll = ls.viterbi(G_vs, s, r, p_mutation=mu)
 
             self.assertAllClose(ll_vs, ll)
