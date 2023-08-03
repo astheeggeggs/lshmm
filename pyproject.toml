@@ -1,6 +1,7 @@
 [build-system]
 requires = [
-    "setuptools>=42",
+    "setuptools>=45",
+    "setuptools_scm[toml]>=6.2",
     "wheel",
 ]
 build-backend = "setuptools.build_meta"
@@ -22,3 +23,9 @@ disable = [
 testpaths = [
     "tests",
 ]
+
+[project]
+name = "lshmm"
+dynamic = ["version"]
+[tool.setuptools_scm]
+write_to = "lshmm/_version.py"
