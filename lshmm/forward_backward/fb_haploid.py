@@ -4,6 +4,7 @@ import numpy as np
 from lshmm import jit
 
 MISSING = -1
+NONCOPY = -2
 
 
 @jit.numba_njit
@@ -17,9 +18,10 @@ def forwards_ls_hap(n, m, H, s, e, r, norm=True):
 
         c = np.zeros(m)
         for i in range(n):
-            F[0, i] = (
-                1 / n * e[0, np.int64(np.equal(H[0, i], s[0, 0]) or s[0, 0] == MISSING)]
-            )
+            em_prob = 0
+            if H[0, i] != NONCOPY:
+                em_prob = e[0, np.int64(np.equal(H[0, i], s[0, 0]) or s[0, 0] == MISSING)]
+            F[0, i] = 1 / n * em_prob
             c[0] += F[0, i]
 
         for i in range(n):
@@ -29,9 +31,10 @@ def forwards_ls_hap(n, m, H, s, e, r, norm=True):
         for l in range(1, m):
             for i in range(n):
                 F[l, i] = F[l - 1, i] * (1 - r[l]) + r_n[l]
-                F[l, i] *= e[
-                    l, np.int64(np.equal(H[l, i], s[0, l]) or s[0, l] == MISSING)
-                ]
+                em_prob = 0
+                if H[l, i] != NONCOPY:
+                    em_prob = e[l, np.int64(np.equal(H[l, i], s[0, l]) or s[0, l] == MISSING)]
+                F[l, i] *= em_prob
                 c[l] += F[l, i]
 
             for i in range(n):
@@ -44,17 +47,19 @@ def forwards_ls_hap(n, m, H, s, e, r, norm=True):
         c = np.ones(m)
 
         for i in range(n):
-            F[0, i] = (
-                1 / n * e[0, np.int64(np.equal(H[0, i], s[0, 0]) or s[0, 0] == MISSING)]
-            )
+            em_prob = 0
+            if H[0, i] != NONCOPY:
+                em_prob = e[0, np.int64(np.equal(H[0, i], s[0, 0]) or s[0, 0] == MISSING)]
+            F[0, i] = 1 / n * em_prob
 
         # Forwards pass
         for l in range(1, m):
             for i in range(n):
                 F[l, i] = F[l - 1, i] * (1 - r[l]) + np.sum(F[l - 1, :]) * r_n[l]
-                F[l, i] *= e[
-                    l, np.int64(np.equal(H[l, i], s[0, l]) or s[0, l] == MISSING)
-                ]
+                em_prob = 0
+                if H[l, i] != NONCOPY:
+                    em_prob = e[l, np.int64(np.equal(H[l, i], s[0, l]) or s[0, l] == MISSING)]
+                F[l, i] *= em_prob
 
         ll = np.log10(np.sum(F[m - 1, :]))
 
@@ -75,15 +80,10 @@ def backwards_ls_hap(n, m, H, s, e, c, r):
         tmp_B = np.zeros(n)
         tmp_B_sum = 0
         for i in range(n):
-            tmp_B[i] = (
-                e[
-                    l + 1,
-                    np.int64(
-                        np.equal(H[l + 1, i], s[0, l + 1]) or s[0, l + 1] == MISSING
-                    ),
-                ]
-                * B[l + 1, i]
-            )
+            em_prob = 0
+            if H[l + 1, i] != NONCOPY:
+                em_prob = e[l + 1, np.int64(np.equal(H[l + 1, i], s[0, l + 1]) or s[0, l + 1] == MISSING)]
+            tmp_B[i] = em_prob * B[l + 1, i]
             tmp_B_sum += tmp_B[i]
         for i in range(n):
             B[l, i] = r_n[l + 1] * tmp_B_sum

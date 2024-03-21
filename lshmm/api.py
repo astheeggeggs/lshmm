@@ -17,6 +17,9 @@ from .vit_haploid import (
     path_ll_hap,
 )
 
+MISSING = -1
+NONCOPY = -2
+
 EQUAL_BOTH_HOM = 4
 UNEQUAL_BOTH_HOM = 0
 BOTH_HET = 7
@@ -27,18 +30,27 @@ MISSING_INDEX = 3
 
 def check_alleles(alleles, m):
     """
-    Checks the specified allele list and returns a list of lists
-    of alleles of length num_sites.
-    If alleles is a 1D list of strings, assume that this list is used
-    for each site and return num_sites copies of this list.
-    Otherwise, raise a ValueError if alleles is not a list of length
-    num_sites.
+    Checks the specified allele list and returns a list of allele lists of length m.
+
+    If alleles is a 1D list of strings, assume that this list is used for each site
+    and return num_sites copies of this list. Otherwise, raise a ValueError
+    if alleles is not a list of length m.
+
+    Note MISSING and NONCOPY values are excluded from the counts.
+
+    :param list alleles: A list of lists of alleles or strings.
+    :param int m: Number of sites.
+    :return: An array of number of distinct alleles at each site.
+    :rtype: numpy.ndarray
     """
     if isinstance(alleles[0], str):
         return np.int8([len(alleles) for _ in range(m)])
     if len(alleles) != m:
-        raise ValueError("Malformed alleles list")
-    n_alleles = np.int8([(len(alleles_site)) for alleles_site in alleles])
+        raise ValueError("Number of alleles list is not equal to number of sites.")
+    exclusion_set = np.array([MISSING, NONCOPY])
+    n_alleles = np.zeros(m, dtype=np.int8)
+    for i in range(m):
+        n_alleles[i] = np.sum(~np.isin(np.unique(alleles[i]), exclusion_set))
     return n_alleles
 
 
@@ -132,12 +144,11 @@ def set_emission_probabilities(
     # Check alleles should go in here, and modify e before passing to the algorithm
     # If alleles is not passed, we don't perform a test of alleles, but set n_alleles based on the reference_panel.
     if alleles is None:
-        n_alleles = np.int8(
-            [
-                len(np.unique(np.append(reference_panel[j, :], query[:, j])))
-                for j in range(reference_panel.shape[0])
-            ]
-        )
+        exclusion_set = np.array([MISSING, NONCOPY])
+        n_alleles = np.zeros(m, dtype=np.int8)
+        for j in range(reference_panel.shape[0]):
+            uniq_alleles = np.unique(np.append(reference_panel[j, :], query[:, j]))
+            n_alleles[j] = np.sum(~np.isin(uniq_alleles, exclusion_set))
     else:
         n_alleles = check_alleles(alleles, m)
 
