@@ -74,6 +74,17 @@ class LSBase:
         n = H.shape[1]
         m = ts.get_num_sites()
 
+        def _get_num_alleles(ref_haps, query):
+            assert ref_haps.shape[0] == query.shape[1]
+            num_sites = ref_haps.shape[0]
+            num_alleles = np.zeros(num_sites, dtype=np.int8)
+            exclusion_set = np.array([MISSING])
+            for i in range(num_sites):
+                uniq_alleles = np.unique(np.append(ref_haps[i, :], query[:, i]))
+                num_alleles[i] = np.sum(~np.isin(uniq_alleles, exclusion_set))
+            assert np.all(num_alleles >= 0), "Number of alleles cannot be zero."
+            return num_alleles
+
         # Here we have equal mutation and recombination
         r = np.zeros(m) + 0.01
         mu = np.zeros(m) + 0.01
@@ -82,9 +93,7 @@ class LSBase:
         for s in haplotypes:
             # Must be calculated from the genotype matrix because we can now get back mutations that
             # result in the number of alleles being higher than the number of alleles in the reference panel.
-            n_alleles = np.int8(
-                [len(np.unique(np.append(H[j, :], s[:, j]))) for j in range(m)]
-            )
+            n_alleles = _get_num_alleles(H, s)
             e = self.haplotype_emission(
                 mu, m, n_alleles, scale_mutation_based_on_n_alleles=scale_mutation
             )
@@ -100,9 +109,7 @@ class LSBase:
 
         for s, r, mu in itertools.product(haplotypes, rs, mus):
             r[0] = 0
-            n_alleles = np.int8(
-                [len(np.unique(np.append(H[j, :], s[:, j]))) for j in range(H.shape[0])]
-            )
+            n_alleles = _get_num_alleles(H, s)
             e = self.haplotype_emission(
                 mu, m, n_alleles, scale_mutation_based_on_n_alleles=scale_mutation
             )
