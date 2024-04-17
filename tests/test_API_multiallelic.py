@@ -27,7 +27,6 @@ class LSBase:
     """Superclass of Li and Stephens tests."""
 
     def example_haplotypes(self, ts, num_random=10, seed=42):
-
         H = ts.genotype_matrix()
         s = H[:, 0].reshape(1, H.shape[0])
         H = H[:, 1:]
@@ -216,7 +215,6 @@ class TestViterbiHap(VitAlgorithmBase):
 
     def verify(self, ts):
         for n, m, H_vs, s, e_vs, r, mu in self.example_parameters_haplotypes(ts):
-
             V_vs, P_vs, ll_vs = vh.forwards_viterbi_hap_lower_mem_rescaling(
                 n, m, H_vs, s, e_vs, r
             )

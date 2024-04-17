@@ -1,4 +1,5 @@
 """Collection of functions to run Viterbi algorithms on haploid genotype data, where the data is structured as variants x samples."""
+
 import numpy as np
 
 from . import jit

@@ -1,4 +1,5 @@
 """External API definitions."""
+
 import warnings
 
 import numpy as np
@@ -194,8 +195,8 @@ def set_emission_probabilities(
         # DEV: there's a wrinkle here.
         e = np.zeros((m, 8))
         e[:, EQUAL_BOTH_HOM] = (1 - p_mutation) ** 2
-        e[:, UNEQUAL_BOTH_HOM] = p_mutation ** 2
-        e[:, BOTH_HET] = (1 - p_mutation) ** 2 + p_mutation ** 2
+        e[:, UNEQUAL_BOTH_HOM] = p_mutation**2
+        e[:, BOTH_HET] = (1 - p_mutation) ** 2 + p_mutation**2
         e[:, REF_HOM_OBS_HET] = 2 * p_mutation * (1 - p_mutation)
         e[:, REF_HET_OBS_HOM] = p_mutation * (1 - p_mutation)
         e[:, MISSING_INDEX] = 1
@@ -204,7 +205,6 @@ def set_emission_probabilities(
 
 
 def viterbi_hap(n, m, reference_panel, query, emissions, p_recombination):
-
     V, P, log_likelihood = forwards_viterbi_hap_lower_mem_rescaling(
         n, m, reference_panel, query, emissions, p_recombination
     )
@@ -214,7 +214,6 @@ def viterbi_hap(n, m, reference_panel, query, emissions, p_recombination):
 
 
 def viterbi_dip(n, m, reference_panel, query, emissions, p_recombination):
-
     V, P, log_likelihood = forwards_viterbi_dip_low_mem(
         n, m, reference_panel, query, emissions, p_recombination
     )
@@ -374,7 +373,6 @@ def path_ll(
     p_mutation=None,
     scale_mutation_based_on_n_alleles=True,
 ):
-
     n, m, ploidy = checks(
         reference_panel,
         query,

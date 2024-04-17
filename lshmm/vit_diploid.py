@@ -1,10 +1,12 @@
 """Collection of functions to run Viterbi algorithms on dipoid genotype data, where the data is structured as variants x samples."""
+
 import numpy as np
 
 from . import jit
 
 MISSING = -1
 MISSING_INDEX = 3
+
 
 # https://github.com/numba/numba/issues/1269
 @jit.numba_njit
@@ -60,7 +62,7 @@ def forwards_viterbi_dip_naive(n, m, G, s, e, r):
                     + 2 * np.int64((G[0, j1, j2] == 1))
                     + np.int64(s[0, 0] == 1)
                 )
-            V[0, j1, j2] = 1 / (n ** 2) * e[0, index_tmp]
+            V[0, j1, j2] = 1 / (n**2) * e[0, index_tmp]
 
     for l in range(1, m):
         if s[0, l] == MISSING:
@@ -117,7 +119,7 @@ def forwards_viterbi_dip_naive_low_mem(n, m, G, s, e, r):
                     + 2 * np.int64((G[0, j1, j2] == 1))
                     + np.int64(s[0, 0] == 1)
                 )
-            V_previous[j1, j2] = 1 / (n ** 2) * e[0, index_tmp]
+            V_previous[j1, j2] = 1 / (n**2) * e[0, index_tmp]
 
     # Take a look at Haploid Viterbi implementation in Jeromes code and see if we can pinch some ideas.
     # Diploid Viterbi, with smaller memory footprint.
@@ -175,7 +177,7 @@ def forwards_viterbi_dip_low_mem(n, m, G, s, e, r):
                     + 2 * np.int64((G[0, j1, j2] == 1))
                     + np.int64(s[0, 0] == 1)
                 )
-            V_previous[j1, j2] = 1 / (n ** 2) * e[0, index_tmp]
+            V_previous[j1, j2] = 1 / (n**2) * e[0, index_tmp]
 
     # Diploid Viterbi, with smaller memory footprint, rescaling, and using the structure of the HMM.
     for l in range(1, m):
@@ -203,7 +205,6 @@ def forwards_viterbi_dip_low_mem(n, m, G, s, e, r):
 
         for j1 in range(n):
             for j2 in range(n):
-
                 V_single_switch = max(V_rowcol_max[j1], V_rowcol_max[j2])
                 P_single_switch = np.argmax(
                     np.array([V_rowcol_max[j1], V_rowcol_max[j2]])
@@ -269,7 +270,7 @@ def forwards_viterbi_dip_low_mem_no_pointer(n, m, G, s, e, r):
                     + 2 * np.int64((G[0, j1, j2] == 1))
                     + np.int64(s[0, 0] == 1)
                 )
-            V_previous[j1, j2] = 1 / (n ** 2) * e[0, index_tmp]
+            V_previous[j1, j2] = 1 / (n**2) * e[0, index_tmp]
 
     # Diploid Viterbi, with smaller memory footprint, rescaling, and using the structure of the HMM.
     for l in range(1, m):
@@ -300,7 +301,6 @@ def forwards_viterbi_dip_low_mem_no_pointer(n, m, G, s, e, r):
 
         for j1 in range(n):
             for j2 in range(n):
-
                 V_single_switch = max(V_rowcol_max[j1], V_rowcol_max[j2])
                 V[j1, j2] = V_previous[j1, j2] * no_switch  # No switch in either
 
@@ -356,7 +356,7 @@ def forwards_viterbi_dip_naive_vec(n, m, G, s, e, r):
                     + 2 * np.int64((G[0, j1, j2] == 1))
                     + np.int64(s[0, 0] == 1)
                 )
-            V[0, j1, j2] = 1 / (n ** 2) * e[0, index_tmp]
+            V[0, j1, j2] = 1 / (n**2) * e[0, index_tmp]
 
     # Jumped the gun - vectorising.
     for l in range(1, m):
@@ -406,7 +406,7 @@ def forwards_viterbi_dip_naive_full_vec(n, m, G, s, e, r):
             + 2 * (G[0, :, :] == 1).astype(np.int64)
             + np.int64(s[0, 0] == 1)
         )
-    V[0, :, :] = 1 / (n ** 2) * e[0, index]
+    V[0, :, :] = 1 / (n**2) * e[0, index]
     r_n = r / n
 
     for l in range(1, m):
@@ -511,12 +511,11 @@ def path_ll_dip(n, m, G, phased_path, s, e, r):
             + 2 * np.int64(G[0, phased_path[0][0], phased_path[1][0]] == 1)
             + np.int64(s[0, 0] == 1)
         )
-    log_prob_path = np.log10(1 / (n ** 2) * e[0, index])
+    log_prob_path = np.log10(1 / (n**2) * e[0, index])
     old_phase = np.array([phased_path[0][0], phased_path[1][0]])
     r_n = r / n
 
     for l in range(1, m):
-
         if s[0, l] == MISSING:
             index = MISSING_INDEX
         else:

@@ -1,4 +1,5 @@
 """Collection of functions to run forwards and backwards algorithms on haploid genotype data, where the data is structured as variants x samples."""
+
 import numpy as np
 
 from lshmm import jit
@@ -11,6 +12,7 @@ REF_HET_OBS_HOM = 2
 
 MISSING = -1
 MISSING_INDEX = 3
+
 
 # https://github.com/numba/numba/issues/1269
 @jit.numba_njit
@@ -51,7 +53,7 @@ def forwards_ls_dip(n, m, G, s, e, r, norm=True):
     """Matrix based diploid LS forward algorithm using numpy vectorisation."""
     # Initialise the forward tensor
     F = np.zeros((m, n, n))
-    F[0, :, :] = 1 / (n ** 2)
+    F[0, :, :] = 1 / (n**2)
     c = np.ones(m)
     r_n = r / n
 
@@ -143,7 +145,6 @@ def backwards_ls_dip(n, m, G, s, e, c, r):
 
     # Backwards
     for l in range(m - 2, -1, -1):
-
         if s[0, l + 1] == MISSING:
             index = MISSING_INDEX * np.ones(
                 (n, n), dtype=np.int64
@@ -181,7 +182,7 @@ def forward_ls_dip_starting_point(n, m, G, s, e, r):
     r_n = r / n
     for j1 in range(n):
         for j2 in range(n):
-            F[0, j1, j2] = 1 / (n ** 2)
+            F[0, j1, j2] = 1 / (n**2)
             if s[0, 0] == MISSING:
                 index_tmp = MISSING_INDEX
             else:
@@ -193,7 +194,6 @@ def forward_ls_dip_starting_point(n, m, G, s, e, r):
             F[0, j1, j2] *= e[0, index_tmp]
 
     for l in range(1, m):
-
         # Determine the various components
         F_no_change = np.zeros((n, n))
         F_j1_change = np.zeros(n)
@@ -266,7 +266,6 @@ def backward_ls_dip_starting_point(n, m, G, s, e, r):
     r_n = r / n
 
     for l in range(m - 2, -1, -1):
-
         # Determine the various components
         B_no_change = np.zeros((n, n))
         B_j1_change = np.zeros(n)
@@ -341,7 +340,7 @@ def forward_ls_dip_loop(n, m, G, s, e, r, norm=True):
     F = np.zeros((m, n, n))
     for j1 in range(n):
         for j2 in range(n):
-            F[0, j1, j2] = 1 / (n ** 2)
+            F[0, j1, j2] = 1 / (n**2)
             if s[0, 0] == MISSING:
                 index_tmp = MISSING_INDEX
             else:
@@ -355,12 +354,10 @@ def forward_ls_dip_loop(n, m, G, s, e, r, norm=True):
     c = np.ones(m)
 
     if norm:
-
         c[0] = np.sum(F[0, :, :])
         F[0, :, :] *= 1 / c[0]
 
         for l in range(1, m):
-
             # Determine the various components
             F_no_change = np.zeros((n, n))
             F_j_change = np.zeros(n)
@@ -406,9 +403,7 @@ def forward_ls_dip_loop(n, m, G, s, e, r, norm=True):
         ll = np.sum(np.log10(c))
 
     else:
-
         for l in range(1, m):
-
             # Determine the various components
             F_no_change = np.zeros((n, n))
             F_j1_change = np.zeros(n)
@@ -466,7 +461,6 @@ def backward_ls_dip_loop(n, m, G, s, e, c, r):
     r_n = r / n
 
     for l in range(m - 2, -1, -1):
-
         # Determine the various components
         B_no_change = np.zeros((n, n))
         B_j1_change = np.zeros(n)
