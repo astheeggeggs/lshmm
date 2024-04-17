@@ -27,7 +27,6 @@ class LSBase:
     """Superclass of Li and Stephens tests."""
 
     def example_haplotypes(self, ts, seed=42):
-
         H = ts.genotype_matrix()
         s = H[:, 0].reshape(1, H.shape[0])
         H = H[:, 1:]
@@ -70,8 +69,8 @@ class LSBase:
         # Define the emission probability matrix
         e = np.zeros((m, 8))
         e[:, EQUAL_BOTH_HOM] = (1 - mu) ** 2
-        e[:, UNEQUAL_BOTH_HOM] = mu ** 2
-        e[:, BOTH_HET] = (1 - mu) ** 2 + mu ** 2
+        e[:, UNEQUAL_BOTH_HOM] = mu**2
+        e[:, BOTH_HET] = (1 - mu) ** 2 + mu**2
         e[:, REF_HOM_OBS_HET] = 2 * mu * (1 - mu)
         e[:, REF_HET_OBS_HOM] = mu * (1 - mu)
         e[:, MISSING_INDEX] = 1
@@ -262,7 +261,6 @@ class TestMethodsDip(FBAlgorithmBase):
 
     def verify(self, ts):
         for n, m, G_vs, s, e_vs, r, mu in self.example_parameters_genotypes(ts):
-
             F_vs, c_vs, ll_vs = fbd.forward_ls_dip_loop(
                 n, m, G_vs, s, e_vs, r, norm=True
             )
@@ -283,7 +281,6 @@ class TestViterbiHap(VitAlgorithmBase):
 
     def verify(self, ts):
         for n, m, H_vs, s, e_vs, r, mu in self.example_parameters_haplotypes(ts):
-
             V_vs, P_vs, ll_vs = vh.forwards_viterbi_hap_lower_mem_rescaling(
                 n, m, H_vs, s, e_vs, r
             )
@@ -299,7 +296,6 @@ class TestViterbiDip(VitAlgorithmBase):
 
     def verify(self, ts):
         for n, m, G_vs, s, e_vs, r, mu in self.example_parameters_genotypes(ts):
-
             V_vs, P_vs, ll_vs = vd.forwards_viterbi_dip_low_mem(n, m, G_vs, s, e_vs, r)
             path_vs = vd.backwards_viterbi_dip(m, V_vs, P_vs)
             phased_path_vs = vd.get_phased_path(n, path_vs)

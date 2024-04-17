@@ -1,4 +1,5 @@
 """Collection of functions to run forwards and backwards algorithms on haploid genotype data, where the data is structured as variants x samples."""
+
 import numpy as np
 
 from lshmm import jit
@@ -14,7 +15,6 @@ def forwards_ls_hap(n, m, H, s, e, r, norm=True):
     r_n = r / n
 
     if norm:
-
         c = np.zeros(m)
         for i in range(n):
             F[0, i] = (
@@ -40,7 +40,6 @@ def forwards_ls_hap(n, m, H, s, e, r, norm=True):
         ll = np.sum(np.log10(c))
 
     else:
-
         c = np.ones(m)
 
         for i in range(n):
