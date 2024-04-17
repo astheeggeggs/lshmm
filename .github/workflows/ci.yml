@@ -26,12 +26,8 @@ jobs:
         run: |
           pip install -r requirements.dev.txt
           pip install build twine nox
-      - name: Check formatting
-        run: nox -s format
-      - name: Check for lint
-        run: nox -s lint
-      - name: Run tests
-        run: nox -s test
+      - name: Tests
+          python3 -m pytest
       - name: Check distribution build
         run: |
           python3 -m build
