@@ -1,82 +1,39 @@
-"""Collection of functions to run Viterbi algorithms on dipoid genotype data, where the data is structured as variants x samples."""
+"""
+Various implementations of the Li & Stephens Viterbi algorithm on diploid genotype data,
+where the data is structured as variants x samples x samples.
+"""
 
 import numpy as np
 
+from . import core
 from . import jit
-
-MISSING = -1
-MISSING_INDEX = 3
-
-
-# https://github.com/numba/numba/issues/1269
-@jit.numba_njit
-def np_apply_along_axis(func1d, axis, arr):
-    """Create numpy-like functions for max, sum etc."""
-    assert arr.ndim == 2
-    assert axis in [0, 1]
-    if axis == 0:
-        result = np.empty(arr.shape[1])
-        for i in range(len(result)):
-            result[i] = func1d(arr[:, i])
-    else:
-        result = np.empty(arr.shape[0])
-        for i in range(len(result)):
-            result[i] = func1d(arr[i, :])
-    return result
-
-
-@jit.numba_njit
-def np_amax(array, axis):
-    """Numba implementation of numpy vectorised maximum."""
-    return np_apply_along_axis(np.amax, axis, array)
-
-
-@jit.numba_njit
-def np_sum(array, axis):
-    """Numba implementation of numpy vectorised sum."""
-    return np_apply_along_axis(np.sum, axis, array)
-
-
-@jit.numba_njit
-def np_argmax(array, axis):
-    """Numba implementation of numpy vectorised argmax."""
-    return np_apply_along_axis(np.argmax, axis, array)
 
 
 @jit.numba_njit
 def forwards_viterbi_dip_naive(n, m, G, s, e, r):
-    """Naive implementation of LS diploid Viterbi algorithm."""
+    """A naive implementation."""
     # Initialise
     V = np.zeros((m, n, n))
-    P = np.zeros((m, n, n)).astype(np.int64)
+    P = np.zeros((m, n, n), dtype=np.int64)
     c = np.ones(m)
     r_n = r / n
 
     for j1 in range(n):
         for j2 in range(n):
-            if s[0, 0] == MISSING:
-                index_tmp = MISSING_INDEX
-            else:
-                index_tmp = (
-                    4 * np.int64(np.equal(G[0, j1, j2], s[0, 0]))
-                    + 2 * np.int64((G[0, j1, j2] == 1))
-                    + np.int64(s[0, 0] == 1)
-                )
-            V[0, j1, j2] = 1 / (n**2) * e[0, index_tmp]
+            emission_index = core.get_index_in_emission_matrix_diploid(
+                ref_allele=G[0, j1, j2], query_allele=s[0, 0]
+            )
+            V[0, j1, j2] = 1 / (n**2) * e[0, emission_index]
 
     for l in range(1, m):
-        if s[0, l] == MISSING:
-            index = MISSING_INDEX * np.ones((n, n), dtype=np.int64)
-        else:
-            index = (
-                4 * np.equal(G[l, :, :], s[0, l]).astype(np.int64)
-                + 2 * (G[l, :, :] == 1).astype(np.int64)
-                + np.int64(s[0, l] == 1)
-            )
+        emission_index = core.get_index_in_emission_matrix_diploid_G(
+            ref_G=G[l, :, :],
+            query_allele=s[0, l],
+            n=n,
+        )
 
         for j1 in range(n):
             for j2 in range(n):
-                # Get the vector to maximise over
                 v = np.zeros((n, n))
                 for k1 in range(n):
                     for k2 in range(n):
@@ -89,7 +46,7 @@ def forwards_viterbi_dip_naive(n, m, G, s, e, r):
                             v[k1, k2] *= r_n[l] * (1 - r[l]) + r_n[l] ** 2
                         else:
                             v[k1, k2] *= r_n[l] ** 2
-                V[l, j1, j2] = np.amax(v) * e[l, index[j1, j2]]
+                V[l, j1, j2] = np.amax(v) * e[l, emission_index[j1, j2]]
                 P[l, j1, j2] = np.argmax(v)
         c[l] = np.amax(V[l, :, :])
         V[l, :, :] *= 1 / c[l]
@@ -101,44 +58,37 @@ def forwards_viterbi_dip_naive(n, m, G, s, e, r):
 
 @jit.numba_njit
 def forwards_viterbi_dip_naive_low_mem(n, m, G, s, e, r):
-    """Naive implementation of LS diploid Viterbi algorithm, with reduced memory."""
+    """A naive implementation with reduced memory."""
     # Initialise
     V = np.zeros((n, n))
-    V_previous = np.zeros((n, n))
-    P = np.zeros((m, n, n)).astype(np.int64)
+    V_prev = np.zeros((n, n))
+    P = np.zeros((m, n, n), dtype=np.int64)
     c = np.ones(m)
     r_n = r / n
 
     for j1 in range(n):
         for j2 in range(n):
-            if s[0, 0] == MISSING:
-                index_tmp = MISSING_INDEX
-            else:
-                index_tmp = (
-                    4 * np.int64(np.equal(G[0, j1, j2], s[0, 0]))
-                    + 2 * np.int64((G[0, j1, j2] == 1))
-                    + np.int64(s[0, 0] == 1)
-                )
-            V_previous[j1, j2] = 1 / (n**2) * e[0, index_tmp]
+            emission_index = core.get_index_in_emission_matrix_diploid(
+                ref_allele=G[0, j1, j2], query_allele=s[0, 0]
+            )
+            V_prev[j1, j2] = 1 / (n**2) * e[0, emission_index]
 
-    # Take a look at Haploid Viterbi implementation in Jeromes code and see if we can pinch some ideas.
+    # Take a look at the haploid Viterbi implementation in Jerome's code, and
+    # see if we can pinch some ideas.
     # Diploid Viterbi, with smaller memory footprint.
     for l in range(1, m):
-        if s[0, l] == MISSING:
-            index = MISSING_INDEX * np.ones((n, n), dtype=np.int64)
-        else:
-            index = (
-                4 * np.equal(G[l, :, :], s[0, l]).astype(np.int64)
-                + 2 * (G[l, :, :] == 1).astype(np.int64)
-                + np.int64(s[0, l] == 1)
-            )
+        emission_index = core.get_index_in_emission_matrix_diploid_G(
+            ref_G=G[l, :, :],
+            query_allele=s[0, l],
+            n=n,
+        )
+
         for j1 in range(n):
             for j2 in range(n):
-                # Get the vector to maximise over
                 v = np.zeros((n, n))
                 for k1 in range(n):
                     for k2 in range(n):
-                        v[k1, k2] = V_previous[k1, k2]
+                        v[k1, k2] = V_prev[k1, k2]
                         if (k1 == j1) and (k2 == j2):
                             v[k1, k2] *= (
                                 (1 - r[l]) ** 2 + 2 * (1 - r[l]) * r_n[l] + r_n[l] ** 2
@@ -147,10 +97,10 @@ def forwards_viterbi_dip_naive_low_mem(n, m, G, s, e, r):
                             v[k1, k2] *= r_n[l] * (1 - r[l]) + r_n[l] ** 2
                         else:
                             v[k1, k2] *= r_n[l] ** 2
-                V[j1, j2] = np.amax(v) * e[l, index[j1, j2]]
+                V[j1, j2] = np.amax(v) * e[l, emission_index[j1, j2]]
                 P[l, j1, j2] = np.argmax(v)
         c[l] = np.amax(V)
-        V_previous = np.copy(V) / c[l]
+        V_prev = np.copy(V) / c[l]
 
     ll = np.sum(np.log10(c))
 
@@ -159,43 +109,39 @@ def forwards_viterbi_dip_naive_low_mem(n, m, G, s, e, r):
 
 @jit.numba_njit
 def forwards_viterbi_dip_low_mem(n, m, G, s, e, r):
-    """LS diploid Viterbi algorithm, with reduced memory."""
+    """
+    An implementation with reduced memory.
+
+    This is exposed via the API.
+    """
     # Initialise
     V = np.zeros((n, n))
-    V_previous = np.zeros((n, n))
-    P = np.zeros((m, n, n)).astype(np.int64)
+    V_prev = np.zeros((n, n))
+    P = np.zeros((m, n, n), dtype=np.int64)
     c = np.ones(m)
     r_n = r / n
 
     for j1 in range(n):
         for j2 in range(n):
-            if s[0, 0] == MISSING:
-                index_tmp = MISSING_INDEX
-            else:
-                index_tmp = (
-                    4 * np.int64(np.equal(G[0, j1, j2], s[0, 0]))
-                    + 2 * np.int64((G[0, j1, j2] == 1))
-                    + np.int64(s[0, 0] == 1)
-                )
-            V_previous[j1, j2] = 1 / (n**2) * e[0, index_tmp]
+            emission_index = core.get_index_in_emission_matrix_diploid(
+                ref_allele=G[0, j1, j2], query_allele=s[0, 0]
+            )
+            V_prev[j1, j2] = 1 / (n**2) * e[0, emission_index]
 
     # Diploid Viterbi, with smaller memory footprint, rescaling, and using the structure of the HMM.
     for l in range(1, m):
-        if s[0, l] == MISSING:
-            index = MISSING_INDEX * np.ones((n, n), dtype=np.int64)
-        else:
-            index = (
-                4 * np.equal(G[l, :, :], s[0, l]).astype(np.int64)
-                + 2 * (G[l, :, :] == 1).astype(np.int64)
-                + np.int64(s[0, l] == 1)
-            )
+        emission_index = core.get_index_in_emission_matrix_diploid_G(
+            ref_G=G[l, :, :],
+            query_allele=s[0, l],
+            n=n,
+        )
 
-        c[l] = np.amax(V_previous)
-        argmax = np.argmax(V_previous)
+        c[l] = np.amax(V_prev)
+        argmax = np.argmax(V_prev)
 
-        V_previous *= 1 / c[l]
-        V_rowcol_max = np_amax(V_previous, 0)
-        arg_rowcol_max = np_argmax(V_previous, 0)
+        V_prev *= 1 / c[l]
+        V_rowcol_max = core.np_amax(V_prev, 0)
+        arg_rowcol_max = core.np_argmax(V_prev, 0)
 
         no_switch = (1 - r[l]) ** 2 + 2 * (r_n[l] * (1 - r[l])) + r_n[l] ** 2
         single_switch = r_n[l] * (1 - r[l]) + r_n[l] ** 2
@@ -215,7 +161,7 @@ def forwards_viterbi_dip_low_mem(n, m, G, s, e, r):
                 else:
                     template_single_switch = arg_rowcol_max[j2] * n + j2
 
-                V[j1, j2] = V_previous[j1, j2] * no_switch  # No switch in either
+                V[j1, j2] = V_prev[j1, j2] * no_switch  # No switch in either
                 P[l, j1, j2] = j1_j2
 
                 # Single or double switch?
@@ -231,9 +177,9 @@ def forwards_viterbi_dip_low_mem(n, m, G, s, e, r):
                         V[j1, j2] = double_switch
                         P[l, j1, j2] = argmax
 
-                V[j1, j2] *= e[l, index[j1, j2]]
+                V[j1, j2] *= e[l, emission_index[j1, j2]]
                 j1_j2 += 1
-        V_previous = np.copy(V)
+        V_prev = np.copy(V)
 
     ll = np.sum(np.log10(c)) + np.log10(np.amax(V))
 
@@ -242,10 +188,10 @@ def forwards_viterbi_dip_low_mem(n, m, G, s, e, r):
 
 @jit.numba_njit
 def forwards_viterbi_dip_low_mem_no_pointer(n, m, G, s, e, r):
-    """LS diploid Viterbi algorithm, with reduced memory."""
+    """An implementation with reduced memory and no pointer."""
     # Initialise
     V = np.zeros((n, n))
-    V_previous = np.zeros((n, n))
+    V_prev = np.zeros((n, n))
     c = np.ones(m)
     r_n = r / n
 
@@ -262,35 +208,27 @@ def forwards_viterbi_dip_low_mem_no_pointer(n, m, G, s, e, r):
 
     for j1 in range(n):
         for j2 in range(n):
-            if s[0, 0] == MISSING:
-                index_tmp = MISSING_INDEX
-            else:
-                index_tmp = (
-                    4 * np.int64(np.equal(G[0, j1, j2], s[0, 0]))
-                    + 2 * np.int64((G[0, j1, j2] == 1))
-                    + np.int64(s[0, 0] == 1)
-                )
-            V_previous[j1, j2] = 1 / (n**2) * e[0, index_tmp]
+            emission_index = core.get_index_in_emission_matrix_diploid(
+                ref_allele=G[0, j1, j2], query_allele=s[0, 0]
+            )
+            V_prev[j1, j2] = 1 / (n**2) * e[0, emission_index]
 
     # Diploid Viterbi, with smaller memory footprint, rescaling, and using the structure of the HMM.
     for l in range(1, m):
-        if s[0, l] == MISSING:
-            index = MISSING_INDEX * np.ones((n, n), dtype=np.int64)
-        else:
-            index = (
-                4 * np.equal(G[l, :, :], s[0, l]).astype(np.int64)
-                + 2 * (G[l, :, :] == 1).astype(np.int64)
-                + np.int64(s[0, l] == 1)
-            )
+        emission_index = core.get_index_in_emission_matrix_diploid_G(
+            ref_G=G[l, :, :],
+            query_allele=s[0, l],
+            n=n,
+        )
 
-        c[l] = np.amax(V_previous)
-        argmax = np.argmax(V_previous)
+        c[l] = np.amax(V_prev)
+        argmax = np.argmax(V_prev)
         V_argmaxes[l - 1] = argmax  # added
 
-        V_previous *= 1 / c[l]
-        V_rowcol_max = np_amax(V_previous, 0)
+        V_prev *= 1 / c[l]
+        V_rowcol_max = core.np_amax(V_prev, 0)
         V_rowcol_maxes[l - 1, :] = V_rowcol_max
-        arg_rowcol_max = np_argmax(V_previous, 0)
+        arg_rowcol_max = core.np_argmax(V_prev, 0)
         V_rowcol_argmaxes[l - 1, :] = arg_rowcol_max
 
         no_switch = (1 - r[l]) ** 2 + 2 * (r_n[l] * (1 - r[l])) + r_n[l] ** 2
@@ -302,7 +240,7 @@ def forwards_viterbi_dip_low_mem_no_pointer(n, m, G, s, e, r):
         for j1 in range(n):
             for j2 in range(n):
                 V_single_switch = max(V_rowcol_max[j1], V_rowcol_max[j2])
-                V[j1, j2] = V_previous[j1, j2] * no_switch  # No switch in either
+                V[j1, j2] = V_prev[j1, j2] * no_switch  # No switch in either
 
                 # Single or double switch?
                 single_switch_tmp = single_switch * V_single_switch
@@ -317,13 +255,13 @@ def forwards_viterbi_dip_low_mem_no_pointer(n, m, G, s, e, r):
                         V[j1, j2] = double_switch
                         recombs_double[l] = np.append(recombs_double[l], values=j1_j2)
 
-                V[j1, j2] *= e[l, index[j1, j2]]
+                V[j1, j2] *= e[l, emission_index[j1, j2]]
                 j1_j2 += 1
-        V_previous = np.copy(V)
+        V_prev = np.copy(V)
 
-    V_argmaxes[m - 1] = np.argmax(V_previous)
-    V_rowcol_maxes[m - 1, :] = np_amax(V_previous, 0)
-    V_rowcol_argmaxes[m - 1, :] = np_argmax(V_previous, 0)
+    V_argmaxes[m - 1] = np.argmax(V_prev)
+    V_rowcol_maxes[m - 1, :] = core.np_amax(V_prev, 0)
+    V_rowcol_argmaxes[m - 1, :] = core.np_argmax(V_prev, 0)
     ll = np.sum(np.log10(c)) + np.log10(np.amax(V))
 
     return (
@@ -339,35 +277,27 @@ def forwards_viterbi_dip_low_mem_no_pointer(n, m, G, s, e, r):
 
 @jit.numba_njit
 def forwards_viterbi_dip_naive_vec(n, m, G, s, e, r):
-    """Vectorised LS diploid Viterbi algorithm using numpy."""
+    """An implementation using Numpy vectorisation."""
     # Initialise
     V = np.zeros((m, n, n))
-    P = np.zeros((m, n, n)).astype(np.int64)
+    P = np.zeros((m, n, n), dtype=np.int64)
     c = np.ones(m)
     r_n = r / n
 
     for j1 in range(n):
         for j2 in range(n):
-            if s[0, 0] == MISSING:
-                index_tmp = MISSING_INDEX
-            else:
-                index_tmp = (
-                    4 * np.int64(np.equal(G[0, j1, j2], s[0, 0]))
-                    + 2 * np.int64((G[0, j1, j2] == 1))
-                    + np.int64(s[0, 0] == 1)
-                )
-            V[0, j1, j2] = 1 / (n**2) * e[0, index_tmp]
+            emission_index = core.get_index_in_emission_matrix_diploid(
+                ref_allele=G[0, j1, j2], query_allele=s[0, 0]
+            )
+            V[0, j1, j2] = 1 / (n**2) * e[0, emission_index]
 
     # Jumped the gun - vectorising.
     for l in range(1, m):
-        if s[0, l] == MISSING:
-            index = MISSING_INDEX * np.ones((n, n), dtype=np.int64)
-        else:
-            index = (
-                4 * np.equal(G[l, :, :], s[0, l]).astype(np.int64)
-                + 2 * (G[l, :, :] == 1).astype(np.int64)
-                + np.int64(s[0, l] == 1)
-            )
+        emission_index = core.get_index_in_emission_matrix_diploid_G(
+            ref_G=G[l, :, :],
+            query_allele=s[0, l],
+            n=n,
+        )
 
         for j1 in range(n):
             for j2 in range(n):
@@ -376,7 +306,7 @@ def forwards_viterbi_dip_naive_vec(n, m, G, s, e, r):
                 v[j1, :] += r_n[l] * (1 - r[l])
                 v[:, j2] += r_n[l] * (1 - r[l])
                 v *= V[l - 1, :, :]
-                V[l, j1, j2] = np.amax(v) * e[l, index[j1, j2]]
+                V[l, j1, j2] = np.amax(v) * e[l, emission_index[j1, j2]]
                 P[l, j1, j2] = np.argmax(v)
 
         c[l] = np.amax(V[l, :, :])
@@ -388,7 +318,7 @@ def forwards_viterbi_dip_naive_vec(n, m, G, s, e, r):
 
 
 def forwards_viterbi_dip_naive_full_vec(n, m, G, s, e, r):
-    """Fully vectorised naive LS diploid Viterbi algorithm using numpy."""
+    """Fully vectorised naive implementation using Numpy."""
     char_both = np.eye(n * n).ravel().reshape((n, n, n, n))
     char_col = np.tile(np.sum(np.eye(n * n).reshape((n, n, n, n)), 3), (n, 1, 1, 1))
     char_row = np.copy(char_col).T
@@ -396,28 +326,23 @@ def forwards_viterbi_dip_naive_full_vec(n, m, G, s, e, r):
 
     # Initialise
     V = np.zeros((m, n, n))
-    P = np.zeros((m, n, n)).astype(np.int64)
+    P = np.zeros((m, n, n), dtype=np.int64)
     c = np.ones(m)
-    if s[0, 0] == MISSING:
-        index = MISSING_INDEX * np.ones((n, n), dtype=np.int64)
-    else:
-        index = (
-            4 * np.equal(G[0, :, :], s[0, 0]).astype(np.int64)
-            + 2 * (G[0, :, :] == 1).astype(np.int64)
-            + np.int64(s[0, 0] == 1)
-        )
-    V[0, :, :] = 1 / (n**2) * e[0, index]
+
+    emission_index = core.get_index_in_emission_matrix_diploid_G(
+        ref_G=G[0, :, :],
+        query_allele=s[0, 0],
+        n=n,
+    )
+    V[0, :, :] = 1 / (n**2) * e[0, emission_index]
     r_n = r / n
 
     for l in range(1, m):
-        if s[0, l] == MISSING:
-            index = MISSING_INDEX * np.ones((n, n), dtype=np.int64)
-        else:
-            index = (
-                4 * np.equal(G[l, :, :], s[0, l]).astype(np.int64)
-                + 2 * (G[l, :, :] == 1).astype(np.int64)
-                + np.int64(s[0, l] == 1)
-            )
+        emission_index = core.get_index_in_emission_matrix_diploid_G(
+            ref_G=G[l, :, :],
+            query_allele=s[0, l],
+            n=n,
+        )
         v = (
             (r_n[l] ** 2)
             + (1 - r[l]) ** 2 * char_both
@@ -425,7 +350,7 @@ def forwards_viterbi_dip_naive_full_vec(n, m, G, s, e, r):
         )
         v *= V[l - 1, :, :]
         P[l, :, :] = np.argmax(v.reshape(n, n, -1), 2)  # Have to flatten to use argmax
-        V[l, :, :] = v.reshape(n, n, -1)[rows, cols, P[l, :, :]] * e[l, index]
+        V[l, :, :] = v.reshape(n, n, -1)[rows, cols, P[l, :, :]] * e[l, emission_index]
         c[l] = np.amax(V[l, :, :])
         V[l, :, :] *= 1 / c[l]
 
@@ -436,11 +361,16 @@ def forwards_viterbi_dip_naive_full_vec(n, m, G, s, e, r):
 
 @jit.numba_njit
 def backwards_viterbi_dip(m, V_last, P):
-    """Run a backwards pass to determine the most likely path."""
+    """
+    Run a backwards pass to determine the most likely path.
+
+    This is exposed via the API.
+    """
     assert V_last.ndim == 2
     assert V_last.shape[0] == V_last.shape[1]
-    # Initialisation
-    path = np.zeros(m).astype(np.int64)
+
+    # Initialise
+    path = np.zeros(m, dtype=np.int64)
     path[m - 1] = np.argmax(V_last)
 
     # Backtrace
@@ -455,8 +385,7 @@ def in_list(array, value):
     where = np.searchsorted(array, value)
     if where < array.shape[0]:
         return array[where] == value
-    else:
-        return False
+    return False
 
 
 @jit.numba_njit
@@ -472,18 +401,19 @@ def backwards_viterbi_dip_no_pointer(
     """Run a backwards pass to determine the most likely path."""
     assert V_last.ndim == 2
     assert V_last.shape[0] == V_last.shape[1]
-    # Initialisation
-    path = np.zeros(m).astype(np.int64)
+
+    # Initialise
+    path = np.zeros(m, dtype=np.int64)
     path[m - 1] = np.argmax(V_last)
     n = V_last.shape[0]
 
     # Backtrace
     for l in range(m - 2, -1, -1):
         current_best_template = path[l + 1]
-        # if current_best_template in recombs_double[l + 1]:
+        # Current_best_template in recombs_double[l + 1]
         if in_list(recombs_double[l + 1], current_best_template):
             current_best_template = V_argmaxes[l]
-        # elif current_best_template in recombs_single[l + 1]:
+        # Current_best_template in recombs_single[l + 1]
         elif in_list(recombs_single[l + 1], current_best_template):
             (j1, j2) = divmod(current_best_template, n)
             if V_rowcol_maxes[l, j1] > V_rowcol_maxes[l, j2]:
@@ -496,37 +426,29 @@ def backwards_viterbi_dip_no_pointer(
 
 
 def get_phased_path(n, path):
-    """Obtain the phased path."""
+    """This is exposed via the API."""
     return np.unravel_index(path, (n, n))
 
 
 @jit.numba_njit
 def path_ll_dip(n, m, G, phased_path, s, e, r):
-    """Evaluate log-likelihood path through a reference panel which results in sequence s."""
-    if s[0, 0] == MISSING:
-        index = MISSING_INDEX
-    else:
-        index = (
-            4 * np.int64(np.equal(G[0, phased_path[0][0], phased_path[1][0]], s[0, 0]))
-            + 2 * np.int64(G[0, phased_path[0][0], phased_path[1][0]] == 1)
-            + np.int64(s[0, 0] == 1)
-        )
-    log_prob_path = np.log10(1 / (n**2) * e[0, index])
+    """
+    Evaluate log-likelihood path through a reference panel which results in sequence.
+
+    This is exposed via the API.
+    """
+    emission_index = core.get_index_in_emission_matrix_diploid(
+        ref_allele=G[0, phased_path[0][0], phased_path[1][0]], query_allele=s[0, 0]
+    )
+    log_prob_path = np.log10(1 / (n**2) * e[0, emission_index])
     old_phase = np.array([phased_path[0][0], phased_path[1][0]])
     r_n = r / n
 
     for l in range(1, m):
-        if s[0, l] == MISSING:
-            index = MISSING_INDEX
-        else:
-            index = (
-                4
-                * np.int64(
-                    np.equal(G[l, phased_path[0][l], phased_path[1][l]], s[0, l])
-                )
-                + 2 * np.int64(G[l, phased_path[0][l], phased_path[1][l]] == 1)
-                + np.int64(s[0, l] == 1)
-            )
+        emission_index = core.get_index_in_emission_matrix_diploid(
+            ref_allele=G[l, phased_path[0][l], phased_path[1][l]],
+            query_allele=s[0, l],
+        )
 
         current_phase = np.array([phased_path[0][l], phased_path[1][l]])
         phase_diff = np.sum(~np.equal(current_phase, old_phase))
@@ -540,7 +462,7 @@ def path_ll_dip(n, m, G, phased_path, s, e, r):
         else:
             log_prob_path += np.log10(r_n[l] ** 2)
 
-        log_prob_path += np.log10(e[l, index])
+        log_prob_path += np.log10(e[l, emission_index])
         old_phase = current_phase
 
     return log_prob_path

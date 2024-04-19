@@ -4,8 +4,15 @@ import warnings
 
 import numpy as np
 
-from .forward_backward.fb_diploid import backward_ls_dip_loop, forward_ls_dip_loop
-from .forward_backward.fb_haploid import backwards_ls_hap, forwards_ls_hap
+from . import core
+from .fb_diploid import (
+    backward_ls_dip_loop,
+    forward_ls_dip_loop,
+)
+from .fb_haploid import (
+    backwards_ls_hap,
+    forwards_ls_hap,
+)
 from .vit_diploid import (
     backwards_viterbi_dip,
     forwards_viterbi_dip_low_mem,
@@ -18,57 +25,16 @@ from .vit_haploid import (
     path_ll_hap,
 )
 
-EQUAL_BOTH_HOM = 4
-UNEQUAL_BOTH_HOM = 0
-BOTH_HET = 7
-REF_HOM_OBS_HET = 1
-REF_HET_OBS_HOM = 2
-MISSING_INDEX = 3
 
-MISSING = -1
-
-
-def check_alleles(alleles, m):
-    """
-    Check a list of allele lists (or strings representing alleles) at m sites, and
-    return a list of counts of distinct alleles at the m sites.
-
-    If alleles is a list of strings, then each string represents distinct alleles
-    at a site, and each character in a string represents a distinct allele.
-    It is assumed that MISSING is not encoded in these strings.
-
-    Note MISSING values in allele lists are excluded from the counts.
-
-    :param list alleles: A list of lists of alleles (or strings).
-    :param int m: Number of sites.
-    :return: An array of counts of distinct alleles at each site.
-    :rtype: numpy.ndarray
-    """
-    num_sites = m
-    if len(alleles) != num_sites:
-        err_msg = "Number of allele lists (or strings) is not equal to number of sites."
-        raise ValueError(err_msg)
-    # Process string encoding of distinct alleles.
-    if isinstance(alleles[0], str):
-        return np.int8([len(alleles) for _ in range(m)])
-    # Otherwise, process allele lists.
-    exclusion_set = np.array([MISSING])
-    n_alleles = np.zeros(num_sites, dtype=np.int8)
-    for i in range(num_sites):
-        uniq_alleles = np.unique(alleles[i])
-        n_alleles[i] = np.sum(~np.isin(uniq_alleles, exclusion_set))
-    return n_alleles
-
-
-def checks(
+def check_inputs(
     reference_panel,
     query,
-    p_mutation,
-    p_recombination,
-    scale_mutation_based_on_n_alleles,
+    prob_recombination,
+    prob_mutation,
+    scale_mutation_rate,
 ):
     """
-    Checks that the input data and parameters are valid.
+    Check that the input data and parameters are valid.
 
     The reference panel must be a matrix of size (m, n) or (m, n, n).
     The query must be a matrix of size (k, m) or (k, m, 2).
@@ -77,182 +43,153 @@ def checks(
     n = number of samples in the reference panel (haplotypes, not individuals).
     k = number of samples in the query (haplotypes, not individuals).
 
+    The mutation rate can be scaled according to the set of alleles
+    that can be mutated to based on the number of distinct alleles at each site.
+
     :param numpy.ndarray(dtype=int) reference_panel: Matrix of size (m, n) or (m, n, n).
     :param numpy.ndarray(dtype=int) query: Matrix of size (k, m) or (k, m, 2).
-    :param numpy.ndarray(dtype=float) p_mutation: Scalar or vector of length m.
-    :param numpy.ndarray(dtype=float) p_recombination: Scalar or vector of length m.
-    :param bool scale_mutation_based_on_n_alleles: Whether to scale the mutation probability to the set of alleles that can be mutated to based on the number of alleles (True) or not (False).
-    :return: n, m, ploidy
+    :param numpy.ndarray(dtype=float) prob_recombination: Scalar or vector of length m.
+    :param numpy.ndarray(dtype=float) prob_mutation: Scalar or vector of length m.
+    :param bool scale_mutation_rate: Scale mutation rate or not.
+    :return: Number of reference haplotypes, Number of sites, ploidy
     :rtype: tuple
     """
     # Check reference panel
     if not len(reference_panel.shape) in (2, 3):
-        raise ValueError("Reference panel array must have 2 or 3 dimensions.")
+        err_msg = "Reference panel array must have 2 or 3 dimensions."
+        raise ValueError(err_msg)
 
     if len(reference_panel.shape) == 2:
-        m, n = reference_panel.shape
+        num_sites, num_ref_haps = reference_panel.shape
         ploidy = 1
     else:
-        m, n, _ = reference_panel.shape
+        num_sites, num_ref_haps, _ = reference_panel.shape
         ploidy = 2
 
     if ploidy == 2 and (reference_panel.shape[1] != reference_panel.shape[2]):
-        raise ValueError(
-            "Reference_panel dimensions are incorrect, perhaps a sample x sample x variant matrix was passed. Expected sites x samples x samples."
+        err_msg = (
+            "Reference_panel dimensions are incorrect, "
+            "perhaps a sample x sample x variant matrix was passed. "
+            "Expected sites x samples x samples."
         )
+        raise ValueError(err_msg)
 
     # Check query sequence(s)
-    if query.shape[1] != m:
-        raise ValueError(
-            "Number of sites in query does not match reference panel. If haploid, ensure a sites x samples matrix is passed."
+    if query.shape[1] != num_sites:
+        err_msg = (
+            "Number of sites in query does not match reference panel. "
+            "If haploid, ensure a sites x samples matrix is passed."
         )
+        raise ValueError(err_msg)
 
-    # Ensure that the mutation probability is either a scalar or vector of length m
-    if isinstance(p_mutation, (int, float)):
-        if not scale_mutation_based_on_n_alleles:
-            warnings.warn(
-                "Passed a scalar probability of mutation, but not rescaling this probability of mutation conditional on the number of alleles at the site."
-            )
-    elif isinstance(p_mutation, np.ndarray) and p_mutation.shape[0] == m:
-        if scale_mutation_based_on_n_alleles:
-            warnings.warn(
-                "Passed a vector of probabilities of mutation, but rescaling each mutation probability conditional on the number of alleles at each site."
-            )
-    elif p_mutation is None:
-        warnings.warn(
-            "No mutation probability passed, setting mutation probability based on Li and Stephens 2003, equations (A2) and (A3)"
+    # Ensure the mutation probability is a scalar or a vector of length m.
+    if isinstance(prob_mutation, (int, float)):
+        if not scale_mutation_rate:
+            warn_msg = "Passed a scalar mutation probability, but not rescaling it."
+            warnings.warn(warn_msg)
+    elif isinstance(prob_mutation, np.ndarray) and prob_mutation.shape[0] == num_sites:
+        if scale_mutation_rate:
+            warn_msg = "Passed a vector of mutation probabilities. Rescaling them."
+            warnings.warn(warn_msg)
+    elif prob_mutation is None:
+        warn_msg = (
+            "No mutation probability passed. "
+            "Setting it based on Li & Stephens (2003) equations A2 and A3."
         )
+        warnings.warn(warn_msg)
     else:
-        raise ValueError(
-            f"Mutation probability is not None, a scalar, or vector of length m: {m}"
-        )
+        err_msg = f"Mutation probability is not None, a scalar, or vector of length m."
+        raise ValueError(err_msg)
 
-    # Ensure that the recombination probability is either a scalar or a vector of length m
+    # Ensure the recombination probability is a scalar or a vector of length m.
     if not (
-        isinstance(p_recombination, (int, float))
-        or (isinstance(p_recombination, np.ndarray) and p_recombination.shape[0] == m)
+        isinstance(prob_recombination, (int, float))
+        or (
+            isinstance(prob_recombination, np.ndarray)
+            and prob_recombination.shape[0] == num_sites
+        )
     ):
-        raise ValueError(f"p_Recombination is not a scalar or vector of length m: {m}")
+        err_msg = f"Recombination probability is not a scalar or vector of length m."
+        raise ValueError(err_msg)
 
-    return (n, m, ploidy)
+    return (num_ref_haps, num_sites, ploidy)
 
 
 def set_emission_probabilities(
-    n,
-    m,
+    num_ref_haps,
+    num_sites,
     reference_panel,
     query,
-    alleles,
-    p_mutation,
     ploidy,
-    scale_mutation_based_on_n_alleles,
+    alleles,
+    prob_mutation,
+    scale_mutation_rate,
 ):
     # Check alleles should go in here, and modify e before passing to the algorithm
-    # If alleles is not passed, we don't perform a test of alleles, but set n_alleles based on the reference_panel.
+    # If alleles is not passed, we don't perform a test of alleles,
+    # but set n_alleles based on the reference_panel.
     if alleles is None:
-        exclusion_set = np.array([MISSING])
-        n_alleles = np.zeros(m, dtype=np.int8)
-        for j in range(reference_panel.shape[0]):
-            uniq_alleles = np.unique(np.append(reference_panel[j, :], query[:, j]))
-            n_alleles[j] = np.sum(~np.isin(uniq_alleles, exclusion_set))
+        num_alleles = core.get_num_alleles(reference_panel, query)
     else:
-        n_alleles = check_alleles(alleles, m)
+        num_alleles = core.check_alleles(alleles, num_sites)
 
-    if p_mutation is None:
-        # Set the mutation probability to be the proposed mutation probability in Li and Stephens (2003).
-        theta_tilde = 1 / np.sum([1 / k for k in range(1, n - 1)])
-        p_mutation = 0.5 * (theta_tilde / (n + theta_tilde))
+    if prob_mutation is None:
+        # Set the mutation probability to be that proposed in Li & Stephens (2003).
+        theta_tilde = 1 / np.sum([1 / k for k in range(1, num_ref_haps - 1)])
+        prob_mutation = 0.5 * (theta_tilde / (num_ref_haps + theta_tilde))
 
-    if isinstance(p_mutation, float):
-        p_mutation = p_mutation * np.ones(m)
+    if isinstance(prob_mutation, float):
+        prob_mutation = prob_mutation * np.ones(num_sites)
 
     if ploidy == 1:
-        # Haploid
-        # Evaluate emission probabilities here using p_mutation - this can take a scalar or vector.
-        e = np.zeros((m, 2))
-
-        if scale_mutation_based_on_n_alleles:
-            # Scale mutation based on the number of alleles - so p_mutation is probability of mutation any given one of the alleles.
-            # The overall mutation probability is then (n_alleles - 1) * p_mutation.
-            e[:, 0] = p_mutation - p_mutation * np.equal(
-                n_alleles, np.ones(m)
-            )  # Added boolean in case we're at an invariant site
-            e[:, 1] = 1 - (n_alleles - 1) * p_mutation
-        else:
-            # No scaling based on the number of alleles - so p_mutation is the probability of mutation to anything
-            # (summing over the states we can switch to). This means that we must rescale the probability of mutation to
-            # a different allele by the number of alleles at the site.
-            for j in range(m):
-                if n_alleles[j] == 1:  # In case we're at an invariant site
-                    e[j, 0] = 0
-                    e[j, 1] = 1
-                else:
-                    e[j, 0] = p_mutation[j] / (n_alleles[j] - 1)
-                    e[j, 1] = 1 - p_mutation[j]
+        emission_probs = core.get_emission_matrix_haploid(
+            mu=prob_mutation,
+            num_sites=num_sites,
+            num_alleles=num_alleles,
+            scale_mutation_rate=scale_mutation_rate,
+        )
     else:
-        # Diploid
-        # Evaluate emission probabilities here, using the mutation probability - this can take a scalar or vector.
-        # DEV: there's a wrinkle here.
-        e = np.zeros((m, 8))
-        e[:, EQUAL_BOTH_HOM] = (1 - p_mutation) ** 2
-        e[:, UNEQUAL_BOTH_HOM] = p_mutation**2
-        e[:, BOTH_HET] = (1 - p_mutation) ** 2 + p_mutation**2
-        e[:, REF_HOM_OBS_HET] = 2 * p_mutation * (1 - p_mutation)
-        e[:, REF_HET_OBS_HOM] = p_mutation * (1 - p_mutation)
-        e[:, MISSING_INDEX] = 1
+        emission_probs = core.get_emission_matrix_diploid(
+            mu=prob_mutation, num_sites=num_sites
+        )
 
-    return e
-
-
-def viterbi_hap(n, m, reference_panel, query, emissions, p_recombination):
-    V, P, log_likelihood = forwards_viterbi_hap_lower_mem_rescaling(
-        n, m, reference_panel, query, emissions, p_recombination
-    )
-    most_likely_path = backwards_viterbi_hap(m, V, P)
-
-    return most_likely_path, log_likelihood
-
-
-def viterbi_dip(n, m, reference_panel, query, emissions, p_recombination):
-    V, P, log_likelihood = forwards_viterbi_dip_low_mem(
-        n, m, reference_panel, query, emissions, p_recombination
-    )
-    unphased_path = backwards_viterbi_dip(m, V, P)
-    most_likely_path = get_phased_path(n, unphased_path)
-
-    return most_likely_path, log_likelihood
+    return emission_probs
 
 
 def forwards(
     reference_panel,
     query,
-    p_recombination,
+    prob_recombination,
+    *,
+    prob_mutation=None,
     alleles=None,
-    p_mutation=None,
-    scale_mutation_based_on_n_alleles=True,
-    norm=True,
+    scale_mutation_rate=None,
+    normalise=None,
 ):
-    """
-    Run the Li and Stephens forwards algorithm on haplotype or
-    unphased genotype data.
-    """
-    n, m, ploidy = checks(
-        reference_panel,
-        query,
-        p_mutation,
-        p_recombination,
-        scale_mutation_based_on_n_alleles,
+    """Run the forwards algorithm on haplotype or unphased genotype data."""
+    if scale_mutation_rate is None:
+        scale_mutation_rate = True
+
+    if normalise is None:
+        normalise = True
+
+    num_ref_haps, num_sites, ploidy = check_inputs(
+        reference_panel=reference_panel,
+        query=query,
+        prob_recombination=prob_recombination,
+        prob_mutation=prob_mutation,
+        scale_mutation_rate=scale_mutation_rate,
     )
 
-    emissions = set_emission_probabilities(
-        n,
-        m,
-        reference_panel,
-        query,
-        alleles,
-        p_mutation,
-        ploidy,
-        scale_mutation_based_on_n_alleles,
+    emission_probs = set_emission_probabilities(
+        num_ref_haps=num_ref_haps,
+        num_sites=num_sites,
+        reference_panel=reference_panel,
+        query=query,
+        ploidy=ploidy,
+        alleles=alleles,
+        prob_mutation=prob_mutation,
+        scale_mutation_rate=scale_mutation_rate,
     )
 
     if ploidy == 1:
@@ -263,44 +200,51 @@ def forwards(
     (
         forward_array,
         normalisation_factor_from_forward,
-        log_likelihood,
+        log_lik,
     ) = forward_function(
-        n, m, reference_panel, query, emissions, p_recombination, norm=norm
+        num_ref_haps,
+        num_sites,
+        reference_panel,
+        query,
+        emission_probs,
+        prob_recombination,
+        norm=normalise,
     )
 
-    return forward_array, normalisation_factor_from_forward, log_likelihood
+    return forward_array, normalisation_factor_from_forward, log_lik
 
 
 def backwards(
     reference_panel,
     query,
     normalisation_factor_from_forward,
-    p_recombination,
+    prob_recombination,
+    *,
+    prob_mutation=None,
     alleles=None,
-    p_mutation=None,
-    scale_mutation_based_on_n_alleles=True,
+    scale_mutation_rate=None,
 ):
-    """
-    Run the Li and Stephens backwards algorithm on haplotype or
-    unphased genotype data.
-    """
-    n, m, ploidy = checks(
-        reference_panel,
-        query,
-        p_mutation,
-        p_recombination,
-        scale_mutation_based_on_n_alleles,
+    """Run the backwards algorithm on haplotype or unphased genotype data."""
+    if scale_mutation_rate is None:
+        scale_mutation_rate = True
+
+    num_ref_haps, num_sites, ploidy = check_inputs(
+        reference_panel=reference_panel,
+        query=query,
+        prob_recombination=prob_recombination,
+        prob_mutation=prob_mutation,
+        scale_mutation_rate=scale_mutation_rate,
     )
 
-    emissions = set_emission_probabilities(
-        n,
-        m,
-        reference_panel,
-        query,
-        alleles,
-        p_mutation,
-        ploidy,
-        scale_mutation_based_on_n_alleles,
+    emission_probs = set_emission_probabilities(
+        num_ref_haps=num_ref_haps,
+        num_sites=num_sites,
+        reference_panel=reference_panel,
+        query=query,
+        ploidy=ploidy,
+        alleles=alleles,
+        prob_mutation=prob_mutation,
+        scale_mutation_rate=scale_mutation_rate,
     )
 
     if ploidy == 1:
@@ -309,13 +253,13 @@ def backwards(
         backward_function = backward_ls_dip_loop
 
     backwards_array = backward_function(
-        n,
-        m,
+        num_ref_haps,
+        num_sites,
         reference_panel,
         query,
-        emissions,
+        emission_probs,
         normalisation_factor_from_forward,
-        p_recombination,
+        prob_recombination,
     )
 
     return backwards_array
@@ -324,72 +268,91 @@ def backwards(
 def viterbi(
     reference_panel,
     query,
-    p_recombination,
+    prob_recombination,
+    *,
+    prob_mutation=None,
     alleles=None,
-    p_mutation=None,
-    scale_mutation_based_on_n_alleles=True,
+    scale_mutation_rate=None,
 ):
-    """
-    Run the Li and Stephens Viterbi algorithm on haplotype or
-    unphased genotype data.
-    """
-    n, m, ploidy = checks(
-        reference_panel,
-        query,
-        p_mutation,
-        p_recombination,
-        scale_mutation_based_on_n_alleles,
+    """Run the Viterbi algorithm on haplotype or unphased genotype data."""
+    if scale_mutation_rate is None:
+        scale_mutation_rate = True
+
+    num_ref_haps, num_sites, ploidy = check_inputs(
+        reference_panel=reference_panel,
+        query=query,
+        prob_recombination=prob_recombination,
+        prob_mutation=prob_mutation,
+        scale_mutation_rate=scale_mutation_rate,
     )
 
-    emissions = set_emission_probabilities(
-        n,
-        m,
-        reference_panel,
-        query,
-        alleles,
-        p_mutation,
-        ploidy,
-        scale_mutation_based_on_n_alleles,
+    emission_probs = set_emission_probabilities(
+        num_ref_haps=num_ref_haps,
+        num_sites=num_sites,
+        reference_panel=reference_panel,
+        query=query,
+        ploidy=ploidy,
+        alleles=alleles,
+        prob_mutation=prob_mutation,
+        scale_mutation_rate=scale_mutation_rate,
     )
 
     if ploidy == 1:
-        viterbi_function = viterbi_hap
+        V, P, log_lik = forwards_viterbi_hap_lower_mem_rescaling(
+            num_ref_haps,
+            num_sites,
+            reference_panel,
+            query,
+            emission_probs,
+            prob_recombination,
+        )
+        best_path = backwards_viterbi_hap(num_sites, V, P)
     else:
-        viterbi_function = viterbi_dip
+        V, P, log_lik = forwards_viterbi_dip_low_mem(
+            num_ref_haps,
+            num_sites,
+            reference_panel,
+            query,
+            emission_probs,
+            prob_recombination,
+        )
+        unphased_path = backwards_viterbi_dip(num_sites, V, P)
+        best_path = get_phased_path(num_ref_haps, unphased_path)
 
-    most_likely_path, log_likelihood = viterbi_function(
-        n, m, reference_panel, query, emissions, p_recombination
-    )
-
-    return most_likely_path, log_likelihood
+    return best_path, log_lik
 
 
-def path_ll(
+def path_loglik(
     reference_panel,
     query,
     path,
-    p_recombination,
+    prob_recombination,
+    *,
+    prob_mutation=None,
     alleles=None,
-    p_mutation=None,
-    scale_mutation_based_on_n_alleles=True,
+    scale_mutation_rate=None,
 ):
-    n, m, ploidy = checks(
-        reference_panel,
-        query,
-        p_mutation,
-        p_recombination,
-        scale_mutation_based_on_n_alleles,
+    """Evaluate the log-likelihood of a copying path for a query through a reference panel."""
+    if scale_mutation_rate is None:
+        scale_mutation_rate = True
+
+    num_ref_haps, num_sites, ploidy = check_inputs(
+        reference_panel=reference_panel,
+        query=query,
+        prob_recombination=prob_recombination,
+        prob_mutation=prob_mutation,
+        scale_mutation_rate=scale_mutation_rate,
     )
 
-    emissions = set_emission_probabilities(
-        n,
-        m,
-        reference_panel,
-        query,
-        alleles,
-        p_mutation,
-        ploidy,
-        scale_mutation_based_on_n_alleles,
+    emission_probs = set_emission_probabilities(
+        num_ref_haps=num_ref_haps,
+        num_sites=num_sites,
+        reference_panel=reference_panel,
+        query=query,
+        ploidy=ploidy,
+        alleles=alleles,
+        prob_mutation=prob_mutation,
+        scale_mutation_rate=scale_mutation_rate,
     )
 
     if ploidy == 1:
@@ -397,8 +360,14 @@ def path_ll(
     else:
         path_ll_function = path_ll_dip
 
-    ll = path_ll_function(
-        n, m, reference_panel, path, query, emissions, p_recombination
+    log_lik = path_ll_function(
+        num_ref_haps,
+        num_sites,
+        reference_panel,
+        path,
+        query,
+        emission_probs,
+        prob_recombination,
     )
 
-    return ll
+    return log_lik
