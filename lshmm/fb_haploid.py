@@ -1,25 +1,31 @@
-"""Collection of functions to run forwards and backwards algorithms on haploid genotype data, where the data is structured as variants x samples."""
+"""
+Various implementations of the Li & Stephens forwards-backwards algorithm on haploid genotype data,
+where the data is structured as variants x samples.
+"""
 
 import numpy as np
 
+from lshmm import core
 from lshmm import jit
-
-MISSING = -1
 
 
 @jit.numba_njit
 def forwards_ls_hap(n, m, H, s, e, r, norm=True):
-    """Matrix based haploid LS forward algorithm using numpy vectorisation."""
-    # Initialise
+    """
+    A matrix-based implementation using Numpy vectorisation.
+
+    This is exposed via the API.
+    """
     F = np.zeros((m, n))
     r_n = r / n
 
     if norm:
         c = np.zeros(m)
         for i in range(n):
-            F[0, i] = (
-                1 / n * e[0, np.int64(np.equal(H[0, i], s[0, 0]) or s[0, 0] == MISSING)]
+            emission_index = core.get_index_in_emission_matrix_haploid(
+                ref_allele=H[0, i], query_allele=s[0, 0]
             )
+            F[0, i] = 1 / n * e[0, emission_index]
             c[0] += F[0, i]
 
         for i in range(n):
@@ -29,9 +35,10 @@ def forwards_ls_hap(n, m, H, s, e, r, norm=True):
         for l in range(1, m):
             for i in range(n):
                 F[l, i] = F[l - 1, i] * (1 - r[l]) + r_n[l]
-                F[l, i] *= e[
-                    l, np.int64(np.equal(H[l, i], s[0, l]) or s[0, l] == MISSING)
-                ]
+                emission_index = core.get_index_in_emission_matrix_haploid(
+                    ref_allele=H[l, i], query_allele=s[0, l]
+                )
+                F[l, i] *= e[l, emission_index]
                 c[l] += F[l, i]
 
             for i in range(n):
@@ -41,19 +48,20 @@ def forwards_ls_hap(n, m, H, s, e, r, norm=True):
 
     else:
         c = np.ones(m)
-
         for i in range(n):
-            F[0, i] = (
-                1 / n * e[0, np.int64(np.equal(H[0, i], s[0, 0]) or s[0, 0] == MISSING)]
+            emission_index = core.get_index_in_emission_matrix_haploid(
+                ref_allele=H[0, i], query_allele=s[0, 0]
             )
+            F[0, i] = 1 / n * e[0, emission_index]
 
         # Forwards pass
         for l in range(1, m):
             for i in range(n):
                 F[l, i] = F[l - 1, i] * (1 - r[l]) + np.sum(F[l - 1, :]) * r_n[l]
-                F[l, i] *= e[
-                    l, np.int64(np.equal(H[l, i], s[0, l]) or s[0, l] == MISSING)
-                ]
+                emission_index = core.get_index_in_emission_matrix_haploid(
+                    ref_allele=H[l, i], query_allele=s[0, l]
+                )
+                F[l, i] *= e[l, emission_index]
 
         ll = np.log10(np.sum(F[m - 1, :]))
 
@@ -62,8 +70,11 @@ def forwards_ls_hap(n, m, H, s, e, r, norm=True):
 
 @jit.numba_njit
 def backwards_ls_hap(n, m, H, s, e, c, r):
-    """Matrix based haploid LS backward algorithm using numpy vectorisation."""
-    # Initialise
+    """
+    A matrix-based implementation using Numpy vectorisation.
+
+    This is exposed via the API.
+    """
     B = np.zeros((m, n))
     for i in range(n):
         B[m - 1, i] = 1
@@ -74,15 +85,10 @@ def backwards_ls_hap(n, m, H, s, e, c, r):
         tmp_B = np.zeros(n)
         tmp_B_sum = 0
         for i in range(n):
-            tmp_B[i] = (
-                e[
-                    l + 1,
-                    np.int64(
-                        np.equal(H[l + 1, i], s[0, l + 1]) or s[0, l + 1] == MISSING
-                    ),
-                ]
-                * B[l + 1, i]
+            emission_index = core.get_index_in_emission_matrix_haploid(
+                ref_allele=H[l + 1, i], query_allele=s[0, l + 1]
             )
+            tmp_B[i] = e[l + 1, emission_index] * B[l + 1, i]
             tmp_B_sum += tmp_B[i]
         for i in range(n):
             B[l, i] = r_n[l + 1] * tmp_B_sum
