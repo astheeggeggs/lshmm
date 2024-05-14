@@ -22,10 +22,13 @@ def forwards_ls_hap(n, m, H, s, e, r, norm=True):
     if norm:
         c = np.zeros(m)
         for i in range(n):
-            emission_index = core.get_index_in_emission_matrix_haploid(
-                ref_allele=H[0, i], query_allele=s[0, 0]
+            emission_prob = core.get_emission_probability_haploid(
+                ref_allele=H[0, i],
+                query_allele=s[0, 0],
+                site=0,
+                emission_matrix=e,
             )
-            F[0, i] = 1 / n * e[0, emission_index]
+            F[0, i] = 1 / n * emission_prob
             c[0] += F[0, i]
 
         for i in range(n):
@@ -35,10 +38,13 @@ def forwards_ls_hap(n, m, H, s, e, r, norm=True):
         for l in range(1, m):
             for i in range(n):
                 F[l, i] = F[l - 1, i] * (1 - r[l]) + r_n[l]
-                emission_index = core.get_index_in_emission_matrix_haploid(
-                    ref_allele=H[l, i], query_allele=s[0, l]
+                emission_prob = core.get_emission_probability_haploid(
+                    ref_allele=H[l, i],
+                    query_allele=s[0, l],
+                    site=l,
+                    emission_matrix=e,
                 )
-                F[l, i] *= e[l, emission_index]
+                F[l, i] *= emission_prob
                 c[l] += F[l, i]
 
             for i in range(n):
@@ -49,19 +55,25 @@ def forwards_ls_hap(n, m, H, s, e, r, norm=True):
     else:
         c = np.ones(m)
         for i in range(n):
-            emission_index = core.get_index_in_emission_matrix_haploid(
-                ref_allele=H[0, i], query_allele=s[0, 0]
+            emission_prob = core.get_emission_probability_haploid(
+                ref_allele=H[0, i],
+                query_allele=s[0, 0],
+                site=0,
+                emission_matrix=e,
             )
-            F[0, i] = 1 / n * e[0, emission_index]
+            F[0, i] = 1 / n * emission_prob
 
         # Forwards pass
         for l in range(1, m):
             for i in range(n):
                 F[l, i] = F[l - 1, i] * (1 - r[l]) + np.sum(F[l - 1, :]) * r_n[l]
-                emission_index = core.get_index_in_emission_matrix_haploid(
-                    ref_allele=H[l, i], query_allele=s[0, l]
+                emission_prob = core.get_emission_probability_haploid(
+                    ref_allele=H[l, i],
+                    query_allele=s[0, l],
+                    site=l,
+                    emission_matrix=e,
                 )
-                F[l, i] *= e[l, emission_index]
+                F[l, i] *= emission_prob
 
         ll = np.log10(np.sum(F[m - 1, :]))
 
@@ -85,10 +97,13 @@ def backwards_ls_hap(n, m, H, s, e, c, r):
         tmp_B = np.zeros(n)
         tmp_B_sum = 0
         for i in range(n):
-            emission_index = core.get_index_in_emission_matrix_haploid(
-                ref_allele=H[l + 1, i], query_allele=s[0, l + 1]
+            emission_prob = core.get_emission_probability_haploid(
+                ref_allele=H[l + 1, i],
+                query_allele=s[0, l + 1],
+                site=l + 1,
+                emission_matrix=e,
             )
-            tmp_B[i] = e[l + 1, emission_index] * B[l + 1, i]
+            tmp_B[i] = emission_prob * B[l + 1, i]
             tmp_B_sum += tmp_B[i]
         for i in range(n):
             B[l, i] = r_n[l + 1] * tmp_B_sum

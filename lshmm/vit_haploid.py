@@ -17,10 +17,13 @@ def viterbi_naive_init(n, m, H, s, e, r):
     r_n = r / n
 
     for i in range(n):
-        emission_index = core.get_index_in_emission_matrix_haploid(
-            ref_allele=H[0, i], query_allele=s[0, 0]
+        emission_prob = core.get_emission_probability_haploid(
+            ref_allele=H[0, i],
+            query_allele=s[0, 0],
+            site=0,
+            emission_matrix=e,
         )
-        V[0, i] = 1 / n * e[0, emission_index]
+        V[0, i] = 1 / n * emission_prob
 
     return V, P, r_n
 
@@ -34,10 +37,13 @@ def viterbi_init(n, m, H, s, e, r):
     r_n = r / n
 
     for i in range(n):
-        emission_index = core.get_index_in_emission_matrix_haploid(
-            ref_allele=H[0, i], query_allele=s[0, 0]
+        emission_prob = core.get_emission_probability_haploid(
+            ref_allele=H[0, i],
+            query_allele=s[0, 0],
+            site=0,
+            emission_matrix=e,
         )
-        V_prev[i] = 1 / n * e[0, emission_index]
+        V_prev[i] = 1 / n * emission_prob
 
     return V, V_prev, P, r_n
 
@@ -51,10 +57,13 @@ def forwards_viterbi_hap_naive(n, m, H, s, e, r):
         for i in range(n):
             v = np.zeros(n)
             for k in range(n):
-                emission_index = core.get_index_in_emission_matrix_haploid(
-                    ref_allele=H[j, i], query_allele=s[0, j]
+                emission_prob = core.get_emission_probability_haploid(
+                    ref_allele=H[j, i],
+                    query_allele=s[0, j],
+                    site=j,
+                    emission_matrix=e,
                 )
-                v[k] = V[j - 1, k] * e[j, emission_index]
+                v[k] = V[j - 1, k] * emission_prob
                 if k == i:
                     v[k] *= 1 - r[j] + r_n[j]
                 else:
@@ -77,10 +86,13 @@ def forwards_viterbi_hap_naive_vec(n, m, H, s, e, r):
         for i in range(n):
             v = np.copy(v_tmp)
             v[i] += V[j - 1, i] * (1 - r[j])
-            emission_index = core.get_index_in_emission_matrix_haploid(
-                ref_allele=H[j, i], query_allele=s[0, j]
+            emission_prob = core.get_emission_probability_haploid(
+                ref_allele=H[j, i],
+                query_allele=s[0, j],
+                site=j,
+                emission_matrix=e,
             )
-            v *= e[j, emission_index]
+            v *= emission_prob
             P[j, i] = np.argmax(v)
             V[j, i] = v[P[j, i]]
 
@@ -98,10 +110,13 @@ def forwards_viterbi_hap_naive_low_mem(n, m, H, s, e, r):
         for i in range(n):
             v = np.zeros(n)
             for k in range(n):
-                emission_index = core.get_index_in_emission_matrix_haploid(
-                    ref_allele=H[j, i], query_allele=s[0, j]
+                emission_prob = core.get_emission_probability_haploid(
+                    ref_allele=H[j, i],
+                    query_allele=s[0, j],
+                    site=j,
+                    emission_matrix=e,
                 )
-                v[k] = V_prev[k] * e[j, emission_index]
+                v[k] = V_prev[k] * emission_prob
                 if k == i:
                     v[k] *= 1 - r[j] + r_n[j]
                 else:
@@ -127,10 +142,13 @@ def forwards_viterbi_hap_naive_low_mem_rescaling(n, m, H, s, e, r):
         for i in range(n):
             v = np.zeros(n)
             for k in range(n):
-                emission_index = core.get_index_in_emission_matrix_haploid(
-                    ref_allele=H[j, i], query_allele=s[0, j]
+                emission_prob = core.get_emission_probability_haploid(
+                    ref_allele=H[j, i],
+                    query_allele=s[0, j],
+                    site=j,
+                    emission_matrix=e,
                 )
-                v[k] = V_prev[k] * e[j, emission_index]
+                v[k] = V_prev[k] * emission_prob
                 if k == i:
                     v[k] *= 1 - r[j] + r_n[j]
                 else:
@@ -161,10 +179,13 @@ def forwards_viterbi_hap_low_mem_rescaling(n, m, H, s, e, r):
             if V[i] < r_n[j]:
                 V[i] = r_n[j]
                 P[j, i] = argmax
-            emission_index = core.get_index_in_emission_matrix_haploid(
-                ref_allele=H[j, i], query_allele=s[0, j]
+            emission_prob = core.get_emission_probability_haploid(
+                ref_allele=H[j, i],
+                query_allele=s[0, j],
+                site=j,
+                emission_matrix=e,
             )
-            V[i] *= e[j, emission_index]
+            V[i] *= emission_prob
         V_prev = np.copy(V)
 
     ll = np.sum(np.log10(c)) + np.log10(np.max(V))
@@ -181,10 +202,13 @@ def forwards_viterbi_hap_lower_mem_rescaling(n, m, H, s, e, r):
     """
     V = np.zeros(n)
     for i in range(n):
-        emission_index = core.get_index_in_emission_matrix_haploid(
-            ref_allele=H[0, i], query_allele=s[0, 0]
+        emission_prob = core.get_emission_probability_haploid(
+            ref_allele=H[0, i],
+            query_allele=s[0, 0],
+            site=0,
+            emission_matrix=e,
         )
-        V[i] = 1 / n * e[0, emission_index]
+        V[i] = 1 / n * emission_prob
     P = np.zeros((m, n), dtype=np.int64)
     r_n = r / n
     c = np.ones(m)
@@ -199,10 +223,13 @@ def forwards_viterbi_hap_lower_mem_rescaling(n, m, H, s, e, r):
             if V[i] < r_n[j]:
                 V[i] = r_n[j]
                 P[j, i] = argmax
-            emission_index = core.get_index_in_emission_matrix_haploid(
-                ref_allele=H[j, i], query_allele=s[0, j]
+            emission_prob = core.get_emission_probability_haploid(
+                ref_allele=H[j, i],
+                query_allele=s[0, j],
+                site=j,
+                emission_matrix=e,
             )
-            V[i] *= e[j, emission_index]
+            V[i] *= emission_prob
 
     ll = np.sum(np.log10(c)) + np.log10(np.max(V))
 
@@ -217,10 +244,13 @@ def forwards_viterbi_hap_lower_mem_rescaling_no_pointer(n, m, H, s, e, r):
     """
     V = np.zeros(n)
     for i in range(n):
-        emission_index = core.get_index_in_emission_matrix_haploid(
-            ref_allele=H[0, i], query_allele=s[0, 0]
+        emission_prob = core.get_emission_probability_haploid(
+            ref_allele=H[0, i],
+            query_allele=s[0, 0],
+            site=0,
+            emission_matrix=e,
         )
-        V[i] = 1 / n * e[0, emission_index]
+        V[i] = 1 / n * emission_prob
     r_n = r / n
     c = np.ones(m)
     # This is going to be filled with the templates we can recombine to
@@ -241,10 +271,13 @@ def forwards_viterbi_hap_lower_mem_rescaling_no_pointer(n, m, H, s, e, r):
                 recombs[j] = np.append(
                     recombs[j], i
                 )  # We add template i as a potential template to recombine to at site j.
-            emission_index = core.get_index_in_emission_matrix_haploid(
-                ref_allele=H[j, i], query_allele=s[0, j]
+            emission_prob = core.get_emission_probability_haploid(
+                ref_allele=H[j, i],
+                query_allele=s[0, j],
+                site=j,
+                emission_matrix=e,
             )
-            V[i] *= e[j, emission_index]
+            V[i] *= emission_prob
 
     V_argmaxes[m - 1] = np.argmax(V)
     ll = np.sum(np.log10(c)) + np.log10(np.max(V))
@@ -292,16 +325,22 @@ def path_ll_hap(n, m, H, path, s, e, r):
 
     This is exposed via the API.
     """
-    emission_index = core.get_index_in_emission_matrix_haploid(
-        ref_allele=H[0, path[0]], query_allele=s[0, 0]
+    emission_prob = core.get_emission_probability_haploid(
+        ref_allele=H[0, path[0]],
+        query_allele=s[0, 0],
+        site=0,
+        emission_matrix=e,
     )
-    log_prob_path = np.log10((1 / n) * e[0, emission_index])
+    log_prob_path = np.log10((1 / n) * emission_prob)
     old = path[0]
     r_n = r / n
 
     for l in range(1, m):
-        emission_index = core.get_index_in_emission_matrix_haploid(
-            ref_allele=H[l, path[l]], query_allele=s[0, l]
+        emission_prob = core.get_emission_probability_haploid(
+            ref_allele=H[l, path[l]],
+            query_allele=s[0, l],
+            site=l,
+            emission_matrix=e,
         )
         current = path[l]
         same = old == current
@@ -311,7 +350,7 @@ def path_ll_hap(n, m, H, path, s, e, r):
         else:
             log_prob_path += np.log10(r_n[l])
 
-        log_prob_path += np.log10(e[l, emission_index])
+        log_prob_path += np.log10(emission_prob)
         old = current
 
     return log_prob_path

@@ -20,16 +20,20 @@ def forwards_viterbi_dip_naive(n, m, G, s, e, r):
 
     for j1 in range(n):
         for j2 in range(n):
-            emission_index = core.get_index_in_emission_matrix_diploid(
-                ref_allele=G[0, j1, j2], query_allele=s[0, 0]
+            emission_prob = core.get_emission_probability_diploid(
+                ref_allele=G[0, j1, j2],
+                query_allele=s[0, 0],
+                site=0,
+                emission_matrix=e,
             )
-            V[0, j1, j2] = 1 / (n**2) * e[0, emission_index]
+            V[0, j1, j2] = 1 / (n**2) * emission_prob
 
     for l in range(1, m):
-        emission_index = core.get_index_in_emission_matrix_diploid_G(
+        emission_probs = core.get_emission_probability_diploid_G(
             ref_G=G[l, :, :],
             query_allele=s[0, l],
-            n=n,
+            site=l,
+            emission_matrix=e,
         )
 
         for j1 in range(n):
@@ -46,7 +50,7 @@ def forwards_viterbi_dip_naive(n, m, G, s, e, r):
                             v[k1, k2] *= r_n[l] * (1 - r[l]) + r_n[l] ** 2
                         else:
                             v[k1, k2] *= r_n[l] ** 2
-                V[l, j1, j2] = np.amax(v) * e[l, emission_index[j1, j2]]
+                V[l, j1, j2] = np.amax(v) * emission_probs[j1, j2]
                 P[l, j1, j2] = np.argmax(v)
         c[l] = np.amax(V[l, :, :])
         V[l, :, :] *= 1 / c[l]
@@ -68,19 +72,23 @@ def forwards_viterbi_dip_naive_low_mem(n, m, G, s, e, r):
 
     for j1 in range(n):
         for j2 in range(n):
-            emission_index = core.get_index_in_emission_matrix_diploid(
-                ref_allele=G[0, j1, j2], query_allele=s[0, 0]
+            emission_prob = core.get_emission_probability_diploid(
+                ref_allele=G[0, j1, j2],
+                query_allele=s[0, 0],
+                site=0,
+                emission_matrix=e,
             )
-            V_prev[j1, j2] = 1 / (n**2) * e[0, emission_index]
+            V_prev[j1, j2] = 1 / (n**2) * emission_prob
 
     # Take a look at the haploid Viterbi implementation in Jerome's code, and
     # see if we can pinch some ideas.
     # Diploid Viterbi, with smaller memory footprint.
     for l in range(1, m):
-        emission_index = core.get_index_in_emission_matrix_diploid_G(
+        emission_probs = core.get_emission_probability_diploid_G(
             ref_G=G[l, :, :],
             query_allele=s[0, l],
-            n=n,
+            site=l,
+            emission_matrix=e,
         )
 
         for j1 in range(n):
@@ -97,7 +105,7 @@ def forwards_viterbi_dip_naive_low_mem(n, m, G, s, e, r):
                             v[k1, k2] *= r_n[l] * (1 - r[l]) + r_n[l] ** 2
                         else:
                             v[k1, k2] *= r_n[l] ** 2
-                V[j1, j2] = np.amax(v) * e[l, emission_index[j1, j2]]
+                V[j1, j2] = np.amax(v) * emission_probs[j1, j2]
                 P[l, j1, j2] = np.argmax(v)
         c[l] = np.amax(V)
         V_prev = np.copy(V) / c[l]
@@ -123,17 +131,21 @@ def forwards_viterbi_dip_low_mem(n, m, G, s, e, r):
 
     for j1 in range(n):
         for j2 in range(n):
-            emission_index = core.get_index_in_emission_matrix_diploid(
-                ref_allele=G[0, j1, j2], query_allele=s[0, 0]
+            emission_prob = core.get_emission_probability_diploid(
+                ref_allele=G[0, j1, j2],
+                query_allele=s[0, 0],
+                site=0,
+                emission_matrix=e,
             )
-            V_prev[j1, j2] = 1 / (n**2) * e[0, emission_index]
+            V_prev[j1, j2] = 1 / (n**2) * emission_prob
 
     # Diploid Viterbi, with smaller memory footprint, rescaling, and using the structure of the HMM.
     for l in range(1, m):
-        emission_index = core.get_index_in_emission_matrix_diploid_G(
+        emission_probs = core.get_emission_probability_diploid_G(
             ref_G=G[l, :, :],
             query_allele=s[0, l],
-            n=n,
+            site=l,
+            emission_matrix=e,
         )
 
         c[l] = np.amax(V_prev)
@@ -177,7 +189,7 @@ def forwards_viterbi_dip_low_mem(n, m, G, s, e, r):
                         V[j1, j2] = double_switch
                         P[l, j1, j2] = argmax
 
-                V[j1, j2] *= e[l, emission_index[j1, j2]]
+                V[j1, j2] *= emission_probs[j1, j2]
                 j1_j2 += 1
         V_prev = np.copy(V)
 
@@ -208,17 +220,21 @@ def forwards_viterbi_dip_low_mem_no_pointer(n, m, G, s, e, r):
 
     for j1 in range(n):
         for j2 in range(n):
-            emission_index = core.get_index_in_emission_matrix_diploid(
-                ref_allele=G[0, j1, j2], query_allele=s[0, 0]
+            emission_prob = core.get_emission_probability_diploid(
+                ref_allele=G[0, j1, j2],
+                query_allele=s[0, 0],
+                site=0,
+                emission_matrix=e,
             )
-            V_prev[j1, j2] = 1 / (n**2) * e[0, emission_index]
+            V_prev[j1, j2] = 1 / (n**2) * emission_prob
 
     # Diploid Viterbi, with smaller memory footprint, rescaling, and using the structure of the HMM.
     for l in range(1, m):
-        emission_index = core.get_index_in_emission_matrix_diploid_G(
+        emission_probs = core.get_emission_probability_diploid_G(
             ref_G=G[l, :, :],
             query_allele=s[0, l],
-            n=n,
+            site=l,
+            emission_matrix=e,
         )
 
         c[l] = np.amax(V_prev)
@@ -255,7 +271,7 @@ def forwards_viterbi_dip_low_mem_no_pointer(n, m, G, s, e, r):
                         V[j1, j2] = double_switch
                         recombs_double[l] = np.append(recombs_double[l], values=j1_j2)
 
-                V[j1, j2] *= e[l, emission_index[j1, j2]]
+                V[j1, j2] *= emission_probs[j1, j2]
                 j1_j2 += 1
         V_prev = np.copy(V)
 
@@ -286,17 +302,21 @@ def forwards_viterbi_dip_naive_vec(n, m, G, s, e, r):
 
     for j1 in range(n):
         for j2 in range(n):
-            emission_index = core.get_index_in_emission_matrix_diploid(
-                ref_allele=G[0, j1, j2], query_allele=s[0, 0]
+            emission_prob = core.get_emission_probability_diploid(
+                ref_allele=G[0, j1, j2],
+                query_allele=s[0, 0],
+                site=0,
+                emission_matrix=e,
             )
-            V[0, j1, j2] = 1 / (n**2) * e[0, emission_index]
+            V[0, j1, j2] = 1 / (n**2) * emission_prob
 
     # Jumped the gun - vectorising.
     for l in range(1, m):
-        emission_index = core.get_index_in_emission_matrix_diploid_G(
+        emission_probs = core.get_emission_probability_diploid_G(
             ref_G=G[l, :, :],
             query_allele=s[0, l],
-            n=n,
+            site=l,
+            emission_matrix=e,
         )
 
         for j1 in range(n):
@@ -306,7 +326,7 @@ def forwards_viterbi_dip_naive_vec(n, m, G, s, e, r):
                 v[j1, :] += r_n[l] * (1 - r[l])
                 v[:, j2] += r_n[l] * (1 - r[l])
                 v *= V[l - 1, :, :]
-                V[l, j1, j2] = np.amax(v) * e[l, emission_index[j1, j2]]
+                V[l, j1, j2] = np.amax(v) * emission_probs[j1, j2]
                 P[l, j1, j2] = np.argmax(v)
 
         c[l] = np.amax(V[l, :, :])
@@ -329,19 +349,21 @@ def forwards_viterbi_dip_naive_full_vec(n, m, G, s, e, r):
     P = np.zeros((m, n, n), dtype=np.int64)
     c = np.ones(m)
 
-    emission_index = core.get_index_in_emission_matrix_diploid_G(
+    emission_probs = core.get_emission_probability_diploid_G(
         ref_G=G[0, :, :],
         query_allele=s[0, 0],
-        n=n,
+        site=l,
+        emission_matrix=e,
     )
-    V[0, :, :] = 1 / (n**2) * e[0, emission_index]
+    V[0, :, :] = 1 / (n**2) * emission_probs
     r_n = r / n
 
     for l in range(1, m):
-        emission_index = core.get_index_in_emission_matrix_diploid_G(
+        emission_probs = core.get_emission_probability_diploid_G(
             ref_G=G[l, :, :],
             query_allele=s[0, l],
-            n=n,
+            site=l,
+            emission_matrix=e,
         )
         v = (
             (r_n[l] ** 2)
@@ -350,7 +372,7 @@ def forwards_viterbi_dip_naive_full_vec(n, m, G, s, e, r):
         )
         v *= V[l - 1, :, :]
         P[l, :, :] = np.argmax(v.reshape(n, n, -1), 2)  # Have to flatten to use argmax
-        V[l, :, :] = v.reshape(n, n, -1)[rows, cols, P[l, :, :]] * e[l, emission_index]
+        V[l, :, :] = v.reshape(n, n, -1)[rows, cols, P[l, :, :]] * emission_probs
         c[l] = np.amax(V[l, :, :])
         V[l, :, :] *= 1 / c[l]
 
@@ -437,17 +459,23 @@ def path_ll_dip(n, m, G, phased_path, s, e, r):
 
     This is exposed via the API.
     """
-    emission_index = core.get_index_in_emission_matrix_diploid(
-        ref_allele=G[0, phased_path[0][0], phased_path[1][0]], query_allele=s[0, 0]
+    emission_prob = core.get_emission_probability_diploid(
+        ref_allele=G[0, phased_path[0][0], phased_path[1][0]],
+        query_allele=s[0, 0],
+        site=0,
+        emission_matrix=e,
     )
-    log_prob_path = np.log10(1 / (n**2) * e[0, emission_index])
+    log_prob_path = np.log10(1 / (n**2) * emission_prob)
+
     old_phase = np.array([phased_path[0][0], phased_path[1][0]])
     r_n = r / n
 
     for l in range(1, m):
-        emission_index = core.get_index_in_emission_matrix_diploid(
+        emission_prob = core.get_emission_probability_diploid(
             ref_allele=G[l, phased_path[0][l], phased_path[1][l]],
             query_allele=s[0, l],
+            site=l,
+            emission_matrix=e,
         )
 
         current_phase = np.array([phased_path[0][l], phased_path[1][l]])
@@ -462,7 +490,7 @@ def path_ll_dip(n, m, G, phased_path, s, e, r):
         else:
             log_prob_path += np.log10(r_n[l] ** 2)
 
-        log_prob_path += np.log10(e[l, emission_index])
+        log_prob_path += np.log10(emission_prob)
         old_phase = current_phase
 
     return log_prob_path

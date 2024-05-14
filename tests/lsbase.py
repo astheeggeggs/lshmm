@@ -1,3 +1,4 @@
+import bisect
 import itertools
 
 import numpy as np
@@ -16,13 +17,49 @@ class LSBase:
     def assertAllClose(self, A, B):
         np.testing.assert_allclose(A, B, rtol=1e-9, atol=0.0)
 
+    def get_ancestral_haplotypes(self, ts):
+        """
+        Returns a numpy array of the haplotypes of the ancestors in the
+        specified tree sequence.
+        Modified from
+        https://github.com/tskit-dev/tsinfer/blob/0c206d319f9c0dcb1ee205d5cc56576e3a88775e/tsinfer/eval_util.py#L244
+        """
+        tables = ts.dump_tables()
+        nodes = tables.nodes
+        flags = nodes.flags[:]
+        flags[:] = 1
+        nodes.set_columns(time=nodes.time, flags=flags)
+
+        sites = tables.sites.position
+        tsp = tables.tree_sequence()
+        B = tsp.genotype_matrix().T
+
+        # Modified. Originally, this was filled with NONCOPY by default.
+        A = np.full((ts.num_nodes, ts.num_sites), core.NONCOPY, dtype=np.int8)
+        for edge in ts.edges():
+            start = bisect.bisect_left(sites, edge.left)
+            end = bisect.bisect_right(sites, edge.right)
+            if sites[end - 1] == edge.right:
+                end -= 1
+            A[edge.parent, start:end] = B[edge.parent, start:end]
+        A[: ts.num_samples] = B[: ts.num_samples]
+
+        assert np.all(
+            np.sum(A != core.NONCOPY, axis=0) > 0
+        ), "Some sites have only NONCOPY states."
+
+        return A.T
+
     # Prepare example reference panels and queries.
-    def get_examples_haploid(self, ts):
+    def get_examples_haploid(self, ts, include_ancestors):
         ref_panel = ts.genotype_matrix()
         num_sites = ref_panel.shape[0]
         query1 = ref_panel[:, 0].reshape(1, num_sites)
         query2 = ref_panel[:, -1].reshape(1, num_sites)
-        ref_panel = ref_panel[:, 1:]
+        if include_ancestors:
+            ref_panel = self.get_ancestral_haplotypes(ts)
+        else:
+            ref_panel = ref_panel[:, 1:]
         # Create queries with MISSING
         query_miss_last = query1.copy()
         query_miss_last[0, -1] = core.MISSING
@@ -33,7 +70,8 @@ class LSBase:
         queries = [query1, query2, query_miss_last, query_miss_mid, query_miss_last]
         return ref_panel, queries
 
-    def get_examples_diploid(self, ts):
+    def get_examples_diploid(self, ts, include_ancestors):
+        # TODO Handle NONCOPY properly.
         ref_panel = ts.genotype_matrix()
         num_sites = ref_panel.shape[0]
         query1 = ref_panel[:, 0].reshape(1, num_sites) + ref_panel[:, 1].reshape(
@@ -66,6 +104,7 @@ class LSBase:
         ts,
         ploidy=None,
         scale_mutation_rate=None,
+        include_ancestors=None,
         mean_r=None,
         mean_mu=None,
         seed=42,
@@ -73,12 +112,13 @@ class LSBase:
         """Returns an iterator over combinations of examples and parameters."""
         assert ploidy in [1, 2]
         assert scale_mutation_rate in [True, False]
+        assert include_ancestors in [True, False]
 
         np.random.seed(seed)
         if ploidy == 1:
-            H, queries = self.get_examples_haploid(ts)
+            H, queries = self.get_examples_haploid(ts, include_ancestors)
         else:
-            H, G, queries = self.get_examples_diploid(ts)
+            H, G, queries = self.get_examples_diploid(ts, include_ancestors)
 
         m = ts.num_sites
         n = H.shape[1]

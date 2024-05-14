@@ -11,6 +11,7 @@ REF_HET_OBS_HOM = 2
 MISSING_INDEX = 3
 
 MISSING = -1
+NONCOPY = -2
 
 
 """ Helper functions. """
@@ -72,9 +73,9 @@ def check_alleles(alleles, num_sites):
 
     If alleles is a list of strings, then each string represents distinct alleles
     at a site, and each character in a string represents a distinct allele.
-    It is assumed that MISSING is not encoded in these strings.
+    It is assumed that MISSING and NONCOPY are not encoded in these strings.
 
-    Note MISSING values in the allele lists are excluded from the counts.
+    Note that MISSING and NONCOPY values are excluded from the counts.
 
     :param list alleles: A list of lists of alleles (or strings).
     :param int num_sites: Number of sites.
@@ -88,7 +89,7 @@ def check_alleles(alleles, num_sites):
     if isinstance(alleles[0], str):
         return np.int8([len(alleles) for _ in range(num_sites)])
     # Otherwise, process allele lists.
-    exclusion_set = np.array([MISSING])
+    exclusion_set = np.array([MISSING, NONCOPY])
     num_alleles = np.zeros(num_sites, dtype=np.int32)
     for i in range(num_sites):
         uniq_alleles = np.unique(alleles[i])
@@ -165,3 +166,36 @@ def get_emission_matrix_diploid(mu, num_sites):
     e[:, REF_HET_OBS_HOM] = mu * (1 - mu)
     e[:, MISSING_INDEX] = 1
     return e
+
+
+@jit.numba_njit
+def get_emission_probability_haploid(ref_allele, query_allele, site, emission_matrix):
+    if ref_allele == NONCOPY:
+        return 0.0
+    else:
+        emission_index = get_index_in_emission_matrix_haploid(ref_allele, query_allele)
+        return emission_matrix[site, emission_index]
+
+
+@jit.numba_njit
+def get_emission_probability_diploid(ref_allele, query_allele, site, emission_matrix):
+    if ref_allele == NONCOPY:
+        return 0.0
+    else:
+        emission_index = get_index_in_emission_matrix_diploid(ref_allele, query_allele)
+        return emission_matrix[site, emission_index]
+
+
+@jit.numba_njit
+def get_emission_probability_diploid_G(ref_G, query_allele, site, emission_matrix):
+    emission_probs = np.zeros(ref_G.shape, dtype=np.float64)
+    for i in range(len(ref_G)):
+        for j in range(len(ref_G)):
+            if ref_G[i, j] == NONCOPY:
+                emission_probs[i, j] = 0.0
+            else:
+                emission_index = get_index_in_emission_matrix_diploid(
+                    ref_G[i, j], query_allele
+                )
+                emission_probs[i, j] = emission_matrix[site, emission_index]
+    return emission_probs
