@@ -17,10 +17,13 @@ def forwards_ls_dip(n, m, G, s, e, r, norm=True):
     c = np.ones(m)
     r_n = r / n
 
-    emission_index = core.get_index_in_emission_matrix_diploid_G(
-        ref_G=G[0, :, :], query_allele=s[0, 0], n=n
+    emission_probs = core.get_emission_probability_diploid_G(
+        ref_G=G[0, :, :],
+        query_allele=s[0, 0],
+        site=0,
+        emission_matrix=e,
     )
-    F[0, :, :] *= e[0, emission_index]
+    F[0, :, :] *= emission_probs
 
     if norm:
         c[0] = np.sum(F[0, :, :])
@@ -28,8 +31,11 @@ def forwards_ls_dip(n, m, G, s, e, r, norm=True):
 
         # Forwards
         for l in range(1, m):
-            emission_index = core.get_index_in_emission_matrix_diploid_G(
-                ref_G=G[l, :, :], query_allele=s[0, l], n=n
+            emission_probs = core.get_emission_probability_diploid_G(
+                ref_G=G[l, :, :],
+                query_allele=s[0, l],
+                site=l,
+                emission_matrix=e,
             )
 
             # No change in both
@@ -43,7 +49,7 @@ def forwards_ls_dip(n, m, G, s, e, r, norm=True):
             F[l, :, :] += ((1 - r[l]) * r_n[l]) * (sum_j + sum_j.T)
 
             # Emission
-            F[l, :, :] *= e[l, emission_index]
+            F[l, :, :] *= emission_probs
             c[l] = np.sum(F[l, :, :])
             F[l, :, :] *= 1 / c[l]
 
@@ -51,8 +57,11 @@ def forwards_ls_dip(n, m, G, s, e, r, norm=True):
     else:
         # Forwards
         for l in range(1, m):
-            emission_index = core.get_index_in_emission_matrix_diploid_G(
-                ref_G=G[l, :, :], query_allele=s[0, l], n=n
+            emission_probs = core.get_emission_probability_diploid_G(
+                ref_G=G[l, :, :],
+                query_allele=s[0, l],
+                site=l,
+                emission_matrix=e,
             )
 
             # No change in both
@@ -67,7 +76,7 @@ def forwards_ls_dip(n, m, G, s, e, r, norm=True):
             F[l, :, :] += ((1 - r[l]) * r_n[l]) * (sum_j + sum_j.T)
 
             # Emission
-            F[l, :, :] *= e[l, emission_index]
+            F[l, :, :] *= emission_probs
 
         ll = np.log10(np.sum(F[l, :, :]))
 
@@ -83,27 +92,22 @@ def backwards_ls_dip(n, m, G, s, e, c, r):
 
     # Backwards
     for l in range(m - 2, -1, -1):
-        emission_index = core.get_index_in_emission_matrix_diploid_G(
-            ref_G=G[l + 1, :, :], query_allele=s[0, l + 1], n=n
+        emission_probs = core.get_emission_probability_diploid_G(
+            ref_G=G[l + 1, :, :],
+            query_allele=s[0, l + 1],
+            site=l + 1,
+            emission_matrix=e,
         )
 
         # No change in both
-        B[l, :, :] = r_n[l + 1] ** 2 * np.sum(
-            e[l + 1, emission_index.reshape((n, n))] * B[l + 1, :, :]
-        )
+        B[l, :, :] = r_n[l + 1] ** 2 * np.sum(emission_probs * B[l + 1, :, :])
 
         # Both change
-        B[l, :, :] += (
-            (1 - r[l + 1]) ** 2
-            * B[l + 1, :, :]
-            * e[l + 1, emission_index.reshape((n, n))]
-        )
+        B[l, :, :] += (1 - r[l + 1]) ** 2 * B[l + 1, :, :] * emission_probs
 
         # One changes
         sum_j = (
-            core.np_sum(B[l + 1, :, :] * e[l + 1, emission_index], 0)
-            .repeat(n)
-            .reshape((-1, n))
+            core.np_sum(B[l + 1, :, :] * emission_probs, 0).repeat(n).reshape((-1, n))
         )
         B[l, :, :] += ((1 - r[l + 1]) * r_n[l + 1]) * (sum_j + sum_j.T)
         B[l, :, :] *= 1 / c[l + 1]
@@ -121,10 +125,13 @@ def forward_ls_dip_starting_point(n, m, G, s, e, r):
     for j1 in range(n):
         for j2 in range(n):
             F[0, j1, j2] = 1 / (n**2)
-            emission_index = core.get_index_in_emission_matrix_diploid(
-                ref_allele=G[0, j1, j2], query_allele=s[0, 0]
+            emission_prob = core.get_emission_probability_diploid(
+                ref_allele=G[0, j1, j2],
+                query_allele=s[0, 0],
+                site=0,
+                emission_matrix=e,
             )
-            F[0, j1, j2] *= e[0, emission_index]
+            F[0, j1, j2] *= emission_prob
 
     for l in range(1, m):
         F_no_change = np.zeros((n, n))
@@ -162,10 +169,13 @@ def forward_ls_dip_starting_point(n, m, G, s, e, r):
 
         for j1 in range(n):
             for j2 in range(n):
-                emission_index = core.get_index_in_emission_matrix_diploid(
-                    ref_allele=G[l, j1, j2], query_allele=s[0, l]
+                emission_prob = core.get_emission_probability_diploid(
+                    ref_allele=G[l, j1, j2],
+                    query_allele=s[0, l],
+                    site=l,
+                    emission_matrix=e,
                 )
-                F[l, j1, j2] *= e[l, emission_index]
+                F[l, j1, j2] *= emission_prob
 
     ll = np.log10(np.sum(F[l, :, :]))
 
@@ -190,10 +200,13 @@ def backward_ls_dip_starting_point(n, m, G, s, e, r):
         e_tmp = np.zeros((n, n))
         for j1 in range(n):
             for j2 in range(n):
-                emission_index = core.get_index_in_emission_matrix_diploid(
-                    ref_allele=G[l + 1, j1, j2], query_allele=s[0, l + 1]
+                emission_prob = core.get_emission_probability_diploid(
+                    ref_allele=G[l + 1, j1, j2],
+                    query_allele=s[0, l + 1],
+                    site=l + 1,
+                    emission_matrix=e,
                 )
-                e_tmp[j1, j2] = e[l + 1, emission_index]
+                e_tmp[j1, j2] = emission_prob
 
         for j1 in range(n):
             for j2 in range(n):
@@ -244,10 +257,13 @@ def forward_ls_dip_loop(n, m, G, s, e, r, norm=True):
     for j1 in range(n):
         for j2 in range(n):
             F[0, j1, j2] = 1 / (n**2)
-            emission_index = core.get_index_in_emission_matrix_diploid(
-                ref_allele=G[0, j1, j2], query_allele=s[0, 0]
+            emission_prob = core.get_emission_probability_diploid(
+                ref_allele=G[0, j1, j2],
+                query_allele=s[0, 0],
+                site=0,
+                emission_matrix=e,
             )
-            F[0, j1, j2] *= e[0, emission_index]
+            F[0, j1, j2] *= emission_prob
     r_n = r / n
     c = np.ones(m)
 
@@ -274,10 +290,13 @@ def forward_ls_dip_loop(n, m, G, s, e, r, norm=True):
 
             for j1 in range(n):
                 for j2 in range(n):
-                    emission_index = core.get_index_in_emission_matrix_diploid(
-                        ref_allele=G[l, j1, j2], query_allele=s[0, l]
+                    emission_prob = core.get_emission_probability_diploid(
+                        ref_allele=G[l, j1, j2],
+                        query_allele=s[0, l],
+                        site=l,
+                        emission_matrix=e,
                     )
-                    F[l, j1, j2] *= e[l, emission_index]
+                    F[l, j1, j2] *= emission_prob
 
             c[l] = np.sum(F[l, :, :])
             F[l, :, :] *= 1 / c[l]
@@ -308,10 +327,13 @@ def forward_ls_dip_loop(n, m, G, s, e, r, norm=True):
 
             for j1 in range(n):
                 for j2 in range(n):
-                    emission_index = core.get_index_in_emission_matrix_diploid(
-                        ref_allele=G[l, j1, j2], query_allele=s[0, l]
+                    emission_prob = core.get_emission_probability_diploid(
+                        ref_allele=G[l, j1, j2],
+                        query_allele=s[0, l],
+                        site=l,
+                        emission_matrix=e,
                     )
-                    F[l, j1, j2] *= e[l, emission_index]
+                    F[l, j1, j2] *= emission_prob
 
             ll = np.log10(np.sum(F[l, :, :]))
 
@@ -340,10 +362,13 @@ def backward_ls_dip_loop(n, m, G, s, e, c, r):
         e_tmp = np.zeros((n, n))
         for j1 in range(n):
             for j2 in range(n):
-                emission_index = core.get_index_in_emission_matrix_diploid(
-                    ref_allele=G[l + 1, j1, j2], query_allele=s[0, l + 1]
+                emission_prob = core.get_emission_probability_diploid(
+                    ref_allele=G[l + 1, j1, j2],
+                    query_allele=s[0, l + 1],
+                    site=l + 1,
+                    emission_matrix=e,
                 )
-                e_tmp[j1, j2] = e[l + 1, emission_index]
+                e_tmp[j1, j2] = emission_prob
 
         for j1 in range(n):
             for j2 in range(n):

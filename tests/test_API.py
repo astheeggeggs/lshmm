@@ -1,3 +1,4 @@
+import pytest
 from . import lsbase
 import lshmm as ls
 import lshmm.fb_diploid as fbd
@@ -7,11 +8,14 @@ import lshmm.vit_haploid as vh
 
 
 class TestForwardBackwardHaploid(lsbase.ForwardBackwardAlgorithmBase):
-    def verify(self, ts, scale_mutation_rate, mean_r=None, mean_mu=None):
+    def verify(
+        self, ts, scale_mutation_rate, include_ancestors, mean_r=None, mean_mu=None
+    ):
         for n, m, H_vs, s, e_vs, r, mu in self.get_examples_pars(
             ts,
             ploidy=1,
             scale_mutation_rate=scale_mutation_rate,
+            include_ancestors=include_ancestors,
             mean_r=mean_r,
             mean_mu=mean_mu,
         ):
@@ -23,27 +27,33 @@ class TestForwardBackwardHaploid(lsbase.ForwardBackwardAlgorithmBase):
             self.assertAllClose(B, B_vs)
             self.assertAllClose(ll_vs, ll)
 
-    def test_ts_simple_n10_no_recomb(self):
+    @pytest.mark.parametrize("include_ancestors", [True, False])
+    def test_ts_simple_n10_no_recomb(self, include_ancestors):
         ts = self.get_ts_simple_n10_no_recomb()
-        self.verify(ts, scale_mutation_rate=True)
+        self.verify(ts, scale_mutation_rate=True, include_ancestors=include_ancestors)
 
-    def test_ts_simple_n6(self):
+    @pytest.mark.parametrize("include_ancestors", [True, False])
+    def test_ts_simple_n6(self, include_ancestors):
         ts = self.get_ts_simple_n6()
-        self.verify(ts, scale_mutation_rate=True)
+        self.verify(ts, scale_mutation_rate=True, include_ancestors=include_ancestors)
 
-    def test_ts_simple_n8(self):
+    @pytest.mark.parametrize("include_ancestors", [True, False])
+    def test_ts_simple_n8(self, include_ancestors):
         ts = self.get_ts_simple_n8()
-        self.verify(ts, scale_mutation_rate=True)
+        self.verify(ts, scale_mutation_rate=True, include_ancestors=include_ancestors)
 
-    def test_ts_simple_n8_high_recomb(self):
+    @pytest.mark.parametrize("include_ancestors", [True, False])
+    def test_ts_simple_n8_high_recomb(self, include_ancestors):
         ts = self.get_ts_simple_n8_high_recomb()
-        self.verify(ts, scale_mutation_rate=True)
+        self.verify(ts, scale_mutation_rate=True, include_ancestors=include_ancestors)
 
-    def test_ts_simple_n16(self):
+    @pytest.mark.parametrize("include_ancestors", [True, False])
+    def test_ts_simple_n16(self, include_ancestors):
         ts = self.get_ts_simple_n16()
-        self.verify(ts, scale_mutation_rate=True)
+        self.verify(ts, scale_mutation_rate=True, include_ancestors=include_ancestors)
 
-    def test_ts_larger(self):
+    @pytest.mark.parametrize("include_ancestors", [True, False])
+    def test_ts_larger(self, include_ancestors):
         ref_panel_size = 46
         length = 1e5
         mean_r = 1e-5
@@ -51,15 +61,24 @@ class TestForwardBackwardHaploid(lsbase.ForwardBackwardAlgorithmBase):
         ts = self.get_ts_custom_pars(
             ref_panel_size=ref_panel_size, length=length, mean_r=mean_r, mean_mu=mean_mu
         )
-        self.verify(ts, scale_mutation_rate=True, mean_r=mean_r, mean_mu=mean_mu)
+        self.verify(
+            ts,
+            scale_mutation_rate=True,
+            include_ancestors=include_ancestors,
+            mean_r=mean_r,
+            mean_mu=mean_mu,
+        )
 
 
 class TestForwardBackwardDiploid(lsbase.ForwardBackwardAlgorithmBase):
-    def verify(self, ts, scale_mutation_rate, mean_r=None, mean_mu=None):
+    def verify(
+        self, ts, scale_mutation_rate, include_ancestors, mean_r=None, mean_mu=None
+    ):
         for n, m, G_vs, s, e_vs, r, mu in self.get_examples_pars(
             ts,
             ploidy=2,
             scale_mutation_rate=scale_mutation_rate,
+            include_ancestors=include_ancestors,
             mean_r=mean_r,
             mean_mu=mean_mu,
         ):
@@ -73,27 +92,33 @@ class TestForwardBackwardDiploid(lsbase.ForwardBackwardAlgorithmBase):
             self.assertAllClose(B, B_vs)
             self.assertAllClose(ll_vs, ll)
 
-    def test_ts_simple_n10_no_recomb(self):
+    @pytest.mark.parametrize("include_ancestors", [True, False])
+    def test_ts_simple_n10_no_recomb(self, include_ancestors):
         ts = self.get_ts_simple_n10_no_recomb()
-        self.verify(ts, scale_mutation_rate=True)
+        self.verify(ts, scale_mutation_rate=True, include_ancestors=include_ancestors)
 
-    def test_ts_simple_n6(self):
+    @pytest.mark.parametrize("include_ancestors", [True, False])
+    def test_ts_simple_n6(self, include_ancestors):
         ts = self.get_ts_simple_n6()
-        self.verify(ts, scale_mutation_rate=True)
+        self.verify(ts, scale_mutation_rate=True, include_ancestors=include_ancestors)
 
-    def test_ts_simple_n8(self):
+    @pytest.mark.parametrize("include_ancestors", [True, False])
+    def test_ts_simple_n8(self, include_ancestors):
         ts = self.get_ts_simple_n8()
-        self.verify(ts, scale_mutation_rate=True)
+        self.verify(ts, scale_mutation_rate=True, include_ancestors=include_ancestors)
 
-    def test_ts_simple_n8_high_recomb(self):
+    @pytest.mark.parametrize("include_ancestors", [True, False])
+    def test_ts_simple_n8_high_recomb(self, include_ancestors):
         ts = self.get_ts_simple_n8_high_recomb()
-        self.verify(ts, scale_mutation_rate=True)
+        self.verify(ts, scale_mutation_rate=True, include_ancestors=include_ancestors)
 
-    def test_ts_simple_n16(self):
+    @pytest.mark.parametrize("include_ancestors", [True, False])
+    def test_ts_simple_n16(self, include_ancestors):
         ts = self.get_ts_simple_n16()
-        self.verify(ts, scale_mutation_rate=True)
+        self.verify(ts, scale_mutation_rate=True, include_ancestors=include_ancestors)
 
-    def test_ts_larger(self):
+    @pytest.mark.parametrize("include_ancestors", [True, False])
+    def test_ts_larger(self, include_ancestors):
         ref_panel_size = 46
         length = 1e5
         mean_r = 1e-5
@@ -101,15 +126,24 @@ class TestForwardBackwardDiploid(lsbase.ForwardBackwardAlgorithmBase):
         ts = self.get_ts_custom_pars(
             ref_panel_size=ref_panel_size, length=length, mean_r=mean_r, mean_mu=mean_mu
         )
-        self.verify(ts, scale_mutation_rate=True, mean_r=mean_r, mean_mu=mean_mu)
+        self.verify(
+            ts,
+            scale_mutation_rate=True,
+            include_ancestors=include_ancestors,
+            mean_r=mean_r,
+            mean_mu=mean_mu,
+        )
 
 
 class TestViterbiHaploid(lsbase.ViterbiAlgorithmBase):
-    def verify(self, ts, scale_mutation_rate, mean_r=None, mean_mu=None):
+    def verify(
+        self, ts, scale_mutation_rate, include_ancestors, mean_r=None, mean_mu=None
+    ):
         for n, m, H_vs, s, e_vs, r, mu in self.get_examples_pars(
             ts,
             ploidy=1,
             scale_mutation_rate=scale_mutation_rate,
+            include_ancestors=include_ancestors,
             mean_r=mean_r,
             mean_mu=mean_mu,
         ):
@@ -121,27 +155,33 @@ class TestViterbiHaploid(lsbase.ViterbiAlgorithmBase):
             self.assertAllClose(ll_vs, ll)
             self.assertAllClose(path_vs, path)
 
-    def test_ts_simple_n10_no_recomb(self):
+    @pytest.mark.parametrize("include_ancestors", [True, False])
+    def test_ts_simple_n10_no_recomb(self, include_ancestors):
         ts = self.get_ts_simple_n10_no_recomb()
-        self.verify(ts, scale_mutation_rate=True)
+        self.verify(ts, scale_mutation_rate=True, include_ancestors=include_ancestors)
 
-    def test_ts_simple_n6(self):
+    @pytest.mark.parametrize("include_ancestors", [True, False])
+    def test_ts_simple_n6(self, include_ancestors):
         ts = self.get_ts_simple_n6()
-        self.verify(ts, scale_mutation_rate=True)
+        self.verify(ts, scale_mutation_rate=True, include_ancestors=include_ancestors)
 
-    def test_ts_simple_n8(self):
+    @pytest.mark.parametrize("include_ancestors", [True, False])
+    def test_ts_simple_n8(self, include_ancestors):
         ts = self.get_ts_simple_n8()
-        self.verify(ts, scale_mutation_rate=True)
+        self.verify(ts, scale_mutation_rate=True, include_ancestors=include_ancestors)
 
-    def test_ts_simple_n8_high_recomb(self):
+    @pytest.mark.parametrize("include_ancestors", [True, False])
+    def test_ts_simple_n8_high_recomb(self, include_ancestors):
         ts = self.get_ts_simple_n8_high_recomb()
-        self.verify(ts, scale_mutation_rate=True)
+        self.verify(ts, scale_mutation_rate=True, include_ancestors=include_ancestors)
 
-    def test_ts_simple_n16(self):
+    @pytest.mark.parametrize("include_ancestors", [True, False])
+    def test_ts_simple_n16(self, include_ancestors):
         ts = self.get_ts_simple_n16()
-        self.verify(ts, scale_mutation_rate=True)
+        self.verify(ts, scale_mutation_rate=True, include_ancestors=include_ancestors)
 
-    def test_ts_larger(self):
+    @pytest.mark.parametrize("include_ancestors", [True, False])
+    def test_ts_larger(self, include_ancestors):
         ref_panel_size = 46
         length = 1e5
         mean_r = 1e-5
@@ -149,15 +189,24 @@ class TestViterbiHaploid(lsbase.ViterbiAlgorithmBase):
         ts = self.get_ts_custom_pars(
             ref_panel_size=ref_panel_size, length=length, mean_r=mean_r, mean_mu=mean_mu
         )
-        self.verify(ts, scale_mutation_rate=True, mean_r=mean_r, mean_mu=mean_mu)
+        self.verify(
+            ts,
+            scale_mutation_rate=True,
+            include_ancestors=include_ancestors,
+            mean_r=mean_r,
+            mean_mu=mean_mu,
+        )
 
 
 class TestViterbiDiploid(lsbase.ViterbiAlgorithmBase):
-    def verify(self, ts, scale_mutation_rate, mean_r=None, mean_mu=None):
+    def verify(
+        self, ts, scale_mutation_rate, include_ancestors, mean_r=None, mean_mu=None
+    ):
         for n, m, G_vs, s, e_vs, r, mu in self.get_examples_pars(
             ts,
             ploidy=2,
             scale_mutation_rate=scale_mutation_rate,
+            include_ancestors=include_ancestors,
             mean_r=mean_r,
             mean_mu=mean_mu,
         ):
@@ -168,27 +217,33 @@ class TestViterbiDiploid(lsbase.ViterbiAlgorithmBase):
             self.assertAllClose(ll_vs, ll)
             self.assertAllClose(phased_path_vs, path)
 
-    def test_ts_simple_n10_no_recomb(self):
+    @pytest.mark.parametrize("include_ancestors", [True, False])
+    def test_ts_simple_n10_no_recomb(self, include_ancestors):
         ts = self.get_ts_simple_n10_no_recomb()
-        self.verify(ts, scale_mutation_rate=True)
+        self.verify(ts, scale_mutation_rate=True, include_ancestors=include_ancestors)
 
-    def test_ts_simple_n6(self):
+    @pytest.mark.parametrize("include_ancestors", [True, False])
+    def test_ts_simple_n6(self, include_ancestors):
         ts = self.get_ts_simple_n6()
-        self.verify(ts, scale_mutation_rate=True)
+        self.verify(ts, scale_mutation_rate=True, include_ancestors=include_ancestors)
 
-    def test_ts_simple_n8(self):
+    @pytest.mark.parametrize("include_ancestors", [True, False])
+    def test_ts_simple_n8(self, include_ancestors):
         ts = self.get_ts_simple_n8()
-        self.verify(ts, scale_mutation_rate=True)
+        self.verify(ts, scale_mutation_rate=True, include_ancestors=include_ancestors)
 
-    def test_ts_simple_n8_high_recomb(self):
+    @pytest.mark.parametrize("include_ancestors", [True, False])
+    def test_ts_simple_n8_high_recomb(self, include_ancestors):
         ts = self.get_ts_simple_n8_high_recomb()
-        self.verify(ts, scale_mutation_rate=True)
+        self.verify(ts, scale_mutation_rate=True, include_ancestors=include_ancestors)
 
-    def test_ts_simple_n16(self):
+    @pytest.mark.parametrize("include_ancestors", [True, False])
+    def test_ts_simple_n16(self, include_ancestors):
         ts = self.get_ts_simple_n16()
-        self.verify(ts, scale_mutation_rate=True)
+        self.verify(ts, scale_mutation_rate=True, include_ancestors=include_ancestors)
 
-    def test_ts_larger(self):
+    @pytest.mark.parametrize("include_ancestors", [True, False])
+    def test_ts_larger(self, include_ancestors):
         ref_panel_size = 46
         length = 1e5
         mean_r = 1e-5
@@ -196,4 +251,10 @@ class TestViterbiDiploid(lsbase.ViterbiAlgorithmBase):
         ts = self.get_ts_custom_pars(
             ref_panel_size=ref_panel_size, length=length, mean_r=mean_r, mean_mu=mean_mu
         )
-        self.verify(ts, scale_mutation_rate=True, mean_r=mean_r, mean_mu=mean_mu)
+        self.verify(
+            ts,
+            scale_mutation_rate=True,
+            include_ancestors=include_ancestors,
+            mean_r=mean_r,
+            mean_mu=mean_mu,
+        )
