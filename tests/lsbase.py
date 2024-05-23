@@ -71,9 +71,8 @@ class LSBase:
         return ref_panel, queries
 
     def get_examples_diploid(self, ts, include_ancestors):
-        """Both the reference panel and query contain unphased genotypes."""
+        # TODO Handle NONCOPY properly.
         if include_ancestors is True:
-            # TODO Handle NONCOPY properly.
             raise NotImplementedError
         ref_panel = ts.genotype_matrix()
         num_sites = ref_panel.shape[0]
@@ -93,11 +92,8 @@ class LSBase:
         queries = [query1, query2, query_miss_last, query_miss_mid, query_miss_most]
         # Exclude the arbitrarily chosen queries from the reference panel.
         ref_panel = ref_panel[:, 2:-2]
-        num_ref_haps = ref_panel.shape[1]  # Haplotypes, not individuals.
-        # Reference panel contains phased genotypes.
-        G = np.zeros((num_sites, num_ref_haps, num_ref_haps))
-        for i in range(num_sites):
-            G[i, :, :] = np.add.outer(ref_panel[i, :], ref_panel[i, :])
+        # Note that the reference panel contains phased genotypes.
+        G = core.convert_haplotypes_to_genotypes(ref_panel)
         return ref_panel, G, queries
 
     def get_examples_pars(

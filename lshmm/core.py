@@ -55,6 +55,43 @@ def np_argmax(array, axis):
 """ Functions used across different implementations of the LS HMM. """
 
 
+def convert_haplotypes_to_genotypes(ref_panel):
+    """
+    Convert a set of haplotypes into a matrix of diploid genotypes encoded as allele dosages, and
+    return the genotypes.
+
+    It is assumed that all the sites are biallelic and alleles are encoded as ancestral/derived.
+    The only allowable allele states are 0, 1, and NONCOPY (for partial ancestral haplotypes).
+    TODO: Handle multiallelic sites.
+
+    TODO: Handle NONCOPY.
+    Allowable genotype values are 0, 1, 2, and NONCOPY. If either one haplotype is NONCOPY,
+    then genotype is NONCOPY.
+
+    The input reference haplotypes is of size (m, n), and the output genotypes is of size (m, n, n),
+    where m = number of sites and n = number of reference haplotypes.
+
+    :param numpy.ndarray ref_panel: An array of reference haplotypes.
+    :return: An array of reference genotypes.
+    :rtype: numpy.ndarray
+    """
+    ALLOWED_ALLELE_STATES = np.array([0, 1], dtype=np.int32)
+    assert np.all(
+        np.isin(np.unique(ref_panel), ALLOWED_ALLELE_STATES)
+    ), f"Reference haplotypes contain illegal allele states."
+    num_sites = ref_panel.shape[0]
+    num_haplotypes = ref_panel.shape[1]
+    genotypes = (
+        np.zeros((num_sites, num_haplotypes, num_haplotypes), dtype=np.int32) - np.inf
+    )
+    for i in range(num_sites):
+        site_alleles = ref_panel[i, :]
+        genotypes[i, :, :] = np.add.outer(site_alleles, site_alleles)
+        # genotypes[i, site_alleles == NONCOPY, :] = NONCOPY
+        # genotypes[i, :, site_alleles == NONCOPY] = NONCOPY
+    return genotypes
+
+
 def get_num_alleles(ref_panel, query):
     assert ref_panel.shape[0] == query.shape[1]
     num_sites = ref_panel.shape[0]
