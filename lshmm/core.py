@@ -55,6 +55,18 @@ def np_argmax(array, axis):
 """ Functions used across different implementations of the LS HMM. """
 
 
+def convert_haplotypes_to_genotypes(ref_panel):
+    num_sites = ref_panel.shape[0]
+    num_haplotypes = ref_panel.shape[1]
+    genotypes = np.zeros((num_haplotypes, num_sites, num_sites), dtype=np.int32) - np.inf
+    for i in range(num_sites):
+        site_alleles = ref_panel[i, :]
+        genotypes[i, :, :] = np.add.outer(site_alleles, site_alleles)
+        genotypes[i, site_alleles == NONCOPY, :] = NONCOPY
+        genotypes[i, :, site_alleles == NONCOPY] = NONCOPY
+    return genotypes
+
+
 def get_num_alleles(ref_panel, query):
     assert ref_panel.shape[0] == query.shape[1]
     num_sites = ref_panel.shape[0]
