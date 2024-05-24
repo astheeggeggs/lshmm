@@ -8,16 +8,13 @@ import lshmm.vit_haploid as vh
 
 
 class TestForwardBackwardHaploid(lsbase.ForwardBackwardAlgorithmBase):
-    def verify(
-        self, ts, scale_mutation_rate, include_ancestors, mean_r=None, mean_mu=None
-    ):
+    def verify(self, ts, scale_mutation_rate, include_ancestors):
         for n, m, H_vs, s, e_vs, r, mu in self.get_examples_pars(
             ts,
             ploidy=1,
             scale_mutation_rate=scale_mutation_rate,
             include_ancestors=include_ancestors,
-            mean_r=mean_r,
-            mean_mu=mean_mu,
+            include_extreme_rates=True,
         ):
             F_vs, c_vs, ll_vs = fbh.forwards_ls_hap(n, m, H_vs, s, e_vs, r)
             B_vs = fbh.backwards_ls_hap(n, m, H_vs, s, e_vs, c_vs, r)
@@ -54,33 +51,24 @@ class TestForwardBackwardHaploid(lsbase.ForwardBackwardAlgorithmBase):
 
     @pytest.mark.parametrize("include_ancestors", [True, False])
     def test_ts_larger(self, include_ancestors):
-        ref_panel_size = 46
-        length = 1e5
-        mean_r = 1e-5
-        mean_mu = 1e-5
         ts = self.get_ts_custom_pars(
-            ref_panel_size=ref_panel_size, length=length, mean_r=mean_r, mean_mu=mean_mu
+            ref_panel_size=45, length=1e5, mean_r=1e-5, mean_mu=1e-5
         )
         self.verify(
             ts,
             scale_mutation_rate=True,
             include_ancestors=include_ancestors,
-            mean_r=mean_r,
-            mean_mu=mean_mu,
         )
 
 
 class TestForwardBackwardDiploid(lsbase.ForwardBackwardAlgorithmBase):
-    def verify(
-        self, ts, scale_mutation_rate, include_ancestors, mean_r=None, mean_mu=None
-    ):
+    def verify(self, ts, scale_mutation_rate, include_ancestors):
         for n, m, G_vs, s, e_vs, r, mu in self.get_examples_pars(
             ts,
             ploidy=2,
             scale_mutation_rate=scale_mutation_rate,
             include_ancestors=include_ancestors,
-            mean_r=mean_r,
-            mean_mu=mean_mu,
+            include_extreme_rates=True,
         ):
             F_vs, c_vs, ll_vs = fbd.forward_ls_dip_loop(
                 n, m, G_vs, s, e_vs, r, norm=True
@@ -119,33 +107,24 @@ class TestForwardBackwardDiploid(lsbase.ForwardBackwardAlgorithmBase):
 
     @pytest.mark.parametrize("include_ancestors", [False])
     def test_ts_larger(self, include_ancestors):
-        ref_panel_size = 46
-        length = 1e5
-        mean_r = 1e-5
-        mean_mu = 1e-5
         ts = self.get_ts_custom_pars(
-            ref_panel_size=ref_panel_size, length=length, mean_r=mean_r, mean_mu=mean_mu
+            ref_panel_size=45, length=1e5, mean_r=1e-5, mean_mu=1e-5
         )
         self.verify(
             ts,
             scale_mutation_rate=True,
             include_ancestors=include_ancestors,
-            mean_r=mean_r,
-            mean_mu=mean_mu,
         )
 
 
 class TestViterbiHaploid(lsbase.ViterbiAlgorithmBase):
-    def verify(
-        self, ts, scale_mutation_rate, include_ancestors, mean_r=None, mean_mu=None
-    ):
+    def verify(self, ts, scale_mutation_rate, include_ancestors):
         for n, m, H_vs, s, e_vs, r, mu in self.get_examples_pars(
             ts,
             ploidy=1,
             scale_mutation_rate=scale_mutation_rate,
             include_ancestors=include_ancestors,
-            mean_r=mean_r,
-            mean_mu=mean_mu,
+            include_extreme_rates=True,
         ):
             V_vs, P_vs, ll_vs = vh.forwards_viterbi_hap_lower_mem_rescaling(
                 n, m, H_vs, s, e_vs, r
@@ -182,33 +161,24 @@ class TestViterbiHaploid(lsbase.ViterbiAlgorithmBase):
 
     @pytest.mark.parametrize("include_ancestors", [True, False])
     def test_ts_larger(self, include_ancestors):
-        ref_panel_size = 46
-        length = 1e5
-        mean_r = 1e-5
-        mean_mu = 1e-5
         ts = self.get_ts_custom_pars(
-            ref_panel_size=ref_panel_size, length=length, mean_r=mean_r, mean_mu=mean_mu
+            ref_panel_size=46, length=1e5, mean_r=1e-5, mean_mu=1e-5
         )
         self.verify(
             ts,
             scale_mutation_rate=True,
             include_ancestors=include_ancestors,
-            mean_r=mean_r,
-            mean_mu=mean_mu,
         )
 
 
 class TestViterbiDiploid(lsbase.ViterbiAlgorithmBase):
-    def verify(
-        self, ts, scale_mutation_rate, include_ancestors, mean_r=None, mean_mu=None
-    ):
+    def verify(self, ts, scale_mutation_rate, include_ancestors):
         for n, m, G_vs, s, e_vs, r, mu in self.get_examples_pars(
             ts,
             ploidy=2,
             scale_mutation_rate=scale_mutation_rate,
             include_ancestors=include_ancestors,
-            mean_r=mean_r,
-            mean_mu=mean_mu,
+            include_extreme_rates=True,
         ):
             V_vs, P_vs, ll_vs = vd.forwards_viterbi_dip_low_mem(n, m, G_vs, s, e_vs, r)
             path_vs = vd.backwards_viterbi_dip(m, V_vs, P_vs)
@@ -244,17 +214,11 @@ class TestViterbiDiploid(lsbase.ViterbiAlgorithmBase):
 
     @pytest.mark.parametrize("include_ancestors", [False])
     def test_ts_larger(self, include_ancestors):
-        ref_panel_size = 46
-        length = 1e5
-        mean_r = 1e-5
-        mean_mu = 1e-5
         ts = self.get_ts_custom_pars(
-            ref_panel_size=ref_panel_size, length=length, mean_r=mean_r, mean_mu=mean_mu
+            ref_panel_size=45, length=1e5, mean_r=1e-5, mean_mu=1e-5
         )
         self.verify(
             ts,
             scale_mutation_rate=True,
             include_ancestors=include_ancestors,
-            mean_r=mean_r,
-            mean_mu=mean_mu,
         )

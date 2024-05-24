@@ -93,7 +93,7 @@ class LSBase:
         queries = [query1, query2, query_miss_last, query_miss_mid, query_miss_most]
         # Exclude the arbitrarily chosen queries from the reference panel.
         ref_panel = ref_panel[:, 2:-2]
-        num_ref_haps = ref_panel.shape[1]   # Haplotypes, not individuals.
+        num_ref_haps = ref_panel.shape[1]  # Haplotypes, not individuals.
         # Reference panel contains phased genotypes.
         G = np.zeros((num_sites, num_ref_haps, num_ref_haps))
         for i in range(num_sites):
@@ -103,17 +103,17 @@ class LSBase:
     def get_examples_pars(
         self,
         ts,
-        ploidy=None,
-        scale_mutation_rate=None,
-        include_ancestors=None,
-        mean_r=None,
-        mean_mu=None,
+        ploidy,
+        scale_mutation_rate,
+        include_ancestors,
+        include_extreme_rates,
         seed=42,
     ):
         """Returns an iterator over combinations of examples and parameters."""
         assert ploidy in [1, 2]
         assert scale_mutation_rate in [True, False]
         assert include_ancestors in [True, False]
+        assert include_extreme_rates in [True, False]
 
         np.random.seed(seed)
         if ploidy == 1:
@@ -129,16 +129,19 @@ class LSBase:
             np.zeros(m) + 0.999,  # Extreme
             np.zeros(m) + 1e-6,  # Extreme
             np.random.rand(m),  # Random
+            1e-5 * (np.random.rand(m) + 0.5) / 2,
         ]
         mus = [
             np.zeros(m) + 0.01,  # Equal recombination and mutation
-            np.zeros(m) + 0.2,  # Extreme
-            np.zeros(m) + 1e-6,  # Extreme
             np.random.rand(m) * 0.2,  # Random
+            1e-5 * (np.random.rand(m) + 0.5) / 2,
         ]
-        if mean_r is not None and mean_mu is not None:
-            rs.append(mean_r * (np.random.rand(m) + 0.5) / 2)
-            mus.append(mean_mu * (np.random.rand(m) + 0.5) / 2)
+
+        if include_extreme_rates:
+            rs.append(np.zeros(m) + 0.2)
+            rs.append(np.zeros(m) + 1e-6)
+            mus.append(np.zeros(m) + 0.2)
+            mus.append(np.zeros(m) + 1e-6)
 
         for s, r, mu in itertools.product(queries, rs, mus):
             r[0] = 0
