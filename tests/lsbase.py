@@ -60,14 +60,14 @@ class LSBase:
             ref_panel = self.get_ancestral_haplotypes(ts)
         else:
             ref_panel = ref_panel[:, 1:]
-        # Create queries with MISSING
+        # Create queries with MISSING.
         query_miss_last = query1.copy()
         query_miss_last[0, -1] = core.MISSING
         query_miss_mid = query1.copy()
         query_miss_mid[0, ts.num_sites // 2] = core.MISSING
-        query_miss_all = query1.copy()
-        query_miss_all[0, :] = core.MISSING
-        queries = [query1, query2, query_miss_last, query_miss_mid, query_miss_last]
+        query_miss_most = query1.copy()
+        query_miss_most[0, 1:] = core.MISSING
+        queries = [query1, query2, query_miss_last, query_miss_mid, query_miss_most]
         return ref_panel, queries
 
     def get_examples_diploid(self, ts, include_ancestors):
