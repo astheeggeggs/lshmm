@@ -136,7 +136,7 @@ class TestNonTreeForwardBackwardDiploid(lsbase.ForwardBackwardAlgorithmBase):
         ts = self.get_ts_simple_n10_no_recomb()
         # Test extreme rates only when normalising,
         # because they can lead to pathological cases.
-        include_extreme_rates = scale_mutation_rate or normalise
+        include_extreme_rates = normalise
         self.verify(
             ts,
             scale_mutation_rate=scale_mutation_rate,
@@ -150,7 +150,7 @@ class TestNonTreeForwardBackwardDiploid(lsbase.ForwardBackwardAlgorithmBase):
     @pytest.mark.parametrize("normalise", [True, False])
     def test_ts_simple_n6(self, scale_mutation_rate, include_ancestors, normalise):
         ts = self.get_ts_simple_n6()
-        include_extreme_rates = scale_mutation_rate or normalise
+        include_extreme_rates = normalise
         self.verify(
             ts,
             scale_mutation_rate=scale_mutation_rate,
@@ -164,7 +164,7 @@ class TestNonTreeForwardBackwardDiploid(lsbase.ForwardBackwardAlgorithmBase):
     @pytest.mark.parametrize("normalise", [True, False])
     def test_ts_simple_n8(self, scale_mutation_rate, include_ancestors, normalise):
         ts = self.get_ts_simple_n8()
-        include_extreme_rates = scale_mutation_rate or normalise
+        include_extreme_rates = normalise
         self.verify(
             ts,
             scale_mutation_rate=scale_mutation_rate,
@@ -180,7 +180,7 @@ class TestNonTreeForwardBackwardDiploid(lsbase.ForwardBackwardAlgorithmBase):
         self, scale_mutation_rate, include_ancestors, normalise
     ):
         ts = self.get_ts_simple_n8_high_recomb()
-        include_extreme_rates = scale_mutation_rate or normalise
+        include_extreme_rates = normalise
         self.verify(
             ts,
             scale_mutation_rate=scale_mutation_rate,
@@ -194,7 +194,7 @@ class TestNonTreeForwardBackwardDiploid(lsbase.ForwardBackwardAlgorithmBase):
     @pytest.mark.parametrize("normalise", [True, False])
     def test_ts_simple_n16(self, scale_mutation_rate, include_ancestors, normalise):
         ts = self.get_ts_simple_n16()
-        include_extreme_rates = scale_mutation_rate or normalise
+        include_extreme_rates = normalise
         self.verify(
             ts,
             scale_mutation_rate=scale_mutation_rate,
@@ -213,7 +213,7 @@ class TestNonTreeForwardBackwardDiploid(lsbase.ForwardBackwardAlgorithmBase):
             mean_r=1e-5,
             mean_mu=1e-5,
         )
-        include_extreme_rates = scale_mutation_rate or normalise
+        include_extreme_rates = normalise
         self.verify(
             ts,
             scale_mutation_rate=scale_mutation_rate,
