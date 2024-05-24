@@ -150,7 +150,10 @@ def set_emission_probabilities(
         )
     else:
         emission_probs = core.get_emission_matrix_diploid(
-            mu=prob_mutation, num_sites=num_sites
+            mu=prob_mutation,
+            num_sites=num_sites,
+            num_alleles=num_alleles,
+            scale_mutation_rate=scale_mutation_rate,
         )
 
     return emission_probs
