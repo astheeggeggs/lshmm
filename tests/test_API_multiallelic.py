@@ -12,6 +12,7 @@ class TestForwardBackwardHaploid(lsbase.ForwardBackwardAlgorithmBase):
             ploidy=1,
             scale_mutation_rate=scale_mutation_rate,
             include_ancestors=include_ancestors,
+            include_extreme_rates=True,
         ):
             F_vs, c_vs, ll_vs = fbh.forwards_ls_hap(n, m, H_vs, s, e_vs, r)
             B_vs = fbh.backwards_ls_hap(n, m, H_vs, s, e_vs, c_vs, r)
@@ -59,6 +60,7 @@ class TestViterbiHaploid(lsbase.ViterbiAlgorithmBase):
             ploidy=1,
             scale_mutation_rate=scale_mutation_rate,
             include_ancestors=include_ancestors,
+            include_extreme_rates=True,
         ):
             V_vs, P_vs, ll_vs = vh.forwards_viterbi_hap_lower_mem_rescaling(
                 n, m, H_vs, s, e_vs, r
