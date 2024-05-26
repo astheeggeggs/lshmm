@@ -55,18 +55,18 @@ def np_argmax(array, axis):
 """ Functions used across different implementations of the LS HMM. """
 
 
-def convert_haplotypes_to_genotypes(ref_panel):
+def convert_haplotypes_to_phased_genotypes(ref_panel):
     """
-    Convert a set of haplotypes into a matrix of diploid genotypes encoded as allele dosages, and
-    return the genotypes.
+    Convert a set of haplotypes into a matrix of diploid genotypes encoded as allele dosages,
+    and return the genotypes.
 
-    It is assumed that all the sites are biallelic and alleles are encoded as ancestral/derived.
+    It is assumed all sites are biallelic and alleles are encoded as ancestral/derived.
     The only allowable allele states are 0, 1, and NONCOPY (for partial ancestral haplotypes).
     TODO: Handle multiallelic sites.
 
     TODO: Handle NONCOPY.
-    Allowable genotype values are 0, 1, 2, and NONCOPY. If either one haplotype is NONCOPY,
-    then genotype is NONCOPY.
+    Allowable genotype values are 0, 1, 2, and NONCOPY. If either one haplotype is NONCOPY
+    at a site, then the genotype at the site is assigned NONCOPY.
 
     The input reference haplotypes is of size (m, n), and the output genotypes is of size (m, n, n),
     where m = number of sites and n = number of reference haplotypes.
@@ -80,15 +80,45 @@ def convert_haplotypes_to_genotypes(ref_panel):
         np.isin(np.unique(ref_panel), ALLOWED_ALLELE_STATES)
     ), f"Reference haplotypes contain illegal allele states."
     num_sites = ref_panel.shape[0]
-    num_haplotypes = ref_panel.shape[1]
-    genotypes = (
-        np.zeros((num_sites, num_haplotypes, num_haplotypes), dtype=np.int32) - np.inf
-    )
+    num_haps = ref_panel.shape[1]
+    genotypes = np.zeros((num_sites, num_haps, num_haps), dtype=np.int32) - np.inf
     for i in range(num_sites):
         site_alleles = ref_panel[i, :]
         genotypes[i, :, :] = np.add.outer(site_alleles, site_alleles)
         # genotypes[i, site_alleles == NONCOPY, :] = NONCOPY
         # genotypes[i, :, site_alleles == NONCOPY] = NONCOPY
+    return genotypes
+
+
+def convert_haplotypes_to_unphased_genotypes(query):
+    """
+    Convert an array of two haplotypes into an array of genotypes encoded as allele dosages,
+    and return the genotypes.
+
+    It is assumed all sites are biallelic and alleles are encoded as ancestral/derived.
+    The only allowable allele states are 0, 1, and MISSING.
+    TODO: Handle multiallelic sites.
+
+    Allowable genotype values are 0, 1, 2, and MISSING. If either one haplotype is MISSING
+    at a site, then the genotype at the site is assigned MISSING.
+
+    The input query haplotypes is of size (2, m), and the output genotypes is of size (1, m),
+    where m = number of sites.
+
+    :param numpy.ndarray query: An array of two query haplotypes.
+    :return: An array of query genotypes.
+    :rtype: numpy.ndarray
+    """
+    ALLOWED_ALLELE_STATES = np.array([0, 1, MISSING], dtype=np.int32)
+    assert np.all(
+        np.isin(np.unique(query), ALLOWED_ALLELE_STATES)
+    ), f"Query haplotypes contain illegal allele states."
+    num_sites = query.shape[1]
+    num_haps = query.shape[0]
+    assert num_haps == 2, "Two haplotypes are expected in a diploid query."
+    genotypes = np.zeros((1, num_sites), dtype=np.int32) - np.inf
+    genotypes[0, :] = np.sum(query, axis=0)
+    genotypes[0, np.any(query == MISSING, axis=0)] = MISSING
     return genotypes
 
 

@@ -77,24 +77,23 @@ class LSBase:
         ref_panel = ts.genotype_matrix()
         num_sites = ref_panel.shape[0]
         # Take some haplotypes as queries from the reference panel.
-        # Note that the queries contain unphased genotypes (calculated as allele dosages).
-        query1 = ref_panel[:, 0].reshape(1, num_sites)
-        query1 += ref_panel[:, 1].reshape(1, num_sites)
-        query2 = ref_panel[:, -2].reshape(1, num_sites)
-        query2 += ref_panel[:, -1].reshape(1, num_sites)
+        query_1 = np.zeros((2, num_sites), dtype=np.int32) - np.inf
+        query_1[0, :] = ref_panel[:, 0].reshape(1, num_sites)
+        query_1[1, :] = ref_panel[:, 1].reshape(1, num_sites)
+        query_2 = np.zeros((2, num_sites), dtype=np.int32) - np.inf
+        query_2[0, :] = ref_panel[:, -2].reshape(1, num_sites)
+        query_2[1, :] = ref_panel[:, -1].reshape(1, num_sites)
         # Create queries with MISSING.
-        query_miss_last = query1.copy()
-        query_miss_last[0, -1] = core.MISSING
-        query_miss_mid = query1.copy()
-        query_miss_mid[0, ts.num_sites // 2] = core.MISSING
-        query_miss_most = query1.copy()
-        query_miss_most[0, 1:] = core.MISSING
-        queries = [query1, query2, query_miss_last, query_miss_mid, query_miss_most]
+        query_miss_last = query_1.copy()
+        query_miss_last[:, -1] = core.MISSING
+        query_miss_mid = query_1.copy()
+        query_miss_mid[:, ts.num_sites // 2] = core.MISSING
+        query_miss_most = query_1.copy()
+        query_miss_most[:, 1:] = core.MISSING
+        queries = [query_1, query_2, query_miss_last, query_miss_mid, query_miss_most]
         # Exclude the arbitrarily chosen queries from the reference panel.
         ref_panel = ref_panel[:, 2:-2]
-        # Note that the reference panel contains phased genotypes.
-        G = core.convert_haplotypes_to_genotypes(ref_panel)
-        return ref_panel, G, queries
+        return ref_panel, queries
 
     def get_examples_pars(
         self,
@@ -115,7 +114,7 @@ class LSBase:
         if ploidy == 1:
             H, queries = self.get_examples_haploid(ts, include_ancestors)
         else:
-            H, G, queries = self.get_examples_diploid(ts, include_ancestors)
+            H, queries = self.get_examples_diploid(ts, include_ancestors)
 
         m = ts.num_sites
         n = H.shape[1]
@@ -139,6 +138,9 @@ class LSBase:
             mus.append(np.zeros(m) + 0.2)
             mus.append(np.zeros(m) + 1e-6)
 
+        if ploidy == 2:
+            G = core.convert_haplotypes_to_phased_genotypes(H)
+
         for s, r, mu in itertools.product(queries, rs, mus):
             r[0] = 0
             # Must be calculated from the genotype matrix,
@@ -152,8 +154,9 @@ class LSBase:
                 )
                 yield n, m, H, s, e, r, mu
             else:
+                Q = core.convert_haplotypes_to_unphased_genotypes(query=s)
                 e = core.get_emission_matrix_diploid(mu, m)
-                yield n, m, G, s, e, r, mu
+                yield n, m, G, Q, e, r, mu
 
     # Prepare simple example datasets.
     def get_ts_simple_n10_no_recomb(self, seed=42):
