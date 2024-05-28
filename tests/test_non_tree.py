@@ -3,6 +3,7 @@ import numpy as np
 import numba as nb
 
 from . import lsbase
+import lshmm.core as core
 import lshmm.fb_diploid as fbd
 import lshmm.fb_haploid as fbh
 import lshmm.vit_diploid as vd
@@ -21,7 +22,6 @@ class TestNonTreeForwardBackwardHaploid(lsbase.ForwardBackwardAlgorithmBase):
             F_vs, c_vs, ll_vs = fbh.forwards_ls_hap(n, m, H_vs, s, e_vs, r, norm=False)
             B_vs = fbh.backwards_ls_hap(n, m, H_vs, s, e_vs, c_vs, r)
             self.assertAllClose(np.log10(np.sum(F_vs * B_vs, 1)), ll_vs * np.ones(m))
-
             F_tmp, c_tmp, ll_tmp = fbh.forwards_ls_hap(
                 n, m, H_vs, s, e_vs, r, norm=True
             )
@@ -78,17 +78,18 @@ class TestNonTreeForwardBackwardDiploid(lsbase.ForwardBackwardAlgorithmBase):
         include_extreme_rates,
         normalise,
     ):
-        for n, m, G_vs, s, e_vs, r, _ in self.get_examples_pars(
+        for n, m, H_vs, query, e_vs, r, _ in self.get_examples_pars(
             ts,
             ploidy=2,
             scale_mutation_rate=scale_mutation_rate,
             include_ancestors=include_ancestors,
             include_extreme_rates=include_extreme_rates,
         ):
+            G_vs = core.convert_haplotypes_to_phased_genotypes(H_vs)
+            s = core.convert_haplotypes_to_unphased_genotypes(query)
             F_vs, c_vs, ll_vs = fbd.forwards_ls_dip(n, m, G_vs, s, e_vs, r, norm=True)
             B_vs = fbd.backwards_ls_dip(n, m, G_vs, s, e_vs, c_vs, r)
             self.assertAllClose(np.sum(F_vs * B_vs, (1, 2)), np.ones(m))
-
             F_tmp, c_tmp, ll_tmp = fbd.forward_ls_dip_loop(
                 n, m, G_vs, s, e_vs, r, norm=True
             )
@@ -323,13 +324,15 @@ class TestNonTreeViterbiHaploid(lsbase.ViterbiAlgorithmBase):
 
 class TestNonTreeViterbiDiploid(lsbase.ViterbiAlgorithmBase):
     def verify(self, ts, scale_mutation_rate, include_ancestors):
-        for n, m, G_vs, s, e_vs, r, _ in self.get_examples_pars(
+        for n, m, H_vs, query, e_vs, r, _ in self.get_examples_pars(
             ts,
             ploidy=2,
             scale_mutation_rate=scale_mutation_rate,
             include_ancestors=include_ancestors,
             include_extreme_rates=True,
         ):
+            G_vs = core.convert_haplotypes_to_phased_genotypes(H_vs)
+            s = core.convert_haplotypes_to_unphased_genotypes(query)
             V_vs, P_vs, ll_vs = vd.forwards_viterbi_dip_naive(n, m, G_vs, s, e_vs, r)
             path_vs = vd.backwards_viterbi_dip(m, V_vs[m - 1, :, :], P_vs)
             phased_path_vs = vd.get_phased_path(n, path_vs)
