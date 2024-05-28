@@ -118,21 +118,11 @@ def check_inputs(
 def set_emission_probabilities(
     num_ref_haps,
     num_sites,
-    reference_panel,
-    query,
     ploidy,
-    alleles,
+    num_alleles,
     prob_mutation,
     scale_mutation_rate,
 ):
-    # Check alleles should go in here, and modify e before passing to the algorithm
-    # If alleles is not passed, we don't perform a test of alleles,
-    # but set n_alleles based on the reference_panel.
-    if alleles is None:
-        num_alleles = core.get_num_alleles(reference_panel, query)
-    else:
-        num_alleles = core.check_alleles(alleles, num_sites)
-
     if prob_mutation is None:
         # Set the mutation probability to be that proposed in Li & Stephens (2003).
         theta_tilde = 1 / np.sum([1 / k for k in range(1, num_ref_haps - 1)])
@@ -159,10 +149,10 @@ def set_emission_probabilities(
 def forwards(
     reference_panel,
     query,
+    num_alleles,
     prob_recombination,
     *,
     prob_mutation=None,
-    alleles=None,
     scale_mutation_rate=None,
     normalise=None,
 ):
@@ -184,10 +174,8 @@ def forwards(
     emission_probs = set_emission_probabilities(
         num_ref_haps=num_ref_haps,
         num_sites=num_sites,
-        reference_panel=reference_panel,
-        query=query,
         ploidy=ploidy,
-        alleles=alleles,
+        num_alleles=num_alleles,
         prob_mutation=prob_mutation,
         scale_mutation_rate=scale_mutation_rate,
     )
@@ -217,11 +205,11 @@ def forwards(
 def backwards(
     reference_panel,
     query,
+    num_alleles,
     normalisation_factor_from_forward,
     prob_recombination,
     *,
     prob_mutation=None,
-    alleles=None,
     scale_mutation_rate=None,
 ):
     """Run the backwards algorithm on haplotype or unphased genotype data."""
@@ -239,10 +227,8 @@ def backwards(
     emission_probs = set_emission_probabilities(
         num_ref_haps=num_ref_haps,
         num_sites=num_sites,
-        reference_panel=reference_panel,
-        query=query,
         ploidy=ploidy,
-        alleles=alleles,
+        num_alleles=num_alleles,
         prob_mutation=prob_mutation,
         scale_mutation_rate=scale_mutation_rate,
     )
@@ -268,10 +254,10 @@ def backwards(
 def viterbi(
     reference_panel,
     query,
+    num_alleles,
     prob_recombination,
     *,
     prob_mutation=None,
-    alleles=None,
     scale_mutation_rate=None,
 ):
     """Run the Viterbi algorithm on haplotype or unphased genotype data."""
@@ -289,10 +275,8 @@ def viterbi(
     emission_probs = set_emission_probabilities(
         num_ref_haps=num_ref_haps,
         num_sites=num_sites,
-        reference_panel=reference_panel,
-        query=query,
         ploidy=ploidy,
-        alleles=alleles,
+        num_alleles=num_alleles,
         prob_mutation=prob_mutation,
         scale_mutation_rate=scale_mutation_rate,
     )
@@ -325,11 +309,11 @@ def viterbi(
 def path_loglik(
     reference_panel,
     query,
+    num_alleles,
     path,
     prob_recombination,
     *,
     prob_mutation=None,
-    alleles=None,
     scale_mutation_rate=None,
 ):
     """Evaluate the log-likelihood of a copying path for a query through a reference panel."""
@@ -347,10 +331,8 @@ def path_loglik(
     emission_probs = set_emission_probabilities(
         num_ref_haps=num_ref_haps,
         num_sites=num_sites,
-        reference_panel=reference_panel,
-        query=query,
         ploidy=ploidy,
-        alleles=alleles,
+        num_alleles=num_alleles,
         prob_mutation=prob_mutation,
         scale_mutation_rate=scale_mutation_rate,
     )

@@ -1,6 +1,8 @@
 import pytest
+
 from . import lsbase
 import lshmm as ls
+import lshmm.core as core
 import lshmm.fb_haploid as fbh
 import lshmm.vit_haploid as vh
 
@@ -14,13 +16,41 @@ class TestForwardBackwardHaploid(lsbase.ForwardBackwardAlgorithmBase):
             include_ancestors=include_ancestors,
             include_extreme_rates=True,
         ):
-            F_vs, c_vs, ll_vs = fbh.forwards_ls_hap(n, m, H_vs, s, e_vs, r)
-            B_vs = fbh.backwards_ls_hap(n, m, H_vs, s, e_vs, c_vs, r)
+            num_alleles = core.get_num_alleles(H_vs, s)
+            F_vs, c_vs, ll_vs = fbh.forwards_ls_hap(
+                n=n,
+                m=m,
+                H=H_vs,
+                s=s,
+                e=e_vs,
+                r=r,
+            )
+            B_vs = fbh.backwards_ls_hap(
+                n=n,
+                m=m,
+                H=H_vs,
+                s=s,
+                e=e_vs,
+                c=c_vs,
+                r=r,
+            )
             F, c, ll = ls.forwards(
-                H_vs, s, r, prob_mutation=mu, scale_mutation_rate=scale_mutation_rate
+                reference_panel=H_vs,
+                query=s,
+                num_alleles=num_alleles,
+                prob_recombination=r,
+                prob_mutation=mu,
+                scale_mutation_rate=scale_mutation_rate,
+                normalise=True,
             )
             B = ls.backwards(
-                H_vs, s, c, r, prob_mutation=mu, scale_mutation_rate=scale_mutation_rate
+                reference_panel=H_vs,
+                query=s,
+                num_alleles=num_alleles,
+                normalisation_factor_from_forward=c,
+                prob_recombination=r,
+                prob_mutation=mu,
+                scale_mutation_rate=scale_mutation_rate,
             )
             self.assertAllClose(F, F_vs)
             self.assertAllClose(B, B_vs)
@@ -62,13 +92,19 @@ class TestViterbiHaploid(lsbase.ViterbiAlgorithmBase):
             include_ancestors=include_ancestors,
             include_extreme_rates=True,
         ):
+            num_alleles = core.get_num_alleles(H_vs, s)
             V_vs, P_vs, ll_vs = vh.forwards_viterbi_hap_lower_mem_rescaling(
                 n, m, H_vs, s, e_vs, r
             )
             path_vs = vh.backwards_viterbi_hap(m, V_vs, P_vs)
             path_ll_hap = vh.path_ll_hap(n, m, H_vs, path_vs, s, e_vs, r)
             path, ll = ls.viterbi(
-                H_vs, s, r, prob_mutation=mu, scale_mutation_rate=scale_mutation_rate
+                reference_panel=H_vs,
+                query=s,
+                num_alleles=num_alleles,
+                prob_recombination=r,
+                prob_mutation=mu,
+                scale_mutation_rate=scale_mutation_rate,
             )
             self.assertAllClose(ll_vs, ll)
             self.assertAllClose(ll_vs, path_ll_hap)

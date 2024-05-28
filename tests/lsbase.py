@@ -138,25 +138,21 @@ class LSBase:
             mus.append(np.zeros(m) + 0.2)
             mus.append(np.zeros(m) + 1e-6)
 
-        if ploidy == 2:
-            G = core.convert_haplotypes_to_phased_genotypes(H)
-
-        for s, r, mu in itertools.product(queries, rs, mus):
+        for query, r, mu in itertools.product(queries, rs, mus):
             r[0] = 0
             # Must be calculated from the genotype matrix,
             # because we can now get back mutations that
             # result in the number of alleles being higher
             # than the number of alleles in the reference panel.
-            num_alleles = core.get_num_alleles(H, s)
+            num_alleles = core.get_num_alleles(H, query)
             if ploidy == 1:
                 e = core.get_emission_matrix_haploid(
                     mu, m, num_alleles, scale_mutation_rate
                 )
-                yield n, m, H, s, e, r, mu
+                yield n, m, H, query, e, r, mu
             else:
-                Q = core.convert_haplotypes_to_unphased_genotypes(query=s)
                 e = core.get_emission_matrix_diploid(mu, m)
-                yield n, m, G, Q, e, r, mu
+                yield n, m, H, query, e, r, mu
 
     # Prepare simple example datasets.
     def get_ts_simple_n10_no_recomb(self, seed=42):
