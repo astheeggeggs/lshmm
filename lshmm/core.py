@@ -224,15 +224,31 @@ def get_emission_matrix_haploid(mu, num_sites, num_alleles, scale_mutation_rate)
     return e
 
 
-def get_emission_matrix_diploid(mu, num_sites):
-    e = np.zeros((num_sites, 8))
-    e[:, EQUAL_BOTH_HOM] = (1 - mu) ** 2
-    e[:, UNEQUAL_BOTH_HOM] = mu**2
-    e[:, BOTH_HET] = (1 - mu) ** 2 + mu**2
-    e[:, REF_HOM_OBS_HET] = 2 * mu * (1 - mu)
-    e[:, REF_HET_OBS_HOM] = mu * (1 - mu)
-    e[:, MISSING_INDEX] = 1
-    return e
+def get_emission_matrix_diploid(mu, num_sites, num_alleles, scale_mutation_rate):
+    # TODO: Handle invariant sites.
+    assert len(mu) == len(
+        num_alleles
+    ), "Arrays of mutation probability and number of alleles are unequal in length."
+    emission_matrix = np.zeros((num_sites, 8), dtype=np.float64) - np.inf
+    if isinstance(mu, float):
+        mu = np.zeros(num_sites, dtype=np.float64) + mu
+    prob_mutation = np.zeros(num_sites, dtype=np.float64) - np.inf
+    prob_no_mutation = np.zeros(num_sites, dtype=np.float64) - np.inf
+    for i in range(num_sites):
+        if scale_mutation_rate:
+            prob_mutation[i] = mu[i]
+            prob_no_mutation[i] = 1 - (num_alleles[i] - 1) * mu[i]
+        else:
+            prob_mutation[i] = mu[i] / (num_alleles[i] - 1)
+            prob_no_mutation[i] = 1 - mu[i]
+    for i in range(num_sites):
+        emission_matrix[:, EQUAL_BOTH_HOM] = prob_no_mutation[i] ** 2
+        emission_matrix[:, UNEQUAL_BOTH_HOM] = prob_mutation[i] ** 2
+        emission_matrix[:, BOTH_HET] = prob_no_mutation[i] ** 2 + prob_mutation[i] ** 2
+        emission_matrix[:, REF_HOM_OBS_HET] = 2 * prob_mutation[i] * prob_no_mutation[i]
+        emission_matrix[:, REF_HET_OBS_HOM] = prob_mutation[i] * prob_no_mutation[i]
+        emission_matrix[:, MISSING_INDEX] = 1
+    return emission_matrix
 
 
 @jit.numba_njit

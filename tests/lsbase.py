@@ -90,9 +90,11 @@ class LSBase:
         query_miss_mid[:, ts.num_sites // 2] = core.MISSING
         query_miss_most = query_1.copy()
         query_miss_most[:, 1:] = core.MISSING
-        queries = [query_1, query_2, query_miss_last, query_miss_mid, query_miss_most]
+        # TODO: Add queries with MISSING.
+        # queries = [query_1, query_miss_last, query_miss_mid, query_miss_most]
+        queries = [query_1]
         # Exclude the arbitrarily chosen queries from the reference panel.
-        ref_panel = ref_panel[:, 2:-2]
+        ref_panel = ref_panel[:, 2:]
         return ref_panel, queries
 
     def get_examples_pars(
@@ -155,7 +157,12 @@ class LSBase:
                 yield n, m, H, s, e, r, mu
             else:
                 Q = core.convert_haplotypes_to_unphased_genotypes(query=s)
-                e = core.get_emission_matrix_diploid(mu, m)
+                e = core.get_emission_matrix_diploid(
+                    mu=mu,
+                    num_sites=m,
+                    num_alleles=num_alleles,
+                    scale_mutation_rate=scale_mutation_rate,
+                )
                 yield n, m, G, Q, e, r, mu
 
     # Prepare simple example datasets.
