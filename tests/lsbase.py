@@ -71,9 +71,6 @@ class LSBase:
         return ref_panel, queries
 
     def get_examples_diploid(self, ts, include_ancestors):
-        # TODO Handle NONCOPY properly.
-        if include_ancestors is True:
-            raise NotImplementedError
         ref_panel = ts.genotype_matrix()
         num_sites = ref_panel.shape[0]
         # Take some haplotypes as queries from the reference panel.
@@ -92,7 +89,10 @@ class LSBase:
         query_miss_most[:, 1:] = core.MISSING
         queries = [query_1, query_2, query_miss_last, query_miss_mid, query_miss_most]
         # Exclude the arbitrarily chosen queries from the reference panel.
-        ref_panel = ref_panel[:, 2:-2]
+        if include_ancestors:
+            ref_panel = self.get_ancestral_haplotypes(ts)
+        else:
+            ref_panel = ref_panel[:, 2:-2]
         return ref_panel, queries
 
     def get_examples_pars(

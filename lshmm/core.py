@@ -64,7 +64,6 @@ def convert_haplotypes_to_phased_genotypes(ref_panel):
     The only allowable allele states are 0, 1, and NONCOPY (for partial ancestral haplotypes).
     TODO: Handle multiallelic sites.
 
-    TODO: Handle NONCOPY.
     Allowable genotype values are 0, 1, 2, and NONCOPY. If either one haplotype is NONCOPY
     at a site, then the genotype at the site is assigned NONCOPY.
 
@@ -75,7 +74,7 @@ def convert_haplotypes_to_phased_genotypes(ref_panel):
     :return: An array of reference genotypes.
     :rtype: numpy.ndarray
     """
-    ALLOWED_ALLELE_STATES = np.array([0, 1], dtype=np.int32)
+    ALLOWED_ALLELE_STATES = np.array([0, 1, NONCOPY], dtype=np.int32)
     assert np.all(
         np.isin(np.unique(ref_panel), ALLOWED_ALLELE_STATES)
     ), f"Reference haplotypes contain illegal allele states."
@@ -85,8 +84,8 @@ def convert_haplotypes_to_phased_genotypes(ref_panel):
     for i in range(num_sites):
         site_alleles = ref_panel[i, :]
         genotypes[i, :, :] = np.add.outer(site_alleles, site_alleles)
-        # genotypes[i, site_alleles == NONCOPY, :] = NONCOPY
-        # genotypes[i, :, site_alleles == NONCOPY] = NONCOPY
+        genotypes[i, site_alleles == NONCOPY, :] = NONCOPY
+        genotypes[i, :, site_alleles == NONCOPY] = NONCOPY
     return genotypes
 
 
