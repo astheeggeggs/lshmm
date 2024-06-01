@@ -147,11 +147,19 @@ class LSBase:
             num_alleles = core.get_num_alleles(H, query)
             if ploidy == 1:
                 e = core.get_emission_matrix_haploid(
-                    mu, m, num_alleles, scale_mutation_rate
+                    mu=mu,
+                    num_sites=m,
+                    num_alleles=num_alleles,
+                    scale_mutation_rate=scale_mutation_rate,
                 )
                 yield n, m, H, query, e, r, mu
             else:
-                e = core.get_emission_matrix_diploid(mu, m)
+                e = core.get_emission_matrix_diploid(
+                    mu=mu,
+                    num_sites=m,
+                    num_alleles=num_alleles,
+                    scale_mutation_rate=scale_mutation_rate,
+                )
                 yield n, m, H, query, e, r, mu
 
     # Prepare simple example datasets.
