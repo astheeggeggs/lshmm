@@ -29,33 +29,59 @@ class TestNonTreeForwardBackwardHaploid(lsbase.ForwardBackwardAlgorithmBase):
             self.assertAllClose(np.sum(F_tmp * B_tmp, 1), np.ones(m))
             self.assertAllClose(ll_vs, ll_tmp)
 
+    @pytest.mark.parametrize("scale_mutation_rate", [True, False])
     @pytest.mark.parametrize("include_ancestors", [True, False])
-    def test_ts_simple_n10_no_recomb(self, include_ancestors):
+    def test_ts_simple_n10_no_recomb(self, scale_mutation_rate, include_ancestors):
         ts = self.get_ts_simple_n10_no_recomb()
-        self.verify(ts, scale_mutation_rate=True, include_ancestors=include_ancestors)
+        self.verify(
+            ts,
+            scale_mutation_rate=scale_mutation_rate,
+            include_ancestors=include_ancestors,
+        )
 
+    @pytest.mark.parametrize("scale_mutation_rate", [True, False])
     @pytest.mark.parametrize("include_ancestors", [True, False])
-    def test_ts_simple_n6(self, include_ancestors):
+    def test_ts_simple_n6(self, scale_mutation_rate, include_ancestors):
         ts = self.get_ts_simple_n6()
-        self.verify(ts, scale_mutation_rate=True, include_ancestors=include_ancestors)
+        self.verify(
+            ts,
+            scale_mutation_rate=scale_mutation_rate,
+            include_ancestors=include_ancestors,
+        )
 
+    @pytest.mark.parametrize("scale_mutation_rate", [True, False])
     @pytest.mark.parametrize("include_ancestors", [True, False])
-    def test_ts_simple_n8(self, include_ancestors):
+    def test_ts_simple_n8(self, scale_mutation_rate, include_ancestors):
         ts = self.get_ts_simple_n8()
-        self.verify(ts, scale_mutation_rate=True, include_ancestors=include_ancestors)
+        self.verify(
+            ts,
+            scale_mutation_rate=scale_mutation_rate,
+            include_ancestors=include_ancestors,
+        )
 
+    @pytest.mark.parametrize("scale_mutation_rate", [True, False])
     @pytest.mark.parametrize("include_ancestors", [True, False])
-    def test_ts_simple_n8_high_recomb(self, include_ancestors):
+    def test_ts_simple_n8_high_recomb(self, scale_mutation_rate, include_ancestors):
         ts = self.get_ts_simple_n8_high_recomb()
-        self.verify(ts, scale_mutation_rate=True, include_ancestors=include_ancestors)
+        self.verify(
+            ts,
+            scale_mutation_rate=scale_mutation_rate,
+            include_ancestors=include_ancestors,
+        )
 
+    @pytest.mark.parametrize("scale_mutation_rate", [True, False])
     @pytest.mark.parametrize("include_ancestors", [True, False])
-    def test_ts_simple_n16(self, include_ancestors):
+    def test_ts_simple_n16(self, scale_mutation_rate, include_ancestors):
         ts = self.get_ts_simple_n16()
-        self.verify(ts, scale_mutation_rate=True, include_ancestors=include_ancestors)
+        self.verify(
+            ts,
+            scale_mutation_rate=scale_mutation_rate,
+            include_ancestors=include_ancestors,
+        )
 
+    @pytest.mark.parametrize("scale_mutation_rate", [True, False])
     @pytest.mark.parametrize("include_ancestors", [True, False])
-    def test_larger(self, include_ancestors):
+    def test_larger(self, scale_mutation_rate, include_ancestors):
         ts = self.get_ts_custom_pars(
             ref_panel_size=45,
             length=1e5,
@@ -64,7 +90,7 @@ class TestNonTreeForwardBackwardHaploid(lsbase.ForwardBackwardAlgorithmBase):
         )
         self.verify(
             ts,
-            scale_mutation_rate=True,
+            scale_mutation_rate=scale_mutation_rate,
             include_ancestors=include_ancestors,
         )
 
@@ -295,39 +321,65 @@ class TestNonTreeViterbiHaploid(lsbase.ViterbiAlgorithmBase):
             self.assertAllClose(ll_tmp, ll_check)
             self.assertAllClose(ll_vs, ll_tmp)
 
+    @pytest.mark.parametrize("scale_mutation_rate", [True, False])
     @pytest.mark.parametrize("include_ancestors", [True, False])
-    def test_ts_simple_n10_no_recombn(self, include_ancestors):
+    def test_ts_simple_n10_no_recombn(self, scale_mutation_rate, include_ancestors):
         ts = self.get_ts_simple_n10_no_recomb()
-        self.verify(ts, scale_mutation_rate=True, include_ancestors=include_ancestors)
+        self.verify(
+            ts,
+            scale_mutation_rate=scale_mutation_rate,
+            include_ancestors=include_ancestors,
+        )
 
+    @pytest.mark.parametrize("scale_mutation_rate", [True, False])
     @pytest.mark.parametrize("include_ancestors", [True, False])
-    def test_ts_simple_n6(self, include_ancestors):
+    def test_ts_simple_n6(self, scale_mutation_rate, include_ancestors):
         ts = self.get_ts_simple_n6()
-        self.verify(ts, scale_mutation_rate=True, include_ancestors=include_ancestors)
+        self.verify(
+            ts,
+            scale_mutation_rate=scale_mutation_rate,
+            include_ancestors=include_ancestors,
+        )
 
+    @pytest.mark.parametrize("scale_mutation_rate", [True, False])
     @pytest.mark.parametrize("include_ancestors", [True, False])
-    def test_ts_simple_n8(self, include_ancestors):
+    def test_ts_simple_n8(self, scale_mutation_rate, include_ancestors):
         ts = self.get_ts_simple_n8()
-        self.verify(ts, scale_mutation_rate=True, include_ancestors=include_ancestors)
+        self.verify(
+            ts,
+            scale_mutation_rate=scale_mutation_rate,
+            include_ancestors=include_ancestors,
+        )
 
+    @pytest.mark.parametrize("scale_mutation_rate", [True, False])
     @pytest.mark.parametrize("include_ancestors", [True, False])
-    def test_ts_simple_n8_high_recomb(self, include_ancestors):
+    def test_ts_simple_n8_high_recomb(self, scale_mutation_rate, include_ancestors):
         ts = self.get_ts_simple_n8_high_recomb()
-        self.verify(ts, scale_mutation_rate=True, include_ancestors=include_ancestors)
+        self.verify(
+            ts,
+            scale_mutation_rate=scale_mutation_rate,
+            include_ancestors=include_ancestors,
+        )
 
+    @pytest.mark.parametrize("scale_mutation_rate", [True, False])
     @pytest.mark.parametrize("include_ancestors", [True, False])
-    def test_ts_simple_n16(self, include_ancestors):
+    def test_ts_simple_n16(self, scale_mutation_rate, include_ancestors):
         ts = self.get_ts_simple_n16()
-        self.verify(ts, scale_mutation_rate=True, include_ancestors=include_ancestors)
+        self.verify(
+            ts,
+            scale_mutation_rate=scale_mutation_rate,
+            include_ancestors=include_ancestors,
+        )
 
+    @pytest.mark.parametrize("scale_mutation_rate", [True, False])
     @pytest.mark.parametrize("include_ancestors", [True, False])
-    def test_ts_larger(self, include_ancestors):
+    def test_ts_larger(self, scale_mutation_rate, include_ancestors):
         ts = self.get_ts_custom_pars(
             ref_panel_size=45, length=1e5, mean_r=1e-5, mean_mu=1e-5
         )
         self.verify(
             ts,
-            scale_mutation_rate=True,
+            scale_mutation_rate=scale_mutation_rate,
             include_ancestors=include_ancestors,
         )
 
