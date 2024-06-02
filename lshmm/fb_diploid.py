@@ -17,9 +17,9 @@ def forwards_ls_dip(n, m, G, s, e, r, norm=True):
     c = np.ones(m)
     r_n = r / n
 
-    emission_probs = core.get_emission_probability_diploid_G(
-        ref_G=G[0, :, :],
-        query_allele=s[0, 0],
+    emission_probs = core.get_emission_probability_diploid_genotypes(
+        ref_genotypes=G[0, :, :],
+        query_genotype=s[0, 0],
         site=0,
         emission_matrix=e,
     )
@@ -31,9 +31,9 @@ def forwards_ls_dip(n, m, G, s, e, r, norm=True):
 
         # Forwards
         for l in range(1, m):
-            emission_probs = core.get_emission_probability_diploid_G(
-                ref_G=G[l, :, :],
-                query_allele=s[0, l],
+            emission_probs = core.get_emission_probability_diploid_genotypes(
+                ref_genotypes=G[l, :, :],
+                query_genotype=s[0, l],
                 site=l,
                 emission_matrix=e,
             )
@@ -57,9 +57,9 @@ def forwards_ls_dip(n, m, G, s, e, r, norm=True):
     else:
         # Forwards
         for l in range(1, m):
-            emission_probs = core.get_emission_probability_diploid_G(
-                ref_G=G[l, :, :],
-                query_allele=s[0, l],
+            emission_probs = core.get_emission_probability_diploid_genotypes(
+                ref_genotypes=G[l, :, :],
+                query_genotype=s[0, l],
                 site=l,
                 emission_matrix=e,
             )
@@ -92,9 +92,9 @@ def backwards_ls_dip(n, m, G, s, e, c, r):
 
     # Backwards
     for l in range(m - 2, -1, -1):
-        emission_probs = core.get_emission_probability_diploid_G(
-            ref_G=G[l + 1, :, :],
-            query_allele=s[0, l + 1],
+        emission_probs = core.get_emission_probability_diploid_genotypes(
+            ref_genotypes=G[l + 1, :, :],
+            query_genotype=s[0, l + 1],
             site=l + 1,
             emission_matrix=e,
         )
@@ -126,8 +126,8 @@ def forward_ls_dip_starting_point(n, m, G, s, e, r):
         for j2 in range(n):
             F[0, j1, j2] = 1 / (n**2)
             emission_prob = core.get_emission_probability_diploid(
-                ref_allele=G[0, j1, j2],
-                query_allele=s[0, 0],
+                ref_genotype=G[0, j1, j2],
+                query_genotype=s[0, 0],
                 site=0,
                 emission_matrix=e,
             )
@@ -170,8 +170,8 @@ def forward_ls_dip_starting_point(n, m, G, s, e, r):
         for j1 in range(n):
             for j2 in range(n):
                 emission_prob = core.get_emission_probability_diploid(
-                    ref_allele=G[l, j1, j2],
-                    query_allele=s[0, l],
+                    ref_genotype=G[l, j1, j2],
+                    query_genotype=s[0, l],
                     site=l,
                     emission_matrix=e,
                 )
@@ -201,8 +201,8 @@ def backward_ls_dip_starting_point(n, m, G, s, e, r):
         for j1 in range(n):
             for j2 in range(n):
                 emission_prob = core.get_emission_probability_diploid(
-                    ref_allele=G[l + 1, j1, j2],
-                    query_allele=s[0, l + 1],
+                    ref_genotype=G[l + 1, j1, j2],
+                    query_genotype=s[0, l + 1],
                     site=l + 1,
                     emission_matrix=e,
                 )
@@ -258,8 +258,8 @@ def forward_ls_dip_loop(n, m, G, s, e, r, norm=True):
         for j2 in range(n):
             F[0, j1, j2] = 1 / (n**2)
             emission_prob = core.get_emission_probability_diploid(
-                ref_allele=G[0, j1, j2],
-                query_allele=s[0, 0],
+                ref_genotype=G[0, j1, j2],
+                query_genotype=s[0, 0],
                 site=0,
                 emission_matrix=e,
             )
@@ -291,8 +291,8 @@ def forward_ls_dip_loop(n, m, G, s, e, r, norm=True):
             for j1 in range(n):
                 for j2 in range(n):
                     emission_prob = core.get_emission_probability_diploid(
-                        ref_allele=G[l, j1, j2],
-                        query_allele=s[0, l],
+                        ref_genotype=G[l, j1, j2],
+                        query_genotype=s[0, l],
                         site=l,
                         emission_matrix=e,
                     )
@@ -328,8 +328,8 @@ def forward_ls_dip_loop(n, m, G, s, e, r, norm=True):
             for j1 in range(n):
                 for j2 in range(n):
                     emission_prob = core.get_emission_probability_diploid(
-                        ref_allele=G[l, j1, j2],
-                        query_allele=s[0, l],
+                        ref_genotype=G[l, j1, j2],
+                        query_genotype=s[0, l],
                         site=l,
                         emission_matrix=e,
                     )
@@ -363,8 +363,8 @@ def backward_ls_dip_loop(n, m, G, s, e, c, r):
         for j1 in range(n):
             for j2 in range(n):
                 emission_prob = core.get_emission_probability_diploid(
-                    ref_allele=G[l + 1, j1, j2],
-                    query_allele=s[0, l + 1],
+                    ref_genotype=G[l + 1, j1, j2],
+                    query_genotype=s[0, l + 1],
                     site=l + 1,
                     emission_matrix=e,
                 )

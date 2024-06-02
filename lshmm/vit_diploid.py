@@ -21,17 +21,17 @@ def forwards_viterbi_dip_naive(n, m, G, s, e, r):
     for j1 in range(n):
         for j2 in range(n):
             emission_prob = core.get_emission_probability_diploid(
-                ref_allele=G[0, j1, j2],
-                query_allele=s[0, 0],
+                ref_genotype=G[0, j1, j2],
+                query_genotype=s[0, 0],
                 site=0,
                 emission_matrix=e,
             )
             V[0, j1, j2] = 1 / (n**2) * emission_prob
 
     for l in range(1, m):
-        emission_probs = core.get_emission_probability_diploid_G(
-            ref_G=G[l, :, :],
-            query_allele=s[0, l],
+        emission_probs = core.get_emission_probability_diploid_genotypes(
+            ref_genotypes=G[l, :, :],
+            query_genotype=s[0, l],
             site=l,
             emission_matrix=e,
         )
@@ -73,8 +73,8 @@ def forwards_viterbi_dip_naive_low_mem(n, m, G, s, e, r):
     for j1 in range(n):
         for j2 in range(n):
             emission_prob = core.get_emission_probability_diploid(
-                ref_allele=G[0, j1, j2],
-                query_allele=s[0, 0],
+                ref_genotype=G[0, j1, j2],
+                query_genotype=s[0, 0],
                 site=0,
                 emission_matrix=e,
             )
@@ -84,9 +84,9 @@ def forwards_viterbi_dip_naive_low_mem(n, m, G, s, e, r):
     # see if we can pinch some ideas.
     # Diploid Viterbi, with smaller memory footprint.
     for l in range(1, m):
-        emission_probs = core.get_emission_probability_diploid_G(
-            ref_G=G[l, :, :],
-            query_allele=s[0, l],
+        emission_probs = core.get_emission_probability_diploid_genotypes(
+            ref_genotypes=G[l, :, :],
+            query_genotype=s[0, l],
             site=l,
             emission_matrix=e,
         )
@@ -132,8 +132,8 @@ def forwards_viterbi_dip_low_mem(n, m, G, s, e, r):
     for j1 in range(n):
         for j2 in range(n):
             emission_prob = core.get_emission_probability_diploid(
-                ref_allele=G[0, j1, j2],
-                query_allele=s[0, 0],
+                ref_genotype=G[0, j1, j2],
+                query_genotype=s[0, 0],
                 site=0,
                 emission_matrix=e,
             )
@@ -141,9 +141,9 @@ def forwards_viterbi_dip_low_mem(n, m, G, s, e, r):
 
     # Diploid Viterbi, with smaller memory footprint, rescaling, and using the structure of the HMM.
     for l in range(1, m):
-        emission_probs = core.get_emission_probability_diploid_G(
-            ref_G=G[l, :, :],
-            query_allele=s[0, l],
+        emission_probs = core.get_emission_probability_diploid_genotypes(
+            ref_genotypes=G[l, :, :],
+            query_genotype=s[0, l],
             site=l,
             emission_matrix=e,
         )
@@ -221,8 +221,8 @@ def forwards_viterbi_dip_low_mem_no_pointer(n, m, G, s, e, r):
     for j1 in range(n):
         for j2 in range(n):
             emission_prob = core.get_emission_probability_diploid(
-                ref_allele=G[0, j1, j2],
-                query_allele=s[0, 0],
+                ref_genotype=G[0, j1, j2],
+                query_genotype=s[0, 0],
                 site=0,
                 emission_matrix=e,
             )
@@ -230,9 +230,9 @@ def forwards_viterbi_dip_low_mem_no_pointer(n, m, G, s, e, r):
 
     # Diploid Viterbi, with smaller memory footprint, rescaling, and using the structure of the HMM.
     for l in range(1, m):
-        emission_probs = core.get_emission_probability_diploid_G(
-            ref_G=G[l, :, :],
-            query_allele=s[0, l],
+        emission_probs = core.get_emission_probability_diploid_genotypes(
+            ref_genotypes=G[l, :, :],
+            query_genotype=s[0, l],
             site=l,
             emission_matrix=e,
         )
@@ -303,8 +303,8 @@ def forwards_viterbi_dip_naive_vec(n, m, G, s, e, r):
     for j1 in range(n):
         for j2 in range(n):
             emission_prob = core.get_emission_probability_diploid(
-                ref_allele=G[0, j1, j2],
-                query_allele=s[0, 0],
+                ref_genotype=G[0, j1, j2],
+                query_genotype=s[0, 0],
                 site=0,
                 emission_matrix=e,
             )
@@ -312,9 +312,9 @@ def forwards_viterbi_dip_naive_vec(n, m, G, s, e, r):
 
     # Jumped the gun - vectorising.
     for l in range(1, m):
-        emission_probs = core.get_emission_probability_diploid_G(
-            ref_G=G[l, :, :],
-            query_allele=s[0, l],
+        emission_probs = core.get_emission_probability_diploid_genotypes(
+            ref_genotypes=G[l, :, :],
+            query_genotype=s[0, l],
             site=l,
             emission_matrix=e,
         )
@@ -349,9 +349,9 @@ def forwards_viterbi_dip_naive_full_vec(n, m, G, s, e, r):
     P = np.zeros((m, n, n), dtype=np.int64)
     c = np.ones(m)
 
-    emission_probs = core.get_emission_probability_diploid_G(
-        ref_G=G[0, :, :],
-        query_allele=s[0, 0],
+    emission_probs = core.get_emission_probability_diploid_genotypes(
+        ref_genotypes=G[0, :, :],
+        query_genotype=s[0, 0],
         site=l,
         emission_matrix=e,
     )
@@ -359,9 +359,9 @@ def forwards_viterbi_dip_naive_full_vec(n, m, G, s, e, r):
     r_n = r / n
 
     for l in range(1, m):
-        emission_probs = core.get_emission_probability_diploid_G(
-            ref_G=G[l, :, :],
-            query_allele=s[0, l],
+        emission_probs = core.get_emission_probability_diploid_genotypes(
+            ref_genotypes=G[l, :, :],
+            query_genotype=s[0, l],
             site=l,
             emission_matrix=e,
         )
@@ -460,8 +460,8 @@ def path_ll_dip(n, m, G, phased_path, s, e, r):
     This is exposed via the API.
     """
     emission_prob = core.get_emission_probability_diploid(
-        ref_allele=G[0, phased_path[0][0], phased_path[1][0]],
-        query_allele=s[0, 0],
+        ref_genotype=G[0, phased_path[0][0], phased_path[1][0]],
+        query_genotype=s[0, 0],
         site=0,
         emission_matrix=e,
     )
@@ -472,8 +472,8 @@ def path_ll_dip(n, m, G, phased_path, s, e, r):
 
     for l in range(1, m):
         emission_prob = core.get_emission_probability_diploid(
-            ref_allele=G[l, phased_path[0][l], phased_path[1][l]],
-            query_allele=s[0, l],
+            ref_genotype=G[l, phased_path[0][l], phased_path[1][l]],
+            query_genotype=s[0, l],
             site=l,
             emission_matrix=e,
         )
