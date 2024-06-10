@@ -173,25 +173,32 @@ def get_index_in_emission_matrix_haploid(ref_allele, query_allele):
 
 
 @jit.numba_njit
-def get_index_in_emission_matrix_diploid(ref_allele, query_allele):
-    if query_allele == MISSING:
+def get_index_in_emission_matrix_diploid(ref_genotype, query_genotype):
+    """
+    Compare the implied unphased genotypes (allele dosages) of
+    the reference and query to get the index of the entry
+    in the emission probability matrix, and return the index.
+    """
+    if query_genotype == MISSING:
         return MISSING_INDEX
     else:
-        is_match = ref_allele == query_allele
-        is_ref_one = ref_allele == 1
-        is_query_one = query_allele == 1
-        return 4 * is_match + 2 * is_ref_one + is_query_one
+        is_match = ref_genotype == query_genotype
+        is_ref_het = ref_genotype == 1
+        is_query_het = query_genotype == 1
+        return 4 * is_match + 2 * is_ref_het + is_query_het
 
 
 @jit.numba_njit
-def get_index_in_emission_matrix_diploid_G(ref_G, query_allele, n):
-    if query_allele == MISSING:
-        return MISSING_INDEX * np.ones((n, n), dtype=np.int64)
+def get_index_in_emission_matrix_diploid_genotypes(
+    ref_genotypes, query_genotype, num_ref_haps
+):
+    if query_genotype == MISSING:
+        return MISSING_INDEX * np.ones((num_ref_haps, num_ref_haps), dtype=np.int64)
     else:
-        is_match = ref_G == query_allele
-        is_ref_one = ref_G == 1
-        is_query_one = query_allele == 1
-        return 4 * is_match + 2 * is_ref_one + is_query_one
+        is_match = ref_genotypes == query_genotype
+        is_ref_het = ref_genotypes == 1
+        is_query_het = query_genotype == 1
+        return 4 * is_match + 2 * is_ref_het + is_query_het
 
 
 def get_emission_matrix_haploid(mu, num_sites, num_alleles, scale_mutation_rate):
@@ -264,24 +271,32 @@ def get_emission_probability_haploid(ref_allele, query_allele, site, emission_ma
 
 
 @jit.numba_njit
-def get_emission_probability_diploid(ref_allele, query_allele, site, emission_matrix):
-    if ref_allele == NONCOPY:
+def get_emission_probability_diploid(
+    ref_genotype, query_genotype, site, emission_matrix
+):
+    if ref_genotype == NONCOPY:
         return 0.0
     else:
-        emission_index = get_index_in_emission_matrix_diploid(ref_allele, query_allele)
+        emission_index = get_index_in_emission_matrix_diploid(
+            ref_genotype, query_genotype
+        )
         return emission_matrix[site, emission_index]
 
 
 @jit.numba_njit
-def get_emission_probability_diploid_G(ref_G, query_allele, site, emission_matrix):
-    emission_probs = np.zeros(ref_G.shape, dtype=np.float64)
-    for i in range(len(ref_G)):
-        for j in range(len(ref_G)):
-            if ref_G[i, j] == NONCOPY:
+def get_emission_probability_diploid_genotypes(
+    ref_genotypes, query_genotype, site, emission_matrix
+):
+    assert ref_genotypes.shape[0] == ref_genotypes.shape[1]
+    num_ref_haps = len(ref_genotypes)
+    emission_probs = np.zeros((num_ref_haps, num_ref_haps), dtype=np.float64)
+    for i in range(num_ref_haps):
+        for j in range(num_ref_haps):
+            if ref_genotypes[i, j] == NONCOPY:
                 emission_probs[i, j] = 0.0
             else:
                 emission_index = get_index_in_emission_matrix_diploid(
-                    ref_G[i, j], query_allele
+                    ref_genotypes[i, j], query_genotype
                 )
                 emission_probs[i, j] = emission_matrix[site, emission_index]
     return emission_probs
