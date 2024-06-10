@@ -30,31 +30,35 @@ def check_inputs(
     reference_panel,
     query,
     prob_recombination,
-    prob_mutation,
-    scale_mutation_rate,
+    prob_mutation=None,
+    scale_mutation_rate=None,
 ):
     """
-    Check that the input data and parameters are valid.
+    Check that the input data and parameters are valid, and return basic info
+    about the data: the number of reference haplotypes, number of sites, and ploidy.
 
-    The reference panel must be a matrix of size (m, n) or (m, n, n).
-    The query must be a matrix of size (k, m) or (k, m, 2).
-
-    m = number of sites.
-    n = number of samples in the reference panel (haplotypes, not individuals).
-    k = number of samples in the query (haplotypes, not individuals).
+    The reference panel must be an array of size (m, n) in the haploid case or
+    (m, n, n) in the diploid case, and the query must be an array of size (k, m),
+    where:
+        m = number of sites.
+        n = number of samples in the reference panel (haplotypes, not individuals).
+        k = number of samples in the query (haplotypes, not individuals).
 
     The mutation rate can be scaled according to the set of alleles
     that can be mutated to based on the number of distinct alleles at each site.
 
-    :param numpy.ndarray(dtype=int) reference_panel: Matrix of size (m, n) or (m, n, n).
-    :param numpy.ndarray(dtype=int) query: Matrix of size (k, m) or (k, m, 2).
-    :param numpy.ndarray(dtype=float) prob_recombination: Scalar or vector of length m.
-    :param numpy.ndarray(dtype=float) prob_mutation: Scalar or vector of length m.
-    :param bool scale_mutation_rate: Scale mutation rate or not.
-    :return: Number of reference haplotypes, Number of sites, ploidy
+    :param numpy.ndarray reference_panel: An array of size (m, n) or (m, n, n).
+    :param numpy.ndarray query: An array of size (k, m).
+    :param numpy.ndarray prob_recombination: Recombination probability.
+    :param numpy.ndarray prob_mutation: Mutation probability. If None (default), set as per Li & Stephens (2003).
+    :param bool scale_mutation_rate: Scale mutation rate if True (default).
+    :return: Number of reference haplotypes, number of sites, ploidy
     :rtype: tuple
     """
-    # Check reference panel
+    if scale_mutation_rate is None:
+        scale_mutation_rate = True
+
+    # Check the reference panel.
     if not len(reference_panel.shape) in (2, 3):
         err_msg = "Reference panel array must have 2 or 3 dimensions."
         raise ValueError(err_msg)
@@ -63,53 +67,47 @@ def check_inputs(
         num_sites, num_ref_haps = reference_panel.shape
         ploidy = 1
     else:
-        num_sites, num_ref_haps, _ = reference_panel.shape
+        num_sites, num_ref_haps, _num_ref_haps = reference_panel.shape
+        if num_ref_haps != _num_ref_haps:
+            err_msg = "Reference panel array has incorrect dimensions."
+            raise ValueError(err_msg)
         ploidy = 2
 
-    if ploidy == 2 and (reference_panel.shape[1] != reference_panel.shape[2]):
-        err_msg = (
-            "Reference_panel dimensions are incorrect, "
-            "perhaps a sample x sample x variant matrix was passed. "
-            "Expected sites x samples x samples."
-        )
-        raise ValueError(err_msg)
-
-    # Check query sequence(s)
+    # Check the query sequence(s).
     if query.shape[1] != num_sites:
-        err_msg = (
-            "Number of sites in query does not match reference panel. "
-            "If haploid, ensure a sites x samples matrix is passed."
-        )
+        err_msg = "Number of sites in query does not match reference panel."
         raise ValueError(err_msg)
 
-    # Ensure the mutation probability is a scalar or a vector of length m.
+    # Check the mutation probability.
     if isinstance(prob_mutation, (int, float)):
         if not scale_mutation_rate:
             warn_msg = "Passed a scalar mutation probability, but not rescaling it."
             warnings.warn(warn_msg)
-    elif isinstance(prob_mutation, np.ndarray) and prob_mutation.shape[0] == num_sites:
+    elif isinstance(prob_mutation, np.ndarray) and len(prob_mutation) == num_sites:
         if scale_mutation_rate:
-            warn_msg = "Passed a vector of mutation probabilities. Rescaling them."
+            warn_msg = "Passed an array of mutation probabilities. Rescaling them."
             warnings.warn(warn_msg)
     elif prob_mutation is None:
         warn_msg = (
-            "No mutation probability passed. "
+            "No mutation probability is passed. "
             "Setting it based on Li & Stephens (2003) equations A2 and A3."
         )
         warnings.warn(warn_msg)
     else:
-        err_msg = f"Mutation probability is not None, a scalar, or vector of length m."
+        err_msg = "Mutation probability is not a scalar or an array of expected length."
         raise ValueError(err_msg)
 
-    # Ensure the recombination probability is a scalar or a vector of length m.
+    # Check the recombination probability.
     if not (
         isinstance(prob_recombination, (int, float))
         or (
             isinstance(prob_recombination, np.ndarray)
-            and prob_recombination.shape[0] == num_sites
+            and len(prob_recombination) == num_sites
         )
     ):
-        err_msg = f"Recombination probability is not a scalar or vector of length m."
+        err_msg = (
+            "Recombination probability is not a scalar or an array of expected length."
+        )
         raise ValueError(err_msg)
 
     return (num_ref_haps, num_sites, ploidy)
