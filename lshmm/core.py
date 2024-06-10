@@ -202,32 +202,50 @@ def get_index_in_emission_matrix_diploid_genotypes(
 
 
 def get_emission_matrix_haploid(mu, num_sites, num_alleles, scale_mutation_rate):
-    e = np.zeros((num_sites, 2))
+    """
+    Compute an emission probability matrix for the haploid case, and return it.
+
+    The emission probability matrix is of size (num_sites, 2). The first entry
+    of each row corresponds to an emission when alleles do not match, and the second
+    entry to an emission when alleles match.
+
+    By default, there is no scaling of mutation rates based on the number of alleles,
+    so that mutation probability is the probability of mutation to **any allele**
+    (therefore, summing over all the states that can be switched to).
+
+    This means that we must rescale the probability of mutation to a different allele
+    by the number of alleles at the site.
+
+    Optionally, scale mutation based on the number of alleles, so that mutation
+    probability is the probability of mutation **any given one** of the alleles.
+    The overall mutation probability is then (num_alleles - 1) * mutation probability.
+
+    :param float/numpy.ndarray(dtype=np.float64) mu: Probability of mutation.
+    :param int num_sites: Number of sites.
+    :param numpy.ndarray(dtype=np.int8): Number of distinct alleles per site.
+    :param bool scale_mutation_rate: Scale mutation rate based on the number of alleles if True (default).
+    """
+    assert len(mu) == len(
+        num_alleles
+    ), "Arrays of mutation probability and number of alleles are unequal in length."
     if isinstance(mu, float):
-        mu = mu * np.ones(num_sites)
-    if scale_mutation_rate:
-        # Scale mutation based on the number of alleles,
-        # so p_mutation is probability of mutation any given one of the alleles.
-        # The overall mutation probability is then (n_alleles - 1) * p_mutation.
-        e[:, 0] = mu - mu * np.equal(
-            num_alleles, np.ones(num_sites)
-        )  # Add boolean in case we're at an invariant site
-        e[:, 1] = 1 - (num_alleles - 1) * mu
-    else:
-        # No scaling based on the number of alleles,
-        # so p_mutation is the probability of mutation to anything
-        # (summing over the states we can switch to).
-        # This means that we must rescale the probability of mutation to
-        # a different allele by the number of alleles at the site.
-        for j in range(num_sites):
-            if num_alleles[j] == 1:
-                # In case we're at an invariant site
-                e[j, 0] = 0
-                e[j, 1] = 1
+        mu = np.zeros(num_sites, dtype=np.float64) + mu
+    emission_matrix = np.zeros((num_sites, 2), np.float64) - np.inf
+    for i in range(num_sites):
+        if num_alleles[i] == 1:
+            # Set probabilities at invariant sites.
+            prob_mutation = 0
+            prob_no_mutation = 1
+        else:
+            if scale_mutation_rate:
+                prob_mutation = mu[i]
+                prob_no_mutation = 1 - (num_alleles[i] - 1) * mu[i]
             else:
-                e[j, 0] = mu[j] / (num_alleles[j] - 1)
-                e[j, 1] = 1 - mu[j]
-    return e
+                prob_mutation = mu[i] / (num_alleles[i] - 1)
+                prob_no_mutation = 1 - mu[i]
+        emission_matrix[i, 0] = prob_mutation
+        emission_matrix[i, 1] = prob_no_mutation
+    return emission_matrix
 
 
 def get_emission_matrix_diploid(mu, num_sites, num_alleles, scale_mutation_rate):
