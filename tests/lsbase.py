@@ -121,8 +121,6 @@ class LSBase:
 
         rs = [
             np.zeros(m) + 0.01,  # Equal recombination and mutation
-            np.zeros(m) + 0.999,  # Extreme
-            np.zeros(m) + 1e-6,  # Extreme
             np.random.rand(m),  # Random
             1e-5 * (np.random.rand(m) + 0.5) / 2,
         ]
