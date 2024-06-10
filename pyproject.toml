@@ -23,6 +23,9 @@ disable = [
 testpaths = [
     "tests",
 ]
+markers = [
+    "local_only: marks tests as local-only (deselect with '-m \"not local_only\"')"
+]
 
 [project]
 name = "lshmm"

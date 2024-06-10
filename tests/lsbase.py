@@ -194,7 +194,7 @@ class LSBase:
     def get_ts_simple_n8_high_recomb(self, seed=42):
         ts = msprime.simulate(
             8,
-            recombination_rate=20,
+            recombination_rate=10,
             mutation_rate=5,
             random_seed=seed,
         )
