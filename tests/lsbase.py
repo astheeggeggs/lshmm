@@ -71,15 +71,18 @@ class LSBase:
         return ref_panel, queries
 
     def get_examples_diploid(self, ts, include_ancestors):
-        ref_panel = ts.genotype_matrix()
+        if include_ancestors:
+            ref_panel = self.get_ancestral_haplotypes(ts)
+        else:
+            ref_panel = ts.genotype_matrix()
         num_sites = ref_panel.shape[0]
         # Take some haplotypes as queries from the reference panel.
         query_1 = np.zeros((2, num_sites), dtype=np.int32) - np.inf
         query_1[0, :] = ref_panel[:, 0].reshape(1, num_sites)
         query_1[1, :] = ref_panel[:, 1].reshape(1, num_sites)
         query_2 = np.zeros((2, num_sites), dtype=np.int32) - np.inf
-        query_2[0, :] = ref_panel[:, -2].reshape(1, num_sites)
-        query_2[1, :] = ref_panel[:, -1].reshape(1, num_sites)
+        query_2[0, :] = ref_panel[:, 2].reshape(1, num_sites)
+        query_2[1, :] = ref_panel[:, 3].reshape(1, num_sites)
         # Create queries with MISSING.
         query_miss_last = query_1.copy()
         query_miss_last[:, -1] = core.MISSING
@@ -89,10 +92,7 @@ class LSBase:
         query_miss_most[:, 1:] = core.MISSING
         queries = [query_1, query_2, query_miss_last, query_miss_mid, query_miss_most]
         # Exclude the arbitrarily chosen queries from the reference panel.
-        if include_ancestors:
-            ref_panel = self.get_ancestral_haplotypes(ts)
-        else:
-            ref_panel = ref_panel[:, 2:-2]
+        ref_panel = ref_panel[:, 4:]
         return ref_panel, queries
 
     def get_examples_pars(
