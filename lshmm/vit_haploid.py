@@ -14,7 +14,8 @@ def viterbi_naive_init(n, m, H, s, e, r):
     """Initialise a naive implementation."""
     V = np.zeros((m, n))
     P = np.zeros((m, n), dtype=np.int64)
-    r_n = r / n
+    num_copiable_entries = core.get_num_copiable_entries(H)
+    r_n = r / num_copiable_entries
 
     for i in range(n):
         emission_prob = core.get_emission_probability_haploid(
@@ -34,7 +35,8 @@ def viterbi_init(n, m, H, s, e, r):
     V_prev = np.zeros(n)
     V = np.zeros(n)
     P = np.zeros((m, n), dtype=np.int64)
-    r_n = r / n
+    num_copiable_entries = core.get_num_copiable_entries(H)
+    r_n = r / num_copiable_entries
 
     for i in range(n):
         emission_prob = core.get_emission_probability_haploid(
@@ -210,7 +212,8 @@ def forwards_viterbi_hap_lower_mem_rescaling(n, m, H, s, e, r):
         )
         V[i] = 1 / n * emission_prob
     P = np.zeros((m, n), dtype=np.int64)
-    r_n = r / n
+    num_copiable_entries = core.get_num_copiable_entries(H)
+    r_n = r / num_copiable_entries
     c = np.ones(m)
 
     for j in range(1, m):
@@ -251,7 +254,8 @@ def forwards_viterbi_hap_lower_mem_rescaling_no_pointer(n, m, H, s, e, r):
             emission_matrix=e,
         )
         V[i] = 1 / n * emission_prob
-    r_n = r / n
+    num_copiable_entries = core.get_num_copiable_entries(H)
+    r_n = r / num_copiable_entries
     c = np.ones(m)
     # This is going to be filled with the templates we can recombine to
     # that have higher prob than staying where we are.
@@ -333,7 +337,8 @@ def path_ll_hap(n, m, H, path, s, e, r):
     )
     log_prob_path = np.log10((1 / n) * emission_prob)
     old = path[0]
-    r_n = r / n
+    num_copiable_entries = core.get_num_copiable_entries(H)
+    r_n = r / num_copiable_entries
 
     for l in range(1, m):
         emission_prob = core.get_emission_probability_haploid(

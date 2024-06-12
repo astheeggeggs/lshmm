@@ -117,7 +117,7 @@ class LSBase:
             H, queries = self.get_examples_diploid(ts, include_ancestors)
 
         m = ts.num_sites
-        n = H.shape[1]
+        n = H.shape[1]  # Number of haplotypes, including ancestors.
 
         rs = [
             np.zeros(m) + 0.01,  # Equal recombination and mutation

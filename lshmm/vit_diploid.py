@@ -16,7 +16,8 @@ def forwards_viterbi_dip_naive(n, m, G, s, e, r):
     V = np.zeros((m, n, n))
     P = np.zeros((m, n, n), dtype=np.int64)
     c = np.ones(m)
-    r_n = r / n
+    num_copiable_entries = core.get_num_copiable_entries(G)
+    r_n = r / num_copiable_entries
 
     for j1 in range(n):
         for j2 in range(n):
@@ -68,7 +69,8 @@ def forwards_viterbi_dip_naive_low_mem(n, m, G, s, e, r):
     V_prev = np.zeros((n, n))
     P = np.zeros((m, n, n), dtype=np.int64)
     c = np.ones(m)
-    r_n = r / n
+    num_copiable_entries = core.get_num_copiable_entries(G)
+    r_n = r / num_copiable_entries
 
     for j1 in range(n):
         for j2 in range(n):
@@ -127,7 +129,8 @@ def forwards_viterbi_dip_low_mem(n, m, G, s, e, r):
     V_prev = np.zeros((n, n))
     P = np.zeros((m, n, n), dtype=np.int64)
     c = np.ones(m)
-    r_n = r / n
+    num_copiable_entries = core.get_num_copiable_entries(G)
+    r_n = r / num_copiable_entries
 
     for j1 in range(n):
         for j2 in range(n):
@@ -205,7 +208,8 @@ def forwards_viterbi_dip_low_mem_no_pointer(n, m, G, s, e, r):
     V = np.zeros((n, n))
     V_prev = np.zeros((n, n))
     c = np.ones(m)
-    r_n = r / n
+    num_copiable_entries = core.get_num_copiable_entries(G)
+    r_n = r / num_copiable_entries
 
     recombs_single = [
         np.zeros(shape=0, dtype=np.int64) for _ in range(m)
@@ -298,7 +302,8 @@ def forwards_viterbi_dip_naive_vec(n, m, G, s, e, r):
     V = np.zeros((m, n, n))
     P = np.zeros((m, n, n), dtype=np.int64)
     c = np.ones(m)
-    r_n = r / n
+    num_copiable_entries = core.get_num_copiable_entries(G)
+    r_n = r / num_copiable_entries
 
     for j1 in range(n):
         for j2 in range(n):
@@ -356,7 +361,8 @@ def forwards_viterbi_dip_naive_full_vec(n, m, G, s, e, r):
         emission_matrix=e,
     )
     V[0, :, :] = 1 / (n**2) * emission_probs
-    r_n = r / n
+    num_copiable_entries = core.get_num_copiable_entries(G)
+    r_n = r / num_copiable_entries
 
     for l in range(1, m):
         emission_probs = core.get_emission_probability_diploid_genotypes(
@@ -468,7 +474,8 @@ def path_ll_dip(n, m, G, phased_path, s, e, r):
     log_prob_path = np.log10(1 / (n**2) * emission_prob)
 
     old_phase = np.array([phased_path[0][0], phased_path[1][0]])
-    r_n = r / n
+    num_copiable_entries = core.get_num_copiable_entries(G)
+    r_n = r / num_copiable_entries
 
     for l in range(1, m):
         emission_prob = core.get_emission_probability_diploid(
