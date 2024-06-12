@@ -73,9 +73,17 @@ def check_inputs(
             raise ValueError(err_msg)
         ploidy = 2
 
-    # Check the query sequence(s).
+    if np.any(reference_panel == core.MISSING):
+        err_msg = "Reference panel cannot have any MISSING values."
+        raise ValueError(err_msg)
+
+    # Check the queries.
     if query.shape[1] != num_sites:
         err_msg = "Number of sites in query does not match reference panel."
+        raise ValueError(err_msg)
+
+    if np.any(query == core.NONCOPY):
+        err_msg = "Queries cannot have any NONCOPY values."
         raise ValueError(err_msg)
 
     # Check the mutation probability.
