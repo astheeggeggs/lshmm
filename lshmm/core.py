@@ -121,6 +121,25 @@ def convert_haplotypes_to_unphased_genotypes(query):
     return genotypes
 
 
+@jit.numba_njit
+def get_num_copiable_entries(ref_panel):
+    assert ref_panel.ndim in [2, 3], "Reference panel array has incorrect dimensions."
+    assert np.all(
+        ref_panel != MISSING
+    ), "Reference panel cannot contain any MISSING values."
+    if ref_panel.ndim == 2:
+        num_copiable_entries = np.sum(ref_panel != NONCOPY, axis=1)
+    else:
+        num_sites = ref_panel.shape[0]
+        num_copiable_entries = np.zeros(num_sites, dtype=np.int32)
+        for i in range(num_sites):
+            num_copiable_entries[i] = np.sum(ref_panel[i, :, :] != NONCOPY)
+    assert np.all(
+        num_copiable_entries > 0
+    ), "Number of copiable entries must be greater than zero at all sites."
+    return num_copiable_entries
+
+
 def get_num_alleles(ref_panel, query):
     assert ref_panel.shape[0] == query.shape[1]
     num_sites = ref_panel.shape[0]

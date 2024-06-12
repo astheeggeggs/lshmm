@@ -17,7 +17,8 @@ def forwards_ls_hap(n, m, H, s, e, r, norm=True):
     This is exposed via the API.
     """
     F = np.zeros((m, n))
-    r_n = r / n
+    num_copiable_entries = core.get_num_copiable_entries(H)
+    r_n = r / num_copiable_entries
 
     if norm:
         c = np.zeros(m)
@@ -90,7 +91,8 @@ def backwards_ls_hap(n, m, H, s, e, c, r):
     B = np.zeros((m, n))
     for i in range(n):
         B[m - 1, i] = 1
-    r_n = r / n
+    num_copiable_entries = core.get_num_copiable_entries(H)
+    r_n = r / num_copiable_entries
 
     # Backwards pass
     for l in range(m - 2, -1, -1):

@@ -9,13 +9,15 @@ from lshmm import core
 from lshmm import jit
 
 
+@jit.numba_njit
 def forwards_ls_dip(n, m, G, s, e, r, norm=True):
     """A matrix-based implementation using Numpy."""
     # Initialise
     F = np.zeros((m, n, n))
     F[0, :, :] = 1 / (n**2)
     c = np.ones(m)
-    r_n = r / n
+    num_copiable_entries = core.get_num_copiable_entries(G)
+    r_n = r / num_copiable_entries
 
     emission_probs = core.get_emission_probability_diploid_genotypes(
         ref_genotypes=G[0, :, :],
@@ -83,12 +85,14 @@ def forwards_ls_dip(n, m, G, s, e, r, norm=True):
     return F, c, ll
 
 
+@jit.numba_njit
 def backwards_ls_dip(n, m, G, s, e, c, r):
     """A matrix-based implementation using Numpy."""
     # Initialise
     B = np.zeros((m, n, n))
     B[m - 1, :, :] = 1
-    r_n = r / n
+    num_copiable_entries = core.get_num_copiable_entries(G)
+    r_n = r / num_copiable_entries
 
     # Backwards
     for l in range(m - 2, -1, -1):
@@ -120,7 +124,8 @@ def forward_ls_dip_starting_point(n, m, G, s, e, r):
     """A naive implementation."""
     # Initialise
     F = np.zeros((m, n, n))
-    r_n = r / n
+    num_copiable_entries = core.get_num_copiable_entries(G)
+    r_n = r / num_copiable_entries
 
     for j1 in range(n):
         for j2 in range(n):
@@ -188,7 +193,8 @@ def backward_ls_dip_starting_point(n, m, G, s, e, r):
     # Initialise
     B = np.zeros((m, n, n))
     B[m - 1, :, :] = 1
-    r_n = r / n
+    num_copiable_entries = core.get_num_copiable_entries(G)
+    r_n = r / num_copiable_entries
 
     for l in range(m - 2, -1, -1):
         B_no_change = np.zeros((n, n))
@@ -264,7 +270,8 @@ def forward_ls_dip_loop(n, m, G, s, e, r, norm=True):
                 emission_matrix=e,
             )
             F[0, j1, j2] *= emission_prob
-    r_n = r / n
+    num_copiable_entries = core.get_num_copiable_entries(G)
+    r_n = r / num_copiable_entries
     c = np.ones(m)
 
     if norm:
@@ -350,7 +357,8 @@ def backward_ls_dip_loop(n, m, G, s, e, c, r):
     # Initialise
     B = np.zeros((m, n, n))
     B[m - 1, :, :] = 1
-    r_n = r / n
+    num_copiable_entries = core.get_num_copiable_entries(G)
+    r_n = r / num_copiable_entries
 
     for l in range(m - 2, -1, -1):
         B_no_change = np.zeros((n, n))
