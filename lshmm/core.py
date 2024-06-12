@@ -201,6 +201,7 @@ def get_index_in_emission_matrix_diploid_genotypes(
         return 4 * is_match + 2 * is_ref_het + is_query_het
 
 
+@jit.numba_njit
 def get_emission_matrix_haploid(mu, num_sites, num_alleles, scale_mutation_rate):
     """
     Compute an emission probability matrix for the haploid case, and return it.
@@ -248,6 +249,7 @@ def get_emission_matrix_haploid(mu, num_sites, num_alleles, scale_mutation_rate)
     return emission_matrix
 
 
+@jit.numba_njit
 def get_emission_matrix_diploid(mu, num_sites, num_alleles, scale_mutation_rate):
     assert len(mu) == len(
         num_alleles
