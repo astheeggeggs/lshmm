@@ -17,12 +17,19 @@ class LSBase:
     def assertAllClose(self, A, B):
         np.testing.assert_allclose(A, B, rtol=1e-9, atol=0.0)
 
+    # https://github.com/tskit-dev/tsinfer/blob/0c206d319f9c0dcb1ee205d5cc56576e3a88775e/tsinfer/eval_util.py#L244
     def get_ancestral_haplotypes(self, ts):
         """
-        Returns a numpy array of the haplotypes of the ancestors in the
-        specified tree sequence.
-        Modified from
-        https://github.com/tskit-dev/tsinfer/blob/0c206d319f9c0dcb1ee205d5cc56576e3a88775e/tsinfer/eval_util.py#L244
+        Return an array of the haplotypes of the nodes in a tree sequence.
+
+        Both ancestral and sample haplotypes in the tree sequence are stored
+        in an array of size (number of nodes, number of sites).
+
+        Note that haplotypes having only NONCOPY values are removed.
+
+        :param numpy.ndarray ts: A tree sequence.
+        :return: An array of haplotypes.
+        :rtype: numpy.ndarray
         """
         tables = ts.dump_tables()
         nodes = tables.nodes
@@ -43,6 +50,10 @@ class LSBase:
                 end -= 1
             A[edge.parent, start:end] = B[edge.parent, start:end]
         A[: ts.num_samples] = B[: ts.num_samples]
+
+        # Remove ancestral haplotypes with only NONCOPY values, which can happen
+        # when recombination rate is high enough and mutation rate is low.
+        A = A[~np.all(A == core.NONCOPY, axis=1),]
 
         assert np.all(
             np.sum(A != core.NONCOPY, axis=0) > 0
