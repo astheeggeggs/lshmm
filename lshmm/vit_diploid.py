@@ -43,16 +43,20 @@ def forwards_viterbi_dip_naive(n, m, G, s, e, r):
                 for k1 in range(n):
                     for k2 in range(n):
                         v[k1, k2] = V[l - 1, k1, k2]
-                        if (k1 == j1) and (k2 == j2):
-                            v[k1, k2] *= (
-                                (1 - r[l]) ** 2 + 2 * (1 - r[l]) * r_n[l] + r_n[l] ** 2
-                            )
-                        elif (k1 == j1) or (k2 == j2):
-                            v[k1, k2] *= r_n[l] * (1 - r[l]) + r_n[l] ** 2
-                        else:
-                            v[k1, k2] *= r_n[l] ** 2
+                        if v[k1, k2] > 0:  # Skip if v is zero.
+                            if (k1 == j1) and (k2 == j2):
+                                v[k1, k2] *= (
+                                    (1 - r[l]) ** 2
+                                    + 2 * (1 - r[l]) * r_n[l]
+                                    + r_n[l] ** 2
+                                )
+                            elif (k1 == j1) or (k2 == j2):
+                                v[k1, k2] *= r_n[l] * (1 - r[l]) + r_n[l] ** 2
+                            else:
+                                v[k1, k2] *= r_n[l] ** 2
                 V[l, j1, j2] = np.amax(v) * emission_probs[j1, j2]
                 P[l, j1, j2] = np.argmax(v)
+
         c[l] = np.amax(V[l, :, :])
         V[l, :, :] *= 1 / c[l]
 
@@ -99,16 +103,20 @@ def forwards_viterbi_dip_naive_low_mem(n, m, G, s, e, r):
                 for k1 in range(n):
                     for k2 in range(n):
                         v[k1, k2] = V_prev[k1, k2]
-                        if (k1 == j1) and (k2 == j2):
-                            v[k1, k2] *= (
-                                (1 - r[l]) ** 2 + 2 * (1 - r[l]) * r_n[l] + r_n[l] ** 2
-                            )
-                        elif (k1 == j1) or (k2 == j2):
-                            v[k1, k2] *= r_n[l] * (1 - r[l]) + r_n[l] ** 2
-                        else:
-                            v[k1, k2] *= r_n[l] ** 2
+                        if v[k1, k2] > 0:  # Skip if v is zero.
+                            if (k1 == j1) and (k2 == j2):
+                                v[k1, k2] *= (
+                                    (1 - r[l]) ** 2
+                                    + 2 * (1 - r[l]) * r_n[l]
+                                    + r_n[l] ** 2
+                                )
+                            elif (k1 == j1) or (k2 == j2):
+                                v[k1, k2] *= r_n[l] * (1 - r[l]) + r_n[l] ** 2
+                            else:
+                                v[k1, k2] *= r_n[l] ** 2
                 V[j1, j2] = np.amax(v) * emission_probs[j1, j2]
                 P[l, j1, j2] = np.argmax(v)
+
         c[l] = np.amax(V)
         V_prev = np.copy(V) / c[l]
 
