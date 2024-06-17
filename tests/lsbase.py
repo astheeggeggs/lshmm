@@ -136,11 +136,14 @@ class LSBase:
             H, ts.num_samples
         ), "Reference haplotypes have unexpected number of copiable entries."
 
-        rs = [
+        r_s = [
             np.zeros(m) + 0.01,  # Equal recombination and mutation
             np.random.rand(m),  # Random
             1e-5 * (np.random.rand(m) + 0.5) / 2,
         ]
+        for i in range(len(r_s)):
+            r_s[i][0] = 0
+
         mus = [
             np.zeros(m) + 0.01,  # Equal recombination and mutation
             np.random.rand(m) * 0.2,  # Random
@@ -148,13 +151,12 @@ class LSBase:
         ]
 
         if include_extreme_rates:
-            rs.append(np.zeros(m) + 0.2)
-            rs.append(np.zeros(m) + 1e-6)
+            r_s.append(np.zeros(m) + 0.2)
+            r_s.append(np.zeros(m) + 1e-6)
             mus.append(np.zeros(m) + 0.2)
             mus.append(np.zeros(m) + 1e-6)
 
-        for query, r, mu in itertools.product(queries, rs, mus):
-            r[0] = 0
+        for query, r, mu in itertools.product(queries, r_s, mus):
             # Must be calculated from the genotype matrix,
             # because we can now get back mutations that
             # result in the number of alleles being higher
