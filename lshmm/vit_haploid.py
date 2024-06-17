@@ -1,7 +1,4 @@
-"""
-Various implementations of the Li & Stephens Viterbi algorithm on haploid genotype data,
-where the data is structured as variants x samples.
-"""
+"""Implementations of the Li & Stephens Viterbi algorithm on haploid data."""
 
 import numpy as np
 
@@ -80,7 +77,7 @@ def forwards_viterbi_hap_naive(n, m, H, s, e, r):
 
 @jit.numba_njit
 def forwards_viterbi_hap_naive_vec(n, m, H, s, e, r):
-    """A naive matrix-based implementation of the forward pass using Numpy."""
+    """A naive matrix-based implementation of the forward pass."""
     V, P, r_n = viterbi_naive_init(n, m, H, s, e, r)
 
     for j in range(1, m):
@@ -198,7 +195,8 @@ def forwards_viterbi_hap_low_mem_rescaling(n, m, H, s, e, r):
 @jit.numba_njit
 def forwards_viterbi_hap_lower_mem_rescaling(n, m, H, s, e, r):
     """
-    An implementation with even smaller memory footprint that exploits the Markov structure.
+    An implementation with even smaller memory footprint
+    that exploits the Markov structure.
 
     This is exposed via the API.
     """
@@ -289,11 +287,10 @@ def forwards_viterbi_hap_lower_mem_rescaling_no_pointer(n, m, H, s, e, r):
     return V, V_argmaxes, recombs, ll
 
 
-# Speedier version, variants x samples
 @jit.numba_njit
 def backwards_viterbi_hap(m, V_last, P):
     """
-    Run a backwards pass to determine the most likely path.
+    An implementation of the backwards pass to get the most likely path.
 
     This is exposed via API.
     """
@@ -309,7 +306,7 @@ def backwards_viterbi_hap(m, V_last, P):
 
 @jit.numba_njit
 def backwards_viterbi_hap_no_pointer(m, V_argmaxes, recombs):
-    """Run a backwards pass to determine the most likely path."""
+    """An implementation of the backwards pass to get the most likely path."""
     path = np.zeros(m, dtype=np.int64)
     path[m - 1] = V_argmaxes[m - 1]
 
@@ -325,7 +322,7 @@ def backwards_viterbi_hap_no_pointer(m, V_argmaxes, recombs):
 @jit.numba_njit
 def path_ll_hap(n, m, H, path, s, e, r):
     """
-    Evaluate the log-likelihood of a path through a reference panel resulting in a sequence.
+    Evaluate the log-likelihood of a path through a reference panel resulting in a query.
 
     This is exposed via the API.
     """
