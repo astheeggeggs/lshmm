@@ -121,6 +121,32 @@ def convert_haplotypes_to_unphased_genotypes(query):
     return genotypes
 
 
+def check_genotype_matrix(genotype_matrix, num_sample_haps):
+    """
+    Check that at each site the number of non-NONCOPY values in the reference panel
+    in the form of a genotype matrix is at most a maximum.
+
+    The genotype matrix is an array of size (m, n),
+    where:
+        m = number of sites.
+        n = number of haplotypes (sample and ancestor) in the reference panel.
+
+    The maximum is equal to (2n - 1), where n is the number of sample haplotypes
+    in the genotype matrix, when a marginal tree is fully binary.
+
+    :param numpy.ndarray genotype_matrix: An array containing the reference haplotypes.
+    :param int num_sample_haps: Number of reference sample haplotypes.
+    :return: True if the condition is satisfied, otherwise False.
+    :rtype: bool
+    """
+    assert np.all(
+        genotype_matrix != MISSING
+    ), "Reference panel cannot contain any MISSING values."
+    max_num_copiable_entries = 2 * num_sample_haps - 1
+    num_copiable_entries_per_site = np.sum(genotype_matrix != NONCOPY, axis=1)
+    return np.all(num_copiable_entries_per_site <= max_num_copiable_entries)
+
+
 @jit.numba_njit
 def get_num_copiable_entries(ref_panel):
     assert ref_panel.ndim in [2, 3], "Reference panel array has incorrect dimensions."

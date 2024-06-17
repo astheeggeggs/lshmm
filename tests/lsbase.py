@@ -132,6 +132,10 @@ class LSBase:
         m = ts.num_sites
         n = H.shape[1]  # Number of haplotypes, including ancestors.
 
+        assert core.check_genotype_matrix(
+            H, ts.num_samples
+        ), "Reference haplotypes have unexpected number of copiable entries."
+
         rs = [
             np.zeros(m) + 0.01,  # Equal recombination and mutation
             np.random.rand(m),  # Random
