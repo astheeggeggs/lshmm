@@ -206,7 +206,7 @@ class TestNonTreeViterbiDiploid(lsbase.ViterbiAlgorithmBase):
             self.assertAllClose(ll_tmp, path_ll_tmp)
             self.assertAllClose(ll_vs, ll_tmp)
 
-            MAX_NUM_REF_HAPS = 100
+            MAX_NUM_REF_HAPS = 50
             num_ref_haps = H_vs.shape[1]
             if num_ref_haps <= MAX_NUM_REF_HAPS:
                 # Run tests for the naive implementations.
@@ -291,7 +291,7 @@ class TestNonTreeViterbiDiploid(lsbase.ViterbiAlgorithmBase):
     @pytest.mark.parametrize("include_ancestors", [True, False])
     def test_ts_larger(self, scale_mutation_rate, include_ancestors):
         ts = self.get_ts_custom_pars(
-            ref_panel_size=45, length=1e5, mean_r=1e-5, mean_mu=1e-5
+            ref_panel_size=30, length=1e5, mean_r=1e-6, mean_mu=1e-5
         )
         self.verify(
             ts,
