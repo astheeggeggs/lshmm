@@ -257,20 +257,35 @@ def get_emission_matrix_haploid(mu, num_sites, num_alleles, scale_mutation_rate)
 
 @jit.numba_njit
 def get_emission_probability_haploid(ref_allele, query_allele, site, emission_matrix):
+    """
+    Return the emission probability at a specified site for the haploid case,
+    given an emission probability matrix.
+
+    The emission probability matrix is an array of size (m, 2), where m = number of sites.
+
+    This handle multiallelic sites.
+
+    :param int ref_allele: Reference allele.
+    :param int query_allele: Query allele.
+    :param int site: Site index.
+    :param numpy.ndarray emission_matrix: Emission probability matrix.
+    :return: Emission probability.
+    :rtype: float
+    """
+    assert ref_allele != MISSING, "Reference allele cannot be MISSING."
+    assert query_allele != NONCOPY, "Query allele cannot be NONCOPY."
+    assert (
+        emission_matrix.shape[1] == 2
+    ), "Emission probability matrix has incorrect shape."
     if ref_allele == NONCOPY:
         return 0.0
+    elif query_allele == MISSING:
+        return 1.0
     else:
-        emission_index = get_index_in_emission_matrix_haploid(ref_allele, query_allele)
-        return emission_matrix[site, emission_index]
-
-
-@jit.numba_njit
-def get_index_in_emission_matrix_haploid(ref_allele, query_allele):
-    is_allele_match = ref_allele == query_allele
-    is_query_missing = query_allele == MISSING
-    if is_allele_match or is_query_missing:
-        return 1
-    return 0
+        if ref_allele != query_allele:
+            return emission_matrix[site, 0]
+        else:
+            return emission_matrix[site, 1]
 
 
 # Functions to assign emission probabilities for diploid LS HMM.
