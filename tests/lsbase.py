@@ -77,7 +77,7 @@ class LSBase:
         query_miss_mid = query1.copy()
         query_miss_mid[0, ts.num_sites // 2] = core.MISSING
         query_miss_most = query1.copy()
-        query_miss_most[0, 1:] = core.MISSING
+        query_miss_most[0, 2:] = core.MISSING
         queries = [query1, query2, query_miss_last, query_miss_mid, query_miss_most]
         # Exclude the arbitrarily chosen queries from the reference panel.
         ref_panel = ref_panel[:, 2:]
