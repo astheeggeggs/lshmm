@@ -105,7 +105,7 @@ class LSBase:
         query_miss_most[:, 1:] = core.MISSING
         queries = [query_1, query_2, query_miss_last, query_miss_mid, query_miss_most]
         # Exclude the arbitrarily chosen queries from the reference panel.
-        ref_panel = ref_panel[:, 4:]
+        # ref_panel = ref_panel[:, 4:]
         return ref_panel, queries
 
     def get_examples_pars(
@@ -148,6 +148,7 @@ class LSBase:
             np.zeros(m) + 0.01,  # Equal recombination and mutation
             np.random.rand(m) * 0.2,  # Random
             1e-5 * (np.random.rand(m) + 0.5) / 2,
+            None,
         ]
 
         if include_extreme_rates:
@@ -162,9 +163,12 @@ class LSBase:
             # result in the number of alleles being higher
             # than the number of alleles in the reference panel.
             num_alleles = core.get_num_alleles(H, query)
+            prob_mutation = mu
+            if prob_mutation is None:
+                prob_mutation = np.zeros(m) + core.estimate_mutation_probability(n)
             if ploidy == 1:
                 e = core.get_emission_matrix_haploid(
-                    mu=mu,
+                    mu=prob_mutation,
                     num_sites=m,
                     num_alleles=num_alleles,
                     scale_mutation_rate=scale_mutation_rate,
@@ -172,7 +176,7 @@ class LSBase:
                 yield n, m, H, query, e, r, mu
             else:
                 e = core.get_emission_matrix_diploid(
-                    mu=mu,
+                    mu=prob_mutation,
                     num_sites=m,
                     num_alleles=num_alleles,
                     scale_mutation_rate=scale_mutation_rate,
