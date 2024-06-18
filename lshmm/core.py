@@ -409,6 +409,9 @@ def get_index_in_emission_matrix_diploid(ref_genotype, query_genotype):
 # Miscellaneous functions.
 def estimate_mutation_probability(num_haps):
     """Return the mutation probability as defined by A2 and A3 in Li & Stephens (2003)."""
+    if num_haps < 3:
+        err_msg = "Number of haplotypes must be at least 3."
+        raise ValueError(err_msg)
     theta_tilde = 1 / np.sum([1 / k for k in range(1, num_haps - 1)])
     prob_mutation = 0.5 * (theta_tilde / (num_haps + theta_tilde))
     return prob_mutation
