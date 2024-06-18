@@ -122,18 +122,12 @@ def check_inputs(
 
 
 def set_emission_probabilities(
-    num_ref_haps,
     num_sites,
     ploidy,
     num_alleles,
     prob_mutation,
     scale_mutation_rate,
 ):
-    if prob_mutation is None:
-        # Set the mutation probability to be that proposed in Li & Stephens (2003).
-        theta_tilde = 1 / np.sum([1 / k for k in range(1, num_ref_haps - 1)])
-        prob_mutation = 0.5 * (theta_tilde / (num_ref_haps + theta_tilde))
-
     if isinstance(prob_mutation, float):
         prob_mutation = prob_mutation * np.ones(num_sites)
 
@@ -180,8 +174,10 @@ def forwards(
         scale_mutation_rate=scale_mutation_rate,
     )
 
+    if prob_mutation is None:
+        prob_mutation = core.estimate_mutation_probability(num_ref_haps)
+
     emission_probs = set_emission_probabilities(
-        num_ref_haps=num_ref_haps,
         num_sites=num_sites,
         ploidy=ploidy,
         num_alleles=num_alleles,
@@ -233,8 +229,10 @@ def backwards(
         scale_mutation_rate=scale_mutation_rate,
     )
 
+    if prob_mutation is None:
+        prob_mutation = core.estimate_mutation_probability(num_ref_haps)
+
     emission_probs = set_emission_probabilities(
-        num_ref_haps=num_ref_haps,
         num_sites=num_sites,
         ploidy=ploidy,
         num_alleles=num_alleles,
@@ -281,8 +279,10 @@ def viterbi(
         scale_mutation_rate=scale_mutation_rate,
     )
 
+    if prob_mutation is None:
+        prob_mutation = core.estimate_mutation_probability(num_ref_haps)
+
     emission_probs = set_emission_probabilities(
-        num_ref_haps=num_ref_haps,
         num_sites=num_sites,
         ploidy=ploidy,
         num_alleles=num_alleles,
@@ -337,8 +337,10 @@ def path_loglik(
         scale_mutation_rate=scale_mutation_rate,
     )
 
+    if prob_mutation is None:
+        prob_mutation = core.estimate_mutation_probability(num_ref_haps)
+
     emission_probs = set_emission_probabilities(
-        num_ref_haps=num_ref_haps,
         num_sites=num_sites,
         ploidy=ploidy,
         num_alleles=num_alleles,
