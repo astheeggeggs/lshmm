@@ -1,7 +1,4 @@
-"""
-Various implementations of the Li & Stephens forwards-backwards algorithm on diploid genotype data,
-where the data is structured as variants x samples x samples.
-"""
+"""Implementations of the Li & Stephens forwards-backwards algorithm on diploid genotype data."""
 
 import numpy as np
 

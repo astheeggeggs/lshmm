@@ -90,7 +90,7 @@ class TestViterbiHaploid(lsbase.ViterbiAlgorithmBase):
     @pytest.mark.parametrize("include_ancestors", [True, False])
     def test_ts_larger(self, scale_mutation_rate, include_ancestors):
         ts = self.get_ts_custom_pars(
-            ref_panel_size=46, length=1e5, mean_r=1e-5, mean_mu=1e-5
+            ref_panel_size=45, length=1e5, mean_r=1e-5, mean_mu=1e-5
         )
         self.verify(
             ts,

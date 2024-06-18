@@ -1,7 +1,4 @@
-"""
-Various implementations of the Li & Stephens Viterbi algorithm on diploid genotype data,
-where the data is structured as variants x samples x samples.
-"""
+"""Implementations of the Li & Stephens Viterbi algorithm on diploid genotype data."""
 
 import numpy as np
 
@@ -461,7 +458,7 @@ def get_phased_path(n, path):
 @jit.numba_njit
 def path_ll_dip(n, m, G, phased_path, s, e, r):
     """
-    Evaluate log-likelihood path through a reference panel which results in sequence.
+    Evaluate the log-likelihood of a path through a reference panel resulting in a query.
 
     This is exposed via the API.
     """

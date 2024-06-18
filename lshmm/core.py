@@ -135,7 +135,7 @@ def check_genotype_matrix(genotype_matrix, num_sample_haps):
         m = number of sites.
         n = number of haplotypes (sample and ancestor) in the reference panel.
 
-    The maximum value is equal to (2n - 1), where n is the number of sample haplotypes
+    The maximum value is equal to (2*k - 1), where k is the number of sample haplotypes
     in the genotype matrix, when a marginal tree is fully binary.
 
     :param numpy.ndarray genotype_matrix: An array containing the reference haplotypes.
@@ -422,7 +422,14 @@ def get_index_in_emission_matrix_diploid(ref_genotype, query_genotype):
 
 # Miscellaneous functions.
 def estimate_mutation_probability(num_haps):
-    """Return the mutation probability as defined by A2 and A3 in Li & Stephens (2003)."""
+    """
+    Return an estimate of mutation probability based on the number of haplotypes
+    as defined by the equations A2 and A3 in Li & Stephens (2003).
+
+    :param int num_haps: Number of haplotypes.
+    :return: Estimate of mutation probability.
+    :rtype: float
+    """
     if num_haps < 3:
         err_msg = "Number of haplotypes must be at least 3."
         raise ValueError(err_msg)

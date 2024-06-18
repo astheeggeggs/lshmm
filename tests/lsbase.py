@@ -129,13 +129,14 @@ class LSBase:
         include_extreme_rates,
         seed=42,
     ):
-        """Returns an iterator over combinations of examples and parameters."""
+        """Return an iterator over combinations of examples and parameters."""
         assert ploidy in [1, 2]
         assert scale_mutation_rate in [True, False]
         assert include_ancestors in [True, False]
         assert include_extreme_rates in [True, False]
 
         np.random.seed(seed)
+
         if ploidy == 1:
             H, queries = self.get_examples_haploid(ts, include_ancestors)
         else:
@@ -156,7 +157,7 @@ class LSBase:
         for i in range(len(r_s)):
             r_s[i][0] = 0
 
-        mus = [
+        mu_s = [
             np.zeros(m) + 0.01,  # Equal recombination and mutation
             np.random.rand(m) * 0.2,  # Random
             1e-5 * (np.random.rand(m) + 0.5) / 2,
@@ -166,10 +167,10 @@ class LSBase:
         if include_extreme_rates:
             r_s.append(np.zeros(m) + 0.2)
             r_s.append(np.zeros(m) + 1e-6)
-            mus.append(np.zeros(m) + 0.2)
-            mus.append(np.zeros(m) + 1e-6)
+            mu_s.append(np.zeros(m) + 0.2)
+            mu_s.append(np.zeros(m) + 1e-6)
 
-        for query, r, mu in itertools.product(queries, r_s, mus):
+        for query, r, mu in itertools.product(queries, r_s, mu_s):
             # Must be calculated from the genotype matrix,
             # because we can now get back mutations that
             # result in the number of alleles being higher
@@ -177,6 +178,7 @@ class LSBase:
             num_alleles = core.get_num_alleles(H, query)
             prob_mutation = mu
             if prob_mutation is None:
+                # Note that n is the number of haplotypes, including ancestors.
                 prob_mutation = np.zeros(m) + core.estimate_mutation_probability(n)
             if ploidy == 1:
                 e = core.get_emission_matrix_haploid(
@@ -185,7 +187,6 @@ class LSBase:
                     num_alleles=num_alleles,
                     scale_mutation_rate=scale_mutation_rate,
                 )
-                yield n, m, H, query, e, r, mu
             else:
                 e = core.get_emission_matrix_diploid(
                     mu=prob_mutation,
@@ -193,7 +194,7 @@ class LSBase:
                     num_alleles=num_alleles,
                     scale_mutation_rate=scale_mutation_rate,
                 )
-                yield n, m, H, query, e, r, mu
+            yield n, m, H, query, e, r, mu
 
     # Prepare simple example datasets.
     def get_ts_simple_n10_no_recomb(self, seed=42):
@@ -249,7 +250,7 @@ class LSBase:
 
     def get_ts_custom_pars(self, ref_panel_size, length, mean_r, mean_mu, seed=42):
         ts = msprime.simulate(
-            ref_panel_size + 1,
+            ref_panel_size,
             length=length,
             recombination_rate=mean_r,
             mutation_rate=mean_mu,
@@ -259,15 +260,14 @@ class LSBase:
 
     # Prepare example datasets with multiallelic sites.
     def get_ts_multiallelic_n10_no_recomb(self, seed=42):
-        ts = msprime.sim_ancestry(
-            samples=10,
-            recombination_rate=0,
-            sequence_length=10,
-            population_size=1e4,
-            random_seed=seed,
-        )
         ts = msprime.sim_mutations(
-            ts,
+            msprime.sim_ancestry(
+                samples=10,
+                recombination_rate=0,
+                sequence_length=10,
+                population_size=1e4,
+                random_seed=seed,
+            ),
             rate=1e-5,
             random_seed=seed,
         )
@@ -275,15 +275,14 @@ class LSBase:
         return ts
 
     def get_ts_multiallelic_n6(self, seed=42):
-        ts = msprime.sim_ancestry(
-            samples=6,
-            recombination_rate=1e-4,
-            sequence_length=40,
-            population_size=1e4,
-            random_seed=seed,
-        )
         ts = msprime.sim_mutations(
-            ts,
+            msprime.sim_ancestry(
+                samples=6,
+                recombination_rate=1e-4,
+                sequence_length=40,
+                population_size=1e4,
+                random_seed=seed,
+            ),
             rate=1e-3,
             random_seed=seed,
         )
@@ -291,15 +290,14 @@ class LSBase:
         return ts
 
     def get_ts_multiallelic_n8(self, seed=42):
-        ts = msprime.sim_ancestry(
-            samples=8,
-            recombination_rate=1e-4,
-            sequence_length=20,
-            population_size=1e4,
-            random_seed=seed,
-        )
         ts = msprime.sim_mutations(
-            ts,
+            msprime.sim_ancestry(
+                samples=8,
+                recombination_rate=1e-4,
+                sequence_length=20,
+                population_size=1e4,
+                random_seed=seed,
+            ),
             rate=1e-4,
             random_seed=seed,
         )
@@ -308,15 +306,14 @@ class LSBase:
         return ts
 
     def get_ts_multiallelic_n16(self, seed=42):
-        ts = msprime.sim_ancestry(
-            samples=16,
-            recombination_rate=1e-2,
-            sequence_length=20,
-            population_size=1e4,
-            random_seed=seed,
-        )
         ts = msprime.sim_mutations(
-            ts,
+            msprime.sim_ancestry(
+                samples=16,
+                recombination_rate=1e-2,
+                sequence_length=20,
+                population_size=1e4,
+                random_seed=seed,
+            ),
             rate=1e-4,
             random_seed=seed,
         )

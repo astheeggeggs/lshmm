@@ -1,4 +1,4 @@
-"""Implementations of the Li & Stephens Viterbi algorithm on haploid data."""
+"""Implementations of the Li & Stephens Viterbi algorithm on haploid genotype data."""
 
 import numpy as np
 
