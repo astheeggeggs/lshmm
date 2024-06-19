@@ -150,12 +150,10 @@ class LSBase:
         ), "Reference haplotypes have unexpected number of copiable entries."
 
         r_s = [
-            np.zeros(m) + 0.01,  # Equal recombination and mutation
-            np.random.rand(m),  # Random
-            1e-5 * (np.random.rand(m) + 0.5) / 2,
+            np.append([0], np.zeros(m - 1) + 0.01),
+            np.append([0], np.random.rand(m - 1)),
+            np.append([0], 1e-5 * (np.random.rand(m - 1) + 0.5) / 2),
         ]
-        for i in range(len(r_s)):
-            r_s[i][0] = 0
 
         mu_s = [
             np.zeros(m) + 0.01,  # Equal recombination and mutation
@@ -165,8 +163,8 @@ class LSBase:
         ]
 
         if include_extreme_rates:
-            r_s.append(np.zeros(m) + 0.2)
-            r_s.append(np.zeros(m) + 1e-6)
+            r_s.append(np.append([0], np.zeros(m - 1) + 0.2))
+            r_s.append(np.append([0], np.zeros(m - 1) + 1e-6))
             mu_s.append(np.zeros(m) + 0.2)
             mu_s.append(np.zeros(m) + 1e-6)
 
