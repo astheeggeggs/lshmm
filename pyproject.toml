@@ -26,6 +26,14 @@ testpaths = [
 
 [project]
 name = "lshmm"
-dynamic = ["version"]
+dynamic = [
+    "version",
+    "license",
+    "dependencies",
+    "readme",
+    "classifiers",
+    "requires-python",
+]
 [tool.setuptools_scm]
 write_to = "lshmm/_version.py"
+
