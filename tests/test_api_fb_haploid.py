@@ -51,8 +51,8 @@ class TestForwardBackwardHaploid(lsbase.ForwardBackwardAlgorithmBase):
                 prob_mutation=mu,
                 scale_mutation_rate=scale_mutation_rate,
             )
-            self.assertAllClose(F, F_vs)
-            self.assertAllClose(B, B_vs)
+            self.assertAllClose(F_vs, F)
+            self.assertAllClose(B_vs, B)
             self.assertAllClose(ll_vs, ll)
 
     @pytest.mark.parametrize("scale_mutation_rate", [True, False])

@@ -1,7 +1,4 @@
-"""
-Various implementations of the Li & Stephens forwards-backwards algorithm on haploid genotype data,
-where the data is structured as variants x samples.
-"""
+"""Implementations of the Li & Stephens forwards-backwards algorithm on haploid genotype data."""
 
 import numpy as np
 
@@ -12,7 +9,7 @@ from lshmm import jit
 @jit.numba_njit
 def forwards_ls_hap(n, m, H, s, e, r, norm=True):
     """
-    A matrix-based implementation using Numpy vectorisation.
+    A matrix-based implementation using Numpy.
 
     This is exposed via the API.
     """
@@ -84,7 +81,7 @@ def forwards_ls_hap(n, m, H, s, e, r, norm=True):
 @jit.numba_njit
 def backwards_ls_hap(n, m, H, s, e, c, r):
     """
-    A matrix-based implementation using Numpy vectorisation.
+    A matrix-based implementation using Numpy.
 
     This is exposed via the API.
     """

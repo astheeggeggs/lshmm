@@ -17,9 +17,14 @@ class TestViterbiHaploid(lsbase.ViterbiAlgorithmBase):
         ):
             num_alleles = core.get_num_alleles(H_vs, s)
             V_vs, P_vs, ll_vs = vh.forwards_viterbi_hap_lower_mem_rescaling(
-                n, m, H_vs, s, e_vs, r
+                n=n,
+                m=m,
+                H=H_vs,
+                s=s,
+                e=e_vs,
+                r=r,
             )
-            path_vs = vh.backwards_viterbi_hap(m, V_vs, P_vs)
+            path_vs = vh.backwards_viterbi_hap(m=m, V_last=V_vs, P=P_vs)
             path_ll_hap = vh.path_ll_hap(n, m, H_vs, path_vs, s, e_vs, r)
             path, ll = ls.viterbi(
                 reference_panel=H_vs,
@@ -39,22 +44,38 @@ class TestViterbiHaploid(lsbase.ViterbiAlgorithmBase):
         self, scale_mutation_rate, include_ancestors
     ):
         ts = self.get_ts_multiallelic_n10_no_recomb()
-        self.verify(ts, scale_mutation_rate, include_ancestors)
+        self.verify(
+            ts,
+            scale_mutation_rate=scale_mutation_rate,
+            include_ancestors=include_ancestors,
+        )
 
     @pytest.mark.parametrize("scale_mutation_rate", [True, False])
     @pytest.mark.parametrize("include_ancestors", [True, False])
     def test_ts_multiallelic_n6(self, scale_mutation_rate, include_ancestors):
         ts = self.get_ts_multiallelic_n6()
-        self.verify(ts, scale_mutation_rate, include_ancestors)
+        self.verify(
+            ts,
+            scale_mutation_rate=scale_mutation_rate,
+            include_ancestors=include_ancestors,
+        )
 
     @pytest.mark.parametrize("scale_mutation_rate", [True, False])
     @pytest.mark.parametrize("include_ancestors", [True, False])
     def test_ts_multiallelic_n8(self, scale_mutation_rate, include_ancestors):
         ts = self.get_ts_multiallelic_n8()
-        self.verify(ts, scale_mutation_rate, include_ancestors)
+        self.verify(
+            ts,
+            scale_mutation_rate=scale_mutation_rate,
+            include_ancestors=include_ancestors,
+        )
 
     @pytest.mark.parametrize("scale_mutation_rate", [True, False])
     @pytest.mark.parametrize("include_ancestors", [True, False])
     def test_ts_multiallelic_n16(self, scale_mutation_rate, include_ancestors):
         ts = self.get_ts_multiallelic_n16()
-        self.verify(ts, scale_mutation_rate, include_ancestors)
+        self.verify(
+            ts,
+            scale_mutation_rate=scale_mutation_rate,
+            include_ancestors=include_ancestors,
+        )
