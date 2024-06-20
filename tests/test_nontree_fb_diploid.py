@@ -87,25 +87,14 @@ class TestNonTreeForwardBackwardDiploid(lsbase.ForwardBackwardAlgorithmBase):
             include_extreme_rates=include_extreme_rates,
         )
 
+    @pytest.mark.parametrize("num_samples", [4, 8, 16])
     @pytest.mark.parametrize("scale_mutation_rate", [True, False])
     @pytest.mark.parametrize("include_ancestors", [True, False])
     @pytest.mark.parametrize("normalise", [True, False])
-    def test_ts_simple_n6(self, scale_mutation_rate, include_ancestors, normalise):
-        ts = self.get_ts_simple_n6()
-        include_extreme_rates = normalise
-        self.verify(
-            ts,
-            scale_mutation_rate=scale_mutation_rate,
-            include_ancestors=include_ancestors,
-            normalise=normalise,
-            include_extreme_rates=include_extreme_rates,
-        )
-
-    @pytest.mark.parametrize("scale_mutation_rate", [True, False])
-    @pytest.mark.parametrize("include_ancestors", [True, False])
-    @pytest.mark.parametrize("normalise", [True, False])
-    def test_ts_simple_n8(self, scale_mutation_rate, include_ancestors, normalise):
-        ts = self.get_ts_simple_n8()
+    def test_ts_simple(
+        self, num_samples, scale_mutation_rate, include_ancestors, normalise
+    ):
+        ts = self.get_ts_simple(num_samples)
         include_extreme_rates = normalise
         self.verify(
             ts,
@@ -134,24 +123,10 @@ class TestNonTreeForwardBackwardDiploid(lsbase.ForwardBackwardAlgorithmBase):
     @pytest.mark.parametrize("scale_mutation_rate", [True, False])
     @pytest.mark.parametrize("include_ancestors", [True, False])
     @pytest.mark.parametrize("normalise", [True, False])
-    def test_ts_simple_n16(self, scale_mutation_rate, include_ancestors, normalise):
-        ts = self.get_ts_simple_n16()
-        include_extreme_rates = normalise
-        self.verify(
-            ts,
-            scale_mutation_rate=scale_mutation_rate,
-            include_ancestors=include_ancestors,
-            normalise=normalise,
-            include_extreme_rates=include_extreme_rates,
-        )
-
-    @pytest.mark.parametrize("scale_mutation_rate", [True, False])
-    @pytest.mark.parametrize("include_ancestors", [True, False])
-    @pytest.mark.parametrize("normalise", [True, False])
     def test_ts_larger(self, scale_mutation_rate, include_ancestors, normalise):
         ts = self.get_ts_custom_pars(
-            ref_panel_size=45,
-            length=1e5,
+            num_samples=30,
+            seq_length=1e5,
             mean_r=1e-5,
             mean_mu=1e-5,
         )
