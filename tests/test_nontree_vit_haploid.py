@@ -85,7 +85,7 @@ class TestNonTreeViterbiHaploid(lsbase.ViterbiAlgorithmBase):
         ts = self.get_ts_simple_n10_no_recomb()
         self.verify(ts, scale_mutation_rate, include_ancestors)
 
-    @pytest.mark.parametrize("num_samples", [4, 8, 16, 32])
+    @pytest.mark.parametrize("num_samples", [8, 16, 32])
     @pytest.mark.parametrize("scale_mutation_rate", [True, False])
     @pytest.mark.parametrize("include_ancestors", [True, False])
     def test_ts_simple(self, num_samples, scale_mutation_rate, include_ancestors):

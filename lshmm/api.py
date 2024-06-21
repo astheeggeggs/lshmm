@@ -41,16 +41,21 @@ def check_inputs(
     The reference panel and query are arrays of size (m, n) and (k, m), respectively,
     where:
         m = number of sites.
-        n = number of samples in the reference panel (haplotypes, not individuals).
-        k = number of samples in the query (haplotypes, not individuals).
+        n = number of haplotypes (not individuals) in the reference panel.
+        k = number of haploid or diploid individuals in the query.
 
-    TODO: Support running on multiple queries. Currently, only k = 1 or 2 is supported.
+    In the haploid case, queries are (phased) haplotypes and can have multiallelic sites.
+
+    In the diploid case queries are unphased genotypes (encoded as allele dosages).
+    Currently, only biallelic sites are supported.
+
+    TODO: Support running on multiple queries. Currently, only k = 1 is supported.
 
     The mutation rate can be scaled according to the set of alleles
     that can be mutated to based on the number of distinct alleles at each site.
 
-    :param numpy.ndarray reference_panel: A panel of reference sequences.
-    :param numpy.ndarray query: A query sequence.
+    :param numpy.ndarray reference_panel: A panel of reference haplotypes.
+    :param numpy.ndarray query: A query (a haplotype or a sequence of allelic dosages).
     :param numpy.ndarray ploidy: Ploidy (only 1 or 2 are supported).
     :param numpy.ndarray prob_recombination: Recombination probability.
     :param numpy.ndarray prob_mutation: Mutation probability.
@@ -74,14 +79,14 @@ def check_inputs(
 
     if ploidy == 2:
         if not np.all(np.isin(reference_panel, [0, 1, core.NONCOPY])):
-            err_msg = "Reference panel has illegal alleles. "
-            err_msg += "Only 0/1 encoding is supported in diploid mode."
+            err_msg = "Reference panel has not allowed in diploid mode. "
+            err_msg += "Only 0/1 biallelic encoding is supported."
             raise ValueError(err_msg)
 
     num_sites, num_ref_haps = reference_panel.shape
 
     # Check the queries.
-    if query.shape[0] != ploidy:
+    if query.shape[0] != 1:
         err_msg = "Query array has incorrect dimensions."
         raise ValueError(err_msg)
 
@@ -94,9 +99,9 @@ def check_inputs(
         raise ValueError(err_msg)
 
     if ploidy == 2:
-        if not np.all(np.isin(query, [0, 1, core.MISSING])):
-            err_msg = "Query has illegal alleles. "
-            err_msg += "Only 0/1 encoding is supported in diploid mode."
+        if not np.all(np.isin(query, [0, 1, 2, core.MISSING])):
+            err_msg = "Query has states not allowed in diploid mode. "
+            err_msg += "Only 0/1/2 allele dosage encoding is supported."
             raise ValueError(err_msg)
 
     # Check the recombination probability.
@@ -139,8 +144,30 @@ def check_inputs(
         err_msg = "Mutation probability is not a scalar or an array of expected length."
         raise ValueError(err_msg)
 
+    # Get the number of distinct alleles per site.
+    if ploidy == 1:
+        num_alleles = core.get_num_alleles(reference_panel, query)
+    else:
+        # TODO: This is a hack, because the ref. panel and query have different encodings.
+        # This needs to be overhauled when or before we deal with multiallelic sites.
+        # Also, this only works if we work with only biallelic sites.
+        query_unraveled = np.zeros((2, num_sites), dtype=np.int8) - np.inf
+        for i in range(num_sites):
+            if query[0, i] == 0:
+                query_unraveled[:, i] = np.array([0, 0])
+            elif query[0, i] == 1:
+                query_unraveled[:, i] = np.array([0, 1])
+            elif query[0, i] == 2:
+                query_unraveled[:, i] = np.array([1, 1])
+            else:
+                query_unraveled[:, i] = np.array([core.MISSING, core.MISSING])
+        num_alleles = core.get_num_alleles(reference_panel, query_unraveled)
+
+    if not np.all(num_alleles > 1):
+        err_msg = "Some sites have less than two distinct alleles."
+        raise ValueError(err_msg)
+
     # Calculate the emission probability matrix.
-    num_alleles = core.get_num_alleles(reference_panel, query)
     if ploidy == 1:
         emission_matrix = core.get_emission_matrix_haploid(
             mu=prob_mutation,
@@ -168,12 +195,11 @@ def check_inputs(
         ref_panel_genotypes = core.convert_haplotypes_to_phased_genotypes(
             reference_panel
         )
-        query_genotypes = core.convert_haplotypes_to_unphased_genotypes(query)
         return (
             num_ref_haps,
             num_sites,
-            ref_panel_genotypes,
-            query_genotypes,
+            ref_panel_genotypes,  # Only ref. panel is converted
+            query,
             emission_matrix,
         )
 
