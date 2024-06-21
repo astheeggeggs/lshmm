@@ -196,62 +196,65 @@ class LSBase:
 
     # Prepare simple example datasets.
     def get_ts_simple_n10_no_recomb(self, seed=42):
-        ts = msprime.simulate(
-            10,
-            recombination_rate=0,
-            mutation_rate=0.5,
+        ts = msprime.sim_mutations(
+            msprime.sim_ancestry(
+                samples=10,
+                ploidy=1,
+                sequence_length=10,
+                recombination_rate=0.0,
+                random_seed=seed,
+            ),
+            model=msprime.BinaryMutationModel(),
+            rate=0.5,
             random_seed=seed,
         )
         assert ts.num_sites > 3
         return ts
 
-    def get_ts_simple_n6(self, seed=42):
-        ts = msprime.simulate(
-            6,
-            recombination_rate=2,
-            mutation_rate=7,
-            random_seed=seed,
-        )
-        assert ts.num_sites > 5
-        return ts
-
-    def get_ts_simple_n8(self, seed=42):
-        ts = msprime.simulate(
-            8,
-            recombination_rate=2,
-            mutation_rate=5,
+    def get_ts_simple(self, num_samples, seed=42):
+        ts = msprime.sim_mutations(
+            msprime.sim_ancestry(
+                samples=num_samples,
+                ploidy=1,
+                sequence_length=10,
+                recombination_rate=2.0,
+                random_seed=seed,
+            ),
+            rate=5.0,
+            model=msprime.BinaryMutationModel(),
             random_seed=seed,
         )
         assert ts.num_sites > 5
         return ts
 
     def get_ts_simple_n8_high_recomb(self, seed=42):
-        ts = msprime.simulate(
-            8,
-            recombination_rate=20,
-            mutation_rate=5,
+        ts = msprime.sim_mutations(
+            msprime.sim_ancestry(
+                samples=8,
+                ploidy=1,
+                sequence_length=20,
+                recombination_rate=20.0,
+                random_seed=seed,
+            ),
+            rate=5.0,
+            model=msprime.BinaryMutationModel(),
             random_seed=seed,
         )
         assert ts.num_trees > 15
         assert ts.num_sites > 5
         return ts
 
-    def get_ts_simple_n16(self, seed=42):
-        ts = msprime.simulate(
-            16,
-            recombination_rate=2,
-            mutation_rate=5,
-            random_seed=seed,
-        )
-        assert ts.num_sites > 5
-        return ts
-
-    def get_ts_custom_pars(self, ref_panel_size, length, mean_r, mean_mu, seed=42):
-        ts = msprime.simulate(
-            ref_panel_size,
-            length=length,
-            recombination_rate=mean_r,
-            mutation_rate=mean_mu,
+    def get_ts_custom_pars(self, num_samples, seq_length, mean_r, mean_mu, seed=42):
+        ts = msprime.sim_mutations(
+            msprime.sim_ancestry(
+                samples=num_samples,
+                ploidy=1,
+                sequence_length=seq_length,
+                recombination_rate=mean_r,
+                random_seed=seed,
+            ),
+            rate=mean_mu,
+            model=msprime.BinaryMutationModel(),
             random_seed=seed,
         )
         return ts
