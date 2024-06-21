@@ -8,14 +8,14 @@ import lshmm.vit_haploid as vh
 
 class TestViterbiHaploid(lsbase.ViterbiAlgorithmBase):
     def verify(self, ts, scale_mutation_rate, include_ancestors):
+        ploidy = 1
         for n, m, H_vs, s, e_vs, r, mu in self.get_examples_pars(
             ts,
-            ploidy=1,
+            ploidy=ploidy,
             scale_mutation_rate=scale_mutation_rate,
             include_ancestors=include_ancestors,
             include_extreme_rates=True,
         ):
-            num_alleles = core.get_num_alleles(H_vs, s)
             V_vs, P_vs, ll_vs = vh.forwards_viterbi_hap_lower_mem_rescaling(
                 n=n,
                 m=m,
@@ -29,7 +29,7 @@ class TestViterbiHaploid(lsbase.ViterbiAlgorithmBase):
             path, ll = ls.viterbi(
                 reference_panel=H_vs,
                 query=s,
-                num_alleles=num_alleles,
+                ploidy=ploidy,
                 prob_recombination=r,
                 prob_mutation=mu,
                 scale_mutation_rate=scale_mutation_rate,
