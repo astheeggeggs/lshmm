@@ -55,7 +55,7 @@ def check_inputs(
     :param numpy.ndarray num_alleles: Number of distinct alleles per site.
     :param numpy.ndarray prob_recombination: Recombination probability.
     :param numpy.ndarray prob_mutation: Mutation probability.
-    :param bool scale_mutation_rate: Scale mutation rate.
+    :param bool scale_mutation_rate: Scale mutation rate or not.
     :return: Number of ref. haplotypes, number of sites, ploidy, emission prob. matrix.
     :rtype: tuple
     """
@@ -113,6 +113,10 @@ def check_inputs(
         )
         raise ValueError(err_msg)
 
+    # Set whether to scale mutation rates if not set already.
+    if scale_mutation_rate is None:
+        scale_mutation_rate = True
+
     # Check the mutation probability.
     if prob_mutation is None:
         warn_msg = "No mutation probability is passed; setting it as per Li & Stephens (2003) eqn. A2 and A3."
@@ -162,9 +166,6 @@ def forwards(
     normalise=None,
 ):
     """Run the forwards algorithm on haploid or diploid genotype data."""
-    if scale_mutation_rate is None:
-        scale_mutation_rate = True
-
     if normalise is None:
         normalise = True
 
@@ -210,9 +211,6 @@ def backwards(
     scale_mutation_rate=None,
 ):
     """Run the backwards algorithm on haploid or diploid genotype data."""
-    if scale_mutation_rate is None:
-        scale_mutation_rate = True
-
     num_ref_haps, num_sites, ploidy, emission_matrix = check_inputs(
         reference_panel=reference_panel,
         query=query,
@@ -250,9 +248,6 @@ def viterbi(
     scale_mutation_rate=None,
 ):
     """Run the Viterbi algorithm on haploid or diploid genotype data."""
-    if scale_mutation_rate is None:
-        scale_mutation_rate = True
-
     num_ref_haps, num_sites, ploidy, emission_matrix = check_inputs(
         reference_panel=reference_panel,
         query=query,
@@ -298,9 +293,6 @@ def path_loglik(
     scale_mutation_rate=None,
 ):
     """Evaluate the log-likelihood of a copying path for a query through a reference panel."""
-    if scale_mutation_rate is None:
-        scale_mutation_rate = True
-
     num_ref_haps, num_sites, ploidy, emission_matrix = check_inputs(
         reference_panel=reference_panel,
         query=query,
