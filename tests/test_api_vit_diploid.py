@@ -8,16 +8,16 @@ import lshmm.vit_diploid as vd
 
 class TestViterbiDiploid(lsbase.ViterbiAlgorithmBase):
     def verify(self, ts, scale_mutation_rate, include_ancestors):
+        ploidy = 2
         for n, m, H_vs, query, e_vs, r, mu in self.get_examples_pars(
             ts,
-            ploidy=2,
+            ploidy=ploidy,
             scale_mutation_rate=scale_mutation_rate,
             include_ancestors=include_ancestors,
             include_extreme_rates=True,
         ):
             G_vs = core.convert_haplotypes_to_phased_genotypes(H_vs)
             s = core.convert_haplotypes_to_unphased_genotypes(query)
-            num_alleles = core.get_num_alleles(H_vs, query)
 
             V_vs, P_vs, ll_vs = vd.forwards_viterbi_dip_low_mem(
                 n=n,
@@ -30,9 +30,9 @@ class TestViterbiDiploid(lsbase.ViterbiAlgorithmBase):
             path_vs = vd.backwards_viterbi_dip(m=m, V_last=V_vs, P=P_vs)
             phased_path_vs = vd.get_phased_path(n=n, path=path_vs)
             path, ll = ls.viterbi(
-                reference_panel=G_vs,
-                query=s,
-                num_alleles=num_alleles,
+                reference_panel=H_vs,
+                query=query,
+                ploidy=ploidy,
                 prob_recombination=r,
                 prob_mutation=mu,
                 scale_mutation_rate=scale_mutation_rate,

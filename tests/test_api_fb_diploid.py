@@ -8,16 +8,16 @@ import lshmm.fb_diploid as fbd
 
 class TestForwardBackwardDiploid(lsbase.ForwardBackwardAlgorithmBase):
     def verify(self, ts, scale_mutation_rate, include_ancestors):
+        ploidy = 2
         for n, m, H_vs, query, e_vs, r, mu in self.get_examples_pars(
             ts,
-            ploidy=2,
+            ploidy=ploidy,
             scale_mutation_rate=scale_mutation_rate,
             include_ancestors=include_ancestors,
             include_extreme_rates=True,
         ):
             G_vs = core.convert_haplotypes_to_phased_genotypes(H_vs)
             s = core.convert_haplotypes_to_unphased_genotypes(query)
-            num_alleles = core.get_num_alleles(H_vs, query)
 
             F_vs, c_vs, ll_vs = fbd.forward_ls_dip_loop(
                 n=n,
@@ -38,18 +38,18 @@ class TestForwardBackwardDiploid(lsbase.ForwardBackwardAlgorithmBase):
                 r=r,
             )
             F, c, ll = ls.forwards(
-                reference_panel=G_vs,
-                query=s,
-                num_alleles=num_alleles,
+                reference_panel=H_vs,
+                query=query,
+                ploidy=ploidy,
                 prob_recombination=r,
                 prob_mutation=mu,
                 scale_mutation_rate=scale_mutation_rate,
                 normalise=True,
             )
             B = ls.backwards(
-                reference_panel=G_vs,
-                query=s,
-                num_alleles=num_alleles,
+                reference_panel=H_vs,
+                query=query,
+                ploidy=ploidy,
                 normalisation_factor_from_forward=c,
                 prob_recombination=r,
                 prob_mutation=mu,

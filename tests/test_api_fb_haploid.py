@@ -8,9 +8,10 @@ import lshmm.fb_haploid as fbh
 
 class TestForwardBackwardHaploid(lsbase.ForwardBackwardAlgorithmBase):
     def verify(self, ts, scale_mutation_rate, include_ancestors):
+        ploidy = 1
         for n, m, H_vs, s, e_vs, r, mu in self.get_examples_pars(
             ts,
-            ploidy=1,
+            ploidy=ploidy,
             scale_mutation_rate=scale_mutation_rate,
             include_ancestors=include_ancestors,
             include_extreme_rates=True,
@@ -36,7 +37,7 @@ class TestForwardBackwardHaploid(lsbase.ForwardBackwardAlgorithmBase):
             F, c, ll = ls.forwards(
                 reference_panel=H_vs,
                 query=s,
-                num_alleles=num_alleles,
+                ploidy=ploidy,
                 prob_recombination=r,
                 prob_mutation=mu,
                 scale_mutation_rate=scale_mutation_rate,
@@ -45,7 +46,7 @@ class TestForwardBackwardHaploid(lsbase.ForwardBackwardAlgorithmBase):
             B = ls.backwards(
                 reference_panel=H_vs,
                 query=s,
-                num_alleles=num_alleles,
+                ploidy=ploidy,
                 normalisation_factor_from_forward=c,
                 prob_recombination=r,
                 prob_mutation=mu,
