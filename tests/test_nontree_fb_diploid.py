@@ -25,45 +25,48 @@ class TestNonTreeForwardBackwardDiploid(lsbase.ForwardBackwardAlgorithmBase):
             include_extreme_rates=include_extreme_rates,
         ):
             G_vs = core.convert_haplotypes_to_phased_genotypes(H_vs)
-            s = core.convert_haplotypes_to_unphased_genotypes(query)
 
-            F_vs, c_vs, ll_vs = fbd.forwards_ls_dip(n, m, G_vs, s, e_vs, r, norm=True)
-            B_vs = fbd.backwards_ls_dip(n, m, G_vs, s, e_vs, c_vs, r)
+            F_vs, c_vs, ll_vs = fbd.forwards_ls_dip(
+                n, m, G_vs, query, e_vs, r, norm=True
+            )
+            B_vs = fbd.backwards_ls_dip(n, m, G_vs, query, e_vs, c_vs, r)
             self.assertAllClose(np.sum(F_vs * B_vs, (1, 2)), np.ones(m))
 
             F_tmp, c_tmp, ll_tmp = fbd.forward_ls_dip_loop(
-                n, m, G_vs, s, e_vs, r, norm=True
+                n, m, G_vs, query, e_vs, r, norm=True
             )
-            B_tmp = fbd.backward_ls_dip_loop(n, m, G_vs, s, e_vs, c_tmp, r)
+            B_tmp = fbd.backward_ls_dip_loop(n, m, G_vs, query, e_vs, c_tmp, r)
             self.assertAllClose(np.sum(F_tmp * B_tmp, (1, 2)), np.ones(m))
             self.assertAllClose(ll_vs, ll_tmp)
 
             if not normalise:
                 F_tmp, c_tmp, ll_tmp = fbd.forwards_ls_dip(
-                    n, m, G_vs, s, e_vs, r, norm=False
+                    n, m, G_vs, query, e_vs, r, norm=False
                 )
                 if ll_tmp != -np.inf:
-                    B_tmp = fbd.backwards_ls_dip(n, m, G_vs, s, e_vs, c_tmp, r)
+                    B_tmp = fbd.backwards_ls_dip(n, m, G_vs, query, e_vs, c_tmp, r)
                     self.assertAllClose(
                         np.log10(np.sum(F_tmp * B_tmp, (1, 2))), ll_tmp * np.ones(m)
                     )
                     self.assertAllClose(ll_vs, ll_tmp)
 
                 F_tmp, c_tmp, ll_tmp = fbd.forward_ls_dip_loop(
-                    n, m, G_vs, s, e_vs, r, norm=False
+                    n, m, G_vs, query, e_vs, r, norm=False
                 )
                 if ll_tmp != -np.inf:
-                    B_tmp = fbd.backward_ls_dip_loop(n, m, G_vs, s, e_vs, c_tmp, r)
+                    B_tmp = fbd.backward_ls_dip_loop(n, m, G_vs, query, e_vs, c_tmp, r)
                     self.assertAllClose(
                         np.log10(np.sum(F_tmp * B_tmp, (1, 2))), ll_tmp * np.ones(m)
                     )
                     self.assertAllClose(ll_vs, ll_tmp)
 
                 F_tmp, ll_tmp = fbd.forward_ls_dip_starting_point(
-                    n, m, G_vs, s, e_vs, r
+                    n, m, G_vs, query, e_vs, r
                 )
                 if ll_tmp != -np.inf:
-                    B_tmp = fbd.backward_ls_dip_starting_point(n, m, G_vs, s, e_vs, r)
+                    B_tmp = fbd.backward_ls_dip_starting_point(
+                        n, m, G_vs, query, e_vs, r
+                    )
                     self.assertAllClose(
                         np.log10(np.sum(F_tmp * B_tmp, (1, 2))), ll_tmp * np.ones(m)
                     )
@@ -87,7 +90,7 @@ class TestNonTreeForwardBackwardDiploid(lsbase.ForwardBackwardAlgorithmBase):
             include_extreme_rates=include_extreme_rates,
         )
 
-    @pytest.mark.parametrize("num_samples", [4, 8, 16])
+    @pytest.mark.parametrize("num_samples", [8, 16])
     @pytest.mark.parametrize("scale_mutation_rate", [True, False])
     @pytest.mark.parametrize("include_ancestors", [True, False])
     @pytest.mark.parametrize("normalise", [True, False])

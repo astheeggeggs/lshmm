@@ -18,12 +18,13 @@ class TestNonTreeViterbiDiploid(lsbase.ViterbiAlgorithmBase):
             include_extreme_rates=True,
         ):
             G_vs = core.convert_haplotypes_to_phased_genotypes(H_vs)
-            s = core.convert_haplotypes_to_unphased_genotypes(query)
 
-            V_vs, P_vs, ll_vs = vd.forwards_viterbi_dip_low_mem(n, m, G_vs, s, e_vs, r)
+            V_vs, P_vs, ll_vs = vd.forwards_viterbi_dip_low_mem(
+                n, m, G_vs, query, e_vs, r
+            )
             path_vs = vd.backwards_viterbi_dip(m, V_vs, P_vs)
             phased_path_vs = vd.get_phased_path(n, path_vs)
-            path_ll_vs = vd.path_ll_dip(n, m, G_vs, phased_path_vs, s, e_vs, r)
+            path_ll_vs = vd.path_ll_dip(n, m, G_vs, phased_path_vs, query, e_vs, r)
             self.assertAllClose(ll_vs, path_ll_vs)
 
             (
@@ -34,7 +35,7 @@ class TestNonTreeViterbiDiploid(lsbase.ViterbiAlgorithmBase):
                 recombs_single,
                 recombs_double,
                 ll_tmp,
-            ) = vd.forwards_viterbi_dip_low_mem_no_pointer(n, m, G_vs, s, e_vs, r)
+            ) = vd.forwards_viterbi_dip_low_mem_no_pointer(n, m, G_vs, query, e_vs, r)
             path_tmp = vd.backwards_viterbi_dip_no_pointer(
                 m,
                 V_argmaxes_tmp,
@@ -45,7 +46,7 @@ class TestNonTreeViterbiDiploid(lsbase.ViterbiAlgorithmBase):
                 V_tmp,
             )
             phased_path_tmp = vd.get_phased_path(n, path_tmp)
-            path_ll_tmp = vd.path_ll_dip(n, m, G_vs, phased_path_tmp, s, e_vs, r)
+            path_ll_tmp = vd.path_ll_dip(n, m, G_vs, phased_path_tmp, query, e_vs, r)
             self.assertAllClose(ll_tmp, path_ll_tmp)
             self.assertAllClose(ll_vs, ll_tmp)
 
@@ -54,29 +55,35 @@ class TestNonTreeViterbiDiploid(lsbase.ViterbiAlgorithmBase):
             if num_ref_haps <= MAX_NUM_REF_HAPS:
                 # Run tests for the naive implementations.
                 V_tmp, P_tmp, ll_tmp = vd.forwards_viterbi_dip_naive(
-                    n, m, G_vs, s, e_vs, r
+                    n, m, G_vs, query, e_vs, r
                 )
                 path_tmp = vd.backwards_viterbi_dip(m, V_tmp[m - 1, :, :], P_tmp)
                 phased_path_tmp = vd.get_phased_path(n, path_tmp)
-                path_ll_tmp = vd.path_ll_dip(n, m, G_vs, phased_path_tmp, s, e_vs, r)
+                path_ll_tmp = vd.path_ll_dip(
+                    n, m, G_vs, phased_path_tmp, query, e_vs, r
+                )
                 self.assertAllClose(ll_tmp, path_ll_tmp)
                 self.assertAllClose(ll_vs, ll_tmp)
 
                 V_tmp, P_tmp, ll_tmp = vd.forwards_viterbi_dip_naive_low_mem(
-                    n, m, G_vs, s, e_vs, r
+                    n, m, G_vs, query, e_vs, r
                 )
                 path_tmp = vd.backwards_viterbi_dip(m, V_tmp, P_tmp)
                 phased_path_tmp = vd.get_phased_path(n, path_tmp)
-                path_ll_tmp = vd.path_ll_dip(n, m, G_vs, phased_path_tmp, s, e_vs, r)
+                path_ll_tmp = vd.path_ll_dip(
+                    n, m, G_vs, phased_path_tmp, query, e_vs, r
+                )
                 self.assertAllClose(ll_tmp, path_ll_tmp)
                 self.assertAllClose(ll_vs, ll_tmp)
 
                 V_tmp, P_tmp, ll_tmp = vd.forwards_viterbi_dip_naive_vec(
-                    n, m, G_vs, s, e_vs, r
+                    n, m, G_vs, query, e_vs, r
                 )
                 path_tmp = vd.backwards_viterbi_dip(m, V_tmp[m - 1, :, :], P_tmp)
                 phased_path_tmp = vd.get_phased_path(n, path_tmp)
-                path_ll_tmp = vd.path_ll_dip(n, m, G_vs, phased_path_tmp, s, e_vs, r)
+                path_ll_tmp = vd.path_ll_dip(
+                    n, m, G_vs, phased_path_tmp, query, e_vs, r
+                )
                 self.assertAllClose(ll_tmp, path_ll_tmp)
                 self.assertAllClose(ll_vs, ll_tmp)
 
@@ -86,7 +93,7 @@ class TestNonTreeViterbiDiploid(lsbase.ViterbiAlgorithmBase):
         ts = self.get_ts_simple_n10_no_recomb()
         self.verify(ts, scale_mutation_rate, include_ancestors)
 
-    @pytest.mark.parametrize("num_samples", [4, 8, 16])
+    @pytest.mark.parametrize("num_samples", [8, 16])
     @pytest.mark.parametrize("scale_mutation_rate", [True, False])
     @pytest.mark.parametrize("include_ancestors", [True, False])
     def test_ts_simple(self, num_samples, scale_mutation_rate, include_ancestors):

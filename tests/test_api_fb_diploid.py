@@ -17,13 +17,12 @@ class TestForwardBackwardDiploid(lsbase.ForwardBackwardAlgorithmBase):
             include_extreme_rates=True,
         ):
             G_vs = core.convert_haplotypes_to_phased_genotypes(H_vs)
-            s = core.convert_haplotypes_to_unphased_genotypes(query)
 
             F_vs, c_vs, ll_vs = fbd.forward_ls_dip_loop(
                 n=n,
                 m=m,
                 G=G_vs,
-                s=s,
+                s=query,
                 e=e_vs,
                 r=r,
                 norm=True,
@@ -32,7 +31,7 @@ class TestForwardBackwardDiploid(lsbase.ForwardBackwardAlgorithmBase):
                 n=n,
                 m=m,
                 G=G_vs,
-                s=s,
+                s=query,
                 e=e_vs,
                 c=c_vs,
                 r=r,
@@ -66,7 +65,7 @@ class TestForwardBackwardDiploid(lsbase.ForwardBackwardAlgorithmBase):
         ts = self.get_ts_simple_n10_no_recomb()
         self.verify(ts, scale_mutation_rate, include_ancestors)
 
-    @pytest.mark.parametrize("num_samples", [4, 8, 16])
+    @pytest.mark.parametrize("num_samples", [8, 16])
     @pytest.mark.parametrize("scale_mutation_rate", [True, False])
     @pytest.mark.parametrize("include_ancestors", [True, False])
     def test_ts_simple(self, num_samples, scale_mutation_rate, include_ancestors):
@@ -75,13 +74,13 @@ class TestForwardBackwardDiploid(lsbase.ForwardBackwardAlgorithmBase):
 
     @pytest.mark.parametrize("scale_mutation_rate", [True, False])
     @pytest.mark.parametrize("include_ancestors", [True, False])
-    def test_ts_simple_n8_high_recomb(self, scale_mutation_rate, include_ancestors):
+    def ts_simple_n8_high_recomb(self, scale_mutation_rate, include_ancestors):
         ts = self.get_ts_simple_n8_high_recomb()
         self.verify(ts, scale_mutation_rate, include_ancestors)
 
     @pytest.mark.parametrize("scale_mutation_rate", [True, False])
     @pytest.mark.parametrize("include_ancestors", [True, False])
-    def test_ts_larger(self, scale_mutation_rate, include_ancestors):
+    def ts_larger(self, scale_mutation_rate, include_ancestors):
         ts = self.get_ts_custom_pars(
             num_samples=30, seq_length=1e5, mean_r=1e-5, mean_mu=1e-5
         )

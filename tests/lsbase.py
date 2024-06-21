@@ -173,11 +173,13 @@ class LSBase:
             # because we can now get back mutations that
             # result in the number of alleles being higher
             # than the number of alleles in the reference panel.
-            num_alleles = core.get_num_alleles(H, query)
             prob_mutation = mu
             if prob_mutation is None:
                 # Note that n is the number of haplotypes, including ancestors.
                 prob_mutation = np.zeros(m) + core.estimate_mutation_probability(n)
+
+            num_alleles = core.get_num_alleles(H, query)
+
             if ploidy == 1:
                 e = core.get_emission_matrix_haploid(
                     mu=prob_mutation,
@@ -192,6 +194,9 @@ class LSBase:
                     num_alleles=num_alleles,
                     scale_mutation_rate=scale_mutation_rate,
                 )
+                # In the diploid case, query is converted to unphased genotypes.
+                query = core.convert_haplotypes_to_unphased_genotypes(query)
+
             yield n, m, H, query, e, r, mu
 
     # Prepare simple example datasets.
@@ -204,11 +209,13 @@ class LSBase:
                 recombination_rate=0.0,
                 random_seed=seed,
             ),
+            rate=0.3,
             model=msprime.BinaryMutationModel(),
-            rate=0.5,
+            discrete_genome=False,
             random_seed=seed,
         )
-        assert ts.num_sites > 3
+        assert ts.num_sites > 5
+        assert ts.num_sites < 25
         return ts
 
     def get_ts_simple(self, num_samples, seed=42):
@@ -220,11 +227,13 @@ class LSBase:
                 recombination_rate=2.0,
                 random_seed=seed,
             ),
-            rate=5.0,
+            rate=0.2,
             model=msprime.BinaryMutationModel(),
+            discrete_genome=False,
             random_seed=seed,
         )
         assert ts.num_sites > 5
+        assert ts.num_sites < 25
         return ts
 
     def get_ts_simple_n8_high_recomb(self, seed=42):
@@ -236,12 +245,14 @@ class LSBase:
                 recombination_rate=20.0,
                 random_seed=seed,
             ),
-            rate=5.0,
+            rate=0.2,
             model=msprime.BinaryMutationModel(),
+            discrete_genome=False,
             random_seed=seed,
         )
         assert ts.num_trees > 15
         assert ts.num_sites > 5
+        assert ts.num_sites < 25
         return ts
 
     def get_ts_custom_pars(self, num_samples, seq_length, mean_r, mean_mu, seed=42):
@@ -255,6 +266,7 @@ class LSBase:
             ),
             rate=mean_mu,
             model=msprime.BinaryMutationModel(),
+            discrete_genome=False,
             random_seed=seed,
         )
         return ts
@@ -269,7 +281,7 @@ class LSBase:
                 population_size=1e4,
                 random_seed=seed,
             ),
-            rate=1e-5,
+            rate=1e-4,
             random_seed=seed,
         )
         assert ts.num_sites > 3
@@ -302,8 +314,8 @@ class LSBase:
             rate=1e-4,
             random_seed=seed,
         )
-        assert ts.num_sites > 5
         assert ts.num_trees > 15
+        assert ts.num_sites > 5
         return ts
 
     def get_ts_multiallelic_n16(self, seed=42):
