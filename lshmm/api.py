@@ -160,10 +160,6 @@ def check_inputs(
                 query_unraveled[:, i] = np.array([core.MISSING, core.MISSING])
         num_alleles = core.get_num_alleles(reference_panel, query_unraveled)
 
-    if not np.all(num_alleles > 1):
-        err_msg = "Some sites have less than two distinct alleles."
-        raise ValueError(err_msg)
-
     # Calculate the emission probability matrix.
     if ploidy == 1:
         emission_matrix = core.get_emission_matrix_haploid(
