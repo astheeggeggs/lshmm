@@ -7,7 +7,15 @@ from . import jit
 
 
 @jit.numba_njit
-def viterbi_naive_init(n, m, H, s, e, r):
+def viterbi_naive_init(
+    n,
+    m,
+    H,
+    s,
+    e,
+    r,
+    emission_func,
+):
     """Initialise a naive implementation."""
     V = np.zeros((m, n))
     P = np.zeros((m, n), dtype=np.int64)
@@ -15,7 +23,7 @@ def viterbi_naive_init(n, m, H, s, e, r):
     r_n = r / num_copiable_entries
 
     for i in range(n):
-        emission_prob = core.get_emission_probability_haploid(
+        emission_prob = emission_func(
             ref_allele=H[0, i],
             query_allele=s[0, 0],
             site=0,
@@ -27,7 +35,15 @@ def viterbi_naive_init(n, m, H, s, e, r):
 
 
 @jit.numba_njit
-def viterbi_init(n, m, H, s, e, r):
+def viterbi_init(
+    n,
+    m,
+    H,
+    s,
+    e,
+    r,
+    emission_func,
+):
     """Initialise a naive, but more memory efficient, implementation."""
     V_prev = np.zeros(n)
     V = np.zeros(n)
@@ -36,7 +52,7 @@ def viterbi_init(n, m, H, s, e, r):
     r_n = r / num_copiable_entries
 
     for i in range(n):
-        emission_prob = core.get_emission_probability_haploid(
+        emission_prob = emission_func(
             ref_allele=H[0, i],
             query_allele=s[0, 0],
             site=0,
@@ -48,15 +64,23 @@ def viterbi_init(n, m, H, s, e, r):
 
 
 @jit.numba_njit
-def forwards_viterbi_hap_naive(n, m, H, s, e, r):
+def forwards_viterbi_hap_naive(
+    n,
+    m,
+    H,
+    s,
+    e,
+    r,
+    emission_func,
+):
     """A naive implementation of the forward pass."""
-    V, P, r_n = viterbi_naive_init(n, m, H, s, e, r)
+    V, P, r_n = viterbi_naive_init(n, m, H, s, e, r, emission_func=emission_func)
 
     for j in range(1, m):
         for i in range(n):
             v = np.zeros(n)
             for k in range(n):
-                emission_prob = core.get_emission_probability_haploid(
+                emission_prob = emission_func(
                     ref_allele=H[j, i],
                     query_allele=s[0, j],
                     site=j,
@@ -76,16 +100,24 @@ def forwards_viterbi_hap_naive(n, m, H, s, e, r):
 
 
 @jit.numba_njit
-def forwards_viterbi_hap_naive_vec(n, m, H, s, e, r):
+def forwards_viterbi_hap_naive_vec(
+    n,
+    m,
+    H,
+    s,
+    e,
+    r,
+    emission_func,
+):
     """A naive matrix-based implementation of the forward pass."""
-    V, P, r_n = viterbi_naive_init(n, m, H, s, e, r)
+    V, P, r_n = viterbi_naive_init(n, m, H, s, e, r, emission_func=emission_func)
 
     for j in range(1, m):
         v_tmp = V[j - 1, :] * r_n[j]
         for i in range(n):
             v = np.copy(v_tmp)
             v[i] += V[j - 1, i] * (1 - r[j])
-            emission_prob = core.get_emission_probability_haploid(
+            emission_prob = emission_func(
                 ref_allele=H[j, i],
                 query_allele=s[0, j],
                 site=j,
@@ -101,15 +133,23 @@ def forwards_viterbi_hap_naive_vec(n, m, H, s, e, r):
 
 
 @jit.numba_njit
-def forwards_viterbi_hap_naive_low_mem(n, m, H, s, e, r):
+def forwards_viterbi_hap_naive_low_mem(
+    n,
+    m,
+    H,
+    s,
+    e,
+    r,
+    emission_func,
+):
     """A naive implementation of the forward pass with reduced memory."""
-    V, V_prev, P, r_n = viterbi_init(n, m, H, s, e, r)
+    V, V_prev, P, r_n = viterbi_init(n, m, H, s, e, r, emission_func=emission_func)
 
     for j in range(1, m):
         for i in range(n):
             v = np.zeros(n)
             for k in range(n):
-                emission_prob = core.get_emission_probability_haploid(
+                emission_prob = emission_func(
                     ref_allele=H[j, i],
                     query_allele=s[0, j],
                     site=j,
@@ -130,9 +170,17 @@ def forwards_viterbi_hap_naive_low_mem(n, m, H, s, e, r):
 
 
 @jit.numba_njit
-def forwards_viterbi_hap_naive_low_mem_rescaling(n, m, H, s, e, r):
+def forwards_viterbi_hap_naive_low_mem_rescaling(
+    n,
+    m,
+    H,
+    s,
+    e,
+    r,
+    emission_func,
+):
     """A naive implementation of the forward pass with reduced memory and rescaling."""
-    V, V_prev, P, r_n = viterbi_init(n, m, H, s, e, r)
+    V, V_prev, P, r_n = viterbi_init(n, m, H, s, e, r, emission_func=emission_func)
     c = np.ones(m)
 
     for j in range(1, m):
@@ -141,7 +189,7 @@ def forwards_viterbi_hap_naive_low_mem_rescaling(n, m, H, s, e, r):
         for i in range(n):
             v = np.zeros(n)
             for k in range(n):
-                emission_prob = core.get_emission_probability_haploid(
+                emission_prob = emission_func(
                     ref_allele=H[j, i],
                     query_allele=s[0, j],
                     site=j,
@@ -162,9 +210,17 @@ def forwards_viterbi_hap_naive_low_mem_rescaling(n, m, H, s, e, r):
 
 
 @jit.numba_njit
-def forwards_viterbi_hap_low_mem_rescaling(n, m, H, s, e, r):
+def forwards_viterbi_hap_low_mem_rescaling(
+    n,
+    m,
+    H,
+    s,
+    e,
+    r,
+    emission_func,
+):
     """An implementation with reduced memory that exploits the Markov structure."""
-    V, V_prev, P, r_n = viterbi_init(n, m, H, s, e, r)
+    V, V_prev, P, r_n = viterbi_init(n, m, H, s, e, r, emission_func=emission_func)
     c = np.ones(m)
 
     for j in range(1, m):
@@ -178,7 +234,7 @@ def forwards_viterbi_hap_low_mem_rescaling(n, m, H, s, e, r):
             if V[i] < r_n[j]:
                 V[i] = r_n[j]
                 P[j, i] = argmax
-            emission_prob = core.get_emission_probability_haploid(
+            emission_prob = emission_func(
                 ref_allele=H[j, i],
                 query_allele=s[0, j],
                 site=j,
@@ -193,7 +249,15 @@ def forwards_viterbi_hap_low_mem_rescaling(n, m, H, s, e, r):
 
 
 @jit.numba_njit
-def forwards_viterbi_hap_lower_mem_rescaling(n, m, H, s, e, r):
+def forwards_viterbi_hap_lower_mem_rescaling(
+    n,
+    m,
+    H,
+    s,
+    e,
+    r,
+    emission_func,
+):
     """
     An implementation with even smaller memory footprint
     that exploits the Markov structure.
@@ -202,7 +266,7 @@ def forwards_viterbi_hap_lower_mem_rescaling(n, m, H, s, e, r):
     """
     V = np.zeros(n)
     for i in range(n):
-        emission_prob = core.get_emission_probability_haploid(
+        emission_prob = emission_func(
             ref_allele=H[0, i],
             query_allele=s[0, 0],
             site=0,
@@ -224,7 +288,7 @@ def forwards_viterbi_hap_lower_mem_rescaling(n, m, H, s, e, r):
             if V[i] < r_n[j]:
                 V[i] = r_n[j]
                 P[j, i] = argmax
-            emission_prob = core.get_emission_probability_haploid(
+            emission_prob = emission_func(
                 ref_allele=H[j, i],
                 query_allele=s[0, j],
                 site=j,
@@ -238,14 +302,22 @@ def forwards_viterbi_hap_lower_mem_rescaling(n, m, H, s, e, r):
 
 
 @jit.numba_njit
-def forwards_viterbi_hap_lower_mem_rescaling_no_pointer(n, m, H, s, e, r):
+def forwards_viterbi_hap_lower_mem_rescaling_no_pointer(
+    n,
+    m,
+    H,
+    s,
+    e,
+    r,
+    emission_func,
+):
     """
     An implementation with even smaller memory footprint and rescaling
     that exploits the Markov structure.
     """
     V = np.zeros(n)
     for i in range(n):
-        emission_prob = core.get_emission_probability_haploid(
+        emission_prob = emission_func(
             ref_allele=H[0, i],
             query_allele=s[0, 0],
             site=0,
@@ -273,7 +345,7 @@ def forwards_viterbi_hap_lower_mem_rescaling_no_pointer(n, m, H, s, e, r):
                 recombs[j] = np.append(
                     recombs[j], i
                 )  # We add template i as a potential template to recombine to at site j.
-            emission_prob = core.get_emission_probability_haploid(
+            emission_prob = emission_func(
                 ref_allele=H[j, i],
                 query_allele=s[0, j],
                 site=j,
@@ -320,13 +392,22 @@ def backwards_viterbi_hap_no_pointer(m, V_argmaxes, recombs):
 
 
 @jit.numba_njit
-def path_ll_hap(n, m, H, path, s, e, r):
+def path_ll_hap(
+    n,
+    m,
+    H,
+    path,
+    s,
+    e,
+    r,
+    emission_func,
+):
     """
     Evaluate the log-likelihood of a path through a reference panel resulting in a query.
 
     This is exposed via the API.
     """
-    emission_prob = core.get_emission_probability_haploid(
+    emission_prob = emission_func(
         ref_allele=H[0, path[0]],
         query_allele=s[0, 0],
         site=0,
@@ -338,7 +419,7 @@ def path_ll_hap(n, m, H, path, s, e, r):
     r_n = r / num_copiable_entries
 
     for l in range(1, m):
-        emission_prob = core.get_emission_probability_haploid(
+        emission_prob = emission_func(
             ref_allele=H[l, path[l]],
             query_allele=s[0, l],
             site=l,

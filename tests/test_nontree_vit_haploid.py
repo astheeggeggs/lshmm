@@ -10,55 +10,158 @@ import lshmm.vit_haploid as vh
 
 class TestNonTreeViterbiHaploid(lsbase.ViterbiAlgorithmBase):
     def verify(self, ts, scale_mutation_rate, include_ancestors):
+        ploidy = 1
         for n, m, H_vs, s, e_vs, r, _ in self.get_examples_pars(
             ts,
-            ploidy=1,
+            ploidy=ploidy,
             scale_mutation_rate=scale_mutation_rate,
             include_ancestors=include_ancestors,
             include_extreme_rates=True,
         ):
-            V_vs, P_vs, ll_vs = vh.forwards_viterbi_hap_naive(n, m, H_vs, s, e_vs, r)
-            path_vs = vh.backwards_viterbi_hap(m, V_vs[m - 1, :], P_vs)
-            ll_check = vh.path_ll_hap(n, m, H_vs, path_vs, s, e_vs, r)
+            emission_func = core.get_emission_probability_haploid
+
+            V_vs, P_vs, ll_vs = vh.forwards_viterbi_hap_naive(
+                n=n,
+                m=m,
+                H=H_vs,
+                s=s,
+                e=e_vs,
+                r=r,
+                emission_func=emission_func,
+            )
+            path_vs = vh.backwards_viterbi_hap(
+                m=m,
+                V_last=V_vs[m - 1, :],
+                P=P_vs,
+            )
+            ll_check = vh.path_ll_hap(
+                n=n,
+                m=m,
+                H=H_vs,
+                path=path_vs,
+                s=s,
+                e=e_vs,
+                r=r,
+                emission_func=emission_func,
+            )
             self.assertAllClose(ll_vs, ll_check)
 
             V_tmp, P_tmp, ll_tmp = vh.forwards_viterbi_hap_naive_vec(
-                n, m, H_vs, s, e_vs, r
+                n=n,
+                m=m,
+                H=H_vs,
+                s=s,
+                e=e_vs,
+                r=r,
+                emission_func=emission_func,
             )
-            path_tmp = vh.backwards_viterbi_hap(m, V_tmp[m - 1, :], P_tmp)
-            ll_check = vh.path_ll_hap(n, m, H_vs, path_tmp, s, e_vs, r)
+            path_tmp = vh.backwards_viterbi_hap(
+                m=m,
+                V_last=V_tmp[m - 1, :],
+                P=P_tmp,
+            )
+            ll_check = vh.path_ll_hap(
+                n=n,
+                m=m,
+                H=H_vs,
+                path=path_tmp,
+                s=s,
+                e=e_vs,
+                r=r,
+                emission_func=emission_func,
+            )
             self.assertAllClose(ll_tmp, ll_check)
             self.assertAllClose(ll_vs, ll_tmp)
 
             V_tmp, P_tmp, ll_tmp = vh.forwards_viterbi_hap_naive_low_mem(
-                n, m, H_vs, s, e_vs, r
+                n=n,
+                m=m,
+                H=H_vs,
+                s=s,
+                e=e_vs,
+                r=r,
+                emission_func=emission_func,
             )
-            path_tmp = vh.backwards_viterbi_hap(m, V_tmp, P_tmp)
-            ll_check = vh.path_ll_hap(n, m, H_vs, path_tmp, s, e_vs, r)
+            path_tmp = vh.backwards_viterbi_hap(m=m, V_last=V_tmp, P=P_tmp)
+            ll_check = vh.path_ll_hap(
+                n=n,
+                m=m,
+                H=H_vs,
+                path=path_tmp,
+                s=s,
+                e=e_vs,
+                r=r,
+                emission_func=emission_func,
+            )
             self.assertAllClose(ll_tmp, ll_check)
             self.assertAllClose(ll_vs, ll_tmp)
 
             V_tmp, P_tmp, ll_tmp = vh.forwards_viterbi_hap_naive_low_mem_rescaling(
-                n, m, H_vs, s, e_vs, r
+                n=n,
+                m=m,
+                H=H_vs,
+                s=s,
+                e=e_vs,
+                r=r,
+                emission_func=emission_func,
             )
-            path_tmp = vh.backwards_viterbi_hap(m, V_tmp, P_tmp)
-            ll_check = vh.path_ll_hap(n, m, H_vs, path_tmp, s, e_vs, r)
+            path_tmp = vh.backwards_viterbi_hap(m=m, V_last=V_tmp, P=P_tmp)
+            ll_check = vh.path_ll_hap(
+                n=n,
+                m=m,
+                H=H_vs,
+                path=path_tmp,
+                s=s,
+                e=e_vs,
+                r=r,
+                emission_func=emission_func,
+            )
             self.assertAllClose(ll_tmp, ll_check)
             self.assertAllClose(ll_vs, ll_tmp)
 
             V_tmp, P_tmp, ll_tmp = vh.forwards_viterbi_hap_low_mem_rescaling(
-                n, m, H_vs, s, e_vs, r
+                n=n,
+                m=m,
+                H=H_vs,
+                s=s,
+                e=e_vs,
+                r=r,
+                emission_func=emission_func,
             )
-            path_tmp = vh.backwards_viterbi_hap(m, V_tmp, P_tmp)
-            ll_check = vh.path_ll_hap(n, m, H_vs, path_tmp, s, e_vs, r)
+            path_tmp = vh.backwards_viterbi_hap(m=m, V_last=V_tmp, P=P_tmp)
+            ll_check = vh.path_ll_hap(
+                n=n,
+                m=m,
+                H=H_vs,
+                path=path_tmp,
+                s=s,
+                e=e_vs,
+                r=r,
+                emission_func=emission_func,
+            )
             self.assertAllClose(ll_tmp, ll_check)
             self.assertAllClose(ll_vs, ll_tmp)
 
             V_tmp, P_tmp, ll_tmp = vh.forwards_viterbi_hap_lower_mem_rescaling(
-                n, m, H_vs, s, e_vs, r
+                n=n,
+                m=m,
+                H=H_vs,
+                s=s,
+                e=e_vs,
+                r=r,
+                emission_func=emission_func,
             )
-            path_tmp = vh.backwards_viterbi_hap(m, V_tmp, P_tmp)
-            ll_check = vh.path_ll_hap(n, m, H_vs, path_tmp, s, e_vs, r)
+            path_tmp = vh.backwards_viterbi_hap(m=m, V_last=V_tmp, P=P_tmp)
+            ll_check = vh.path_ll_hap(
+                n=n,
+                m=m,
+                H=H_vs,
+                path=path_tmp,
+                s=s,
+                e=e_vs,
+                r=r,
+                emission_func=emission_func,
+            )
             self.assertAllClose(ll_tmp, ll_check)
             self.assertAllClose(ll_vs, ll_tmp)
 
@@ -68,14 +171,29 @@ class TestNonTreeViterbiHaploid(lsbase.ViterbiAlgorithmBase):
                 recombs,
                 ll_tmp,
             ) = vh.forwards_viterbi_hap_lower_mem_rescaling_no_pointer(
-                n, m, H_vs, s, e_vs, r
+                n=n,
+                m=m,
+                H=H_vs,
+                s=s,
+                e=e_vs,
+                r=r,
+                emission_func=emission_func,
             )
             path_tmp = vh.backwards_viterbi_hap_no_pointer(
-                m,
-                V_argmaxes_tmp,
-                nb.typed.List(recombs),
+                m=m,
+                V_argmaxes=V_argmaxes_tmp,
+                recombs=nb.typed.List(recombs),
             )
-            ll_check = vh.path_ll_hap(n, m, H_vs, path_tmp, s, e_vs, r)
+            ll_check = vh.path_ll_hap(
+                n=n,
+                m=m,
+                H=H_vs,
+                path=path_tmp,
+                s=s,
+                e=e_vs,
+                r=r,
+                emission_func=emission_func,
+            )
             self.assertAllClose(ll_tmp, ll_check)
             self.assertAllClose(ll_vs, ll_tmp)
 

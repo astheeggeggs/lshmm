@@ -16,6 +16,7 @@ class TestViterbiHaploid(lsbase.ViterbiAlgorithmBase):
             include_ancestors=include_ancestors,
             include_extreme_rates=True,
         ):
+            emission_func = core.get_emission_probability_haploid
             V_vs, P_vs, ll_vs = vh.forwards_viterbi_hap_lower_mem_rescaling(
                 n=n,
                 m=m,
@@ -23,6 +24,7 @@ class TestViterbiHaploid(lsbase.ViterbiAlgorithmBase):
                 s=s,
                 e=e_vs,
                 r=r,
+                emission_func=emission_func,
             )
             path_vs = vh.backwards_viterbi_hap(m=m, V_last=V_vs, P=P_vs)
             path, ll = ls.viterbi(

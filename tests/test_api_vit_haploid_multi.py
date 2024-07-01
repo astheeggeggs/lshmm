@@ -16,6 +16,7 @@ class TestViterbiHaploid(lsbase.ViterbiAlgorithmBase):
             include_ancestors=include_ancestors,
             include_extreme_rates=True,
         ):
+            emission_func = core.get_emission_probability_haploid
             V_vs, P_vs, ll_vs = vh.forwards_viterbi_hap_lower_mem_rescaling(
                 n=n,
                 m=m,
@@ -23,9 +24,19 @@ class TestViterbiHaploid(lsbase.ViterbiAlgorithmBase):
                 s=s,
                 e=e_vs,
                 r=r,
+                emission_func=emission_func,
             )
             path_vs = vh.backwards_viterbi_hap(m=m, V_last=V_vs, P=P_vs)
-            path_ll_hap = vh.path_ll_hap(n, m, H_vs, path_vs, s, e_vs, r)
+            path_ll_hap = vh.path_ll_hap(
+                n=n,
+                m=m,
+                H=H_vs,
+                path=path_vs,
+                s=s,
+                e=e_vs,
+                r=r,
+                emission_func=emission_func,
+            )
             path, ll = ls.viterbi(
                 reference_panel=H_vs,
                 query=s,
@@ -44,17 +55,11 @@ class TestViterbiHaploid(lsbase.ViterbiAlgorithmBase):
         self, scale_mutation_rate, include_ancestors
     ):
         ts = self.get_ts_multiallelic_n10_no_recomb()
-        self.verify(
-            ts,
-            scale_mutation_rate=scale_mutation_rate,
-            include_ancestors=include_ancestors,
-        )
+        self.verify(ts, scale_mutation_rate, include_ancestors)
 
     @pytest.mark.parametrize("num_samples", [6, 8, 16])
     @pytest.mark.parametrize("scale_mutation_rate", [True, False])
     @pytest.mark.parametrize("include_ancestors", [True, False])
-    def test_ts_multiallelic_n16(
-        self, num_samples, scale_mutation_rate, include_ancestors
-    ):
+    def test_ts_multiallelic(self, num_samples, scale_mutation_rate, include_ancestors):
         ts = self.get_ts_multiallelic(num_samples)
         self.verify(ts, scale_mutation_rate, include_ancestors)
