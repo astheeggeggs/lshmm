@@ -10,20 +10,56 @@ import lshmm.fb_haploid as fbh
 
 class TestNonTreeForwardBackwardHaploid(lsbase.ForwardBackwardAlgorithmBase):
     def verify(self, ts, scale_mutation_rate, include_ancestors):
+        ploidy = 1
         for n, m, H_vs, s, e_vs, r, _ in self.get_examples_pars(
             ts,
-            ploidy=1,
+            ploidy=ploidy,
             scale_mutation_rate=scale_mutation_rate,
             include_ancestors=include_ancestors,
             include_extreme_rates=True,
         ):
-            F_vs, c_vs, ll_vs = fbh.forwards_ls_hap(n, m, H_vs, s, e_vs, r, norm=False)
-            B_vs = fbh.backwards_ls_hap(n, m, H_vs, s, e_vs, c_vs, r)
+            emission_func = core.get_emission_probability_haploid
+            F_vs, c_vs, ll_vs = fbh.forwards_ls_hap(
+                n=n,
+                m=m,
+                H=H_vs,
+                s=s,
+                e=e_vs,
+                r=r,
+                emission_func=emission_func,
+                norm=False,
+            )
+            B_vs = fbh.backwards_ls_hap(
+                n=n,
+                m=m,
+                H=H_vs,
+                s=s,
+                e=e_vs,
+                c=c_vs,
+                r=r,
+                emission_func=emission_func,
+            )
             self.assertAllClose(np.log10(np.sum(F_vs * B_vs, 1)), ll_vs * np.ones(m))
             F_tmp, c_tmp, ll_tmp = fbh.forwards_ls_hap(
-                n, m, H_vs, s, e_vs, r, norm=True
+                n=n,
+                m=m,
+                H=H_vs,
+                s=s,
+                e=e_vs,
+                r=r,
+                emission_func=emission_func,
+                norm=True,
             )
-            B_tmp = fbh.backwards_ls_hap(n, m, H_vs, s, e_vs, c_tmp, r)
+            B_tmp = fbh.backwards_ls_hap(
+                n=n,
+                m=m,
+                H=H_vs,
+                s=s,
+                e=e_vs,
+                c=c_tmp,
+                r=r,
+                emission_func=emission_func,
+            )
             self.assertAllClose(np.sum(F_tmp * B_tmp, 1), np.ones(m))
             self.assertAllClose(ll_vs, ll_tmp)
 

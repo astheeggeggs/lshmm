@@ -7,7 +7,16 @@ from lshmm import jit
 
 
 @jit.numba_njit
-def forwards_ls_hap(n, m, H, s, e, r, norm=True):
+def forwards_ls_hap(
+    n,
+    m,
+    H,
+    s,
+    e,
+    r,
+    emission_func,
+    norm=True,
+):
     """
     A matrix-based implementation using Numpy.
 
@@ -20,7 +29,7 @@ def forwards_ls_hap(n, m, H, s, e, r, norm=True):
     if norm:
         c = np.zeros(m)
         for i in range(n):
-            emission_prob = core.get_emission_probability_haploid(
+            emission_prob = emission_func(
                 ref_allele=H[0, i],
                 query_allele=s[0, 0],
                 site=0,
@@ -36,7 +45,7 @@ def forwards_ls_hap(n, m, H, s, e, r, norm=True):
         for l in range(1, m):
             for i in range(n):
                 F[l, i] = F[l - 1, i] * (1 - r[l]) + r_n[l]
-                emission_prob = core.get_emission_probability_haploid(
+                emission_prob = emission_func(
                     ref_allele=H[l, i],
                     query_allele=s[0, l],
                     site=l,
@@ -53,7 +62,7 @@ def forwards_ls_hap(n, m, H, s, e, r, norm=True):
     else:
         c = np.ones(m)
         for i in range(n):
-            emission_prob = core.get_emission_probability_haploid(
+            emission_prob = emission_func(
                 ref_allele=H[0, i],
                 query_allele=s[0, 0],
                 site=0,
@@ -65,7 +74,7 @@ def forwards_ls_hap(n, m, H, s, e, r, norm=True):
         for l in range(1, m):
             for i in range(n):
                 F[l, i] = F[l - 1, i] * (1 - r[l]) + np.sum(F[l - 1, :]) * r_n[l]
-                emission_prob = core.get_emission_probability_haploid(
+                emission_prob = emission_func(
                     ref_allele=H[l, i],
                     query_allele=s[0, l],
                     site=l,
@@ -79,7 +88,16 @@ def forwards_ls_hap(n, m, H, s, e, r, norm=True):
 
 
 @jit.numba_njit
-def backwards_ls_hap(n, m, H, s, e, c, r):
+def backwards_ls_hap(
+    n,
+    m,
+    H,
+    s,
+    e,
+    c,
+    r,
+    emission_func,
+):
     """
     A matrix-based implementation using Numpy.
 
@@ -96,7 +114,7 @@ def backwards_ls_hap(n, m, H, s, e, c, r):
         tmp_B = np.zeros(n)
         tmp_B_sum = 0
         for i in range(n):
-            emission_prob = core.get_emission_probability_haploid(
+            emission_prob = emission_func(
                 ref_allele=H[l + 1, i],
                 query_allele=s[0, l + 1],
                 site=l + 1,

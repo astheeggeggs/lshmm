@@ -223,23 +223,34 @@ def forwards(
     )
 
     if ploidy == 1:
-        forward_function = forwards_ls_hap
+        (
+            forward_array,
+            normalisation_factor_from_forward,
+            log_lik,
+        ) = forwards_ls_hap(
+            num_ref_haps,
+            num_sites,
+            ref_panel_checked,
+            query_checked,
+            emission_matrix,
+            prob_recombination,
+            norm=normalise,
+            emission_func=core.get_emission_probability_haploid,
+        )
     else:
-        forward_function = forward_ls_dip_loop
-
-    (
-        forward_array,
-        normalisation_factor_from_forward,
-        log_lik,
-    ) = forward_function(
-        num_ref_haps,
-        num_sites,
-        ref_panel_checked,
-        query_checked,
-        emission_matrix,
-        prob_recombination,
-        norm=normalise,
-    )
+        (
+            forward_array,
+            normalisation_factor_from_forward,
+            log_lik,
+        ) = forward_ls_dip_loop(
+            num_ref_haps,
+            num_sites,
+            ref_panel_checked,
+            query_checked,
+            emission_matrix,
+            prob_recombination,
+            norm=normalise,
+        )
 
     return forward_array, normalisation_factor_from_forward, log_lik
 
@@ -267,19 +278,26 @@ def backwards(
     )
 
     if ploidy == 1:
-        backward_function = backwards_ls_hap
+        backwards_array = backwards_ls_hap(
+            num_ref_haps,
+            num_sites,
+            ref_panel_checked,
+            query_checked,
+            emission_matrix,
+            normalisation_factor_from_forward,
+            prob_recombination,
+            emission_func=core.get_emission_probability_haploid,
+        )
     else:
-        backward_function = backward_ls_dip_loop
-
-    backwards_array = backward_function(
-        num_ref_haps,
-        num_sites,
-        ref_panel_checked,
-        query_checked,
-        emission_matrix,
-        normalisation_factor_from_forward,
-        prob_recombination,
-    )
+        backwards_array = backward_ls_dip_loop(
+            num_ref_haps,
+            num_sites,
+            ref_panel_checked,
+            query_checked,
+            emission_matrix,
+            normalisation_factor_from_forward,
+            prob_recombination,
+        )
 
     return backwards_array
 
@@ -313,6 +331,7 @@ def viterbi(
             query_checked,
             emission_matrix,
             prob_recombination,
+            emission_func=core.get_emission_probability_haploid,
         )
         best_path = backwards_viterbi_hap(num_sites, V, P)
     else:
@@ -353,18 +372,25 @@ def path_loglik(
     )
 
     if ploidy == 1:
-        path_ll_function = path_ll_hap
+        log_lik = path_ll_hap(
+            num_ref_haps,
+            num_sites,
+            ref_panel_checked,
+            path,
+            query_checked,
+            emission_matrix,
+            prob_recombination,
+            emission_func=core.get_emission_probability_haploid,
+        )
     else:
-        path_ll_function = path_ll_dip
-
-    log_lik = path_ll_function(
-        num_ref_haps,
-        num_sites,
-        ref_panel_checked,
-        path,
-        query_checked,
-        emission_matrix,
-        prob_recombination,
-    )
+        log_lik = path_ll_dip(
+            num_ref_haps,
+            num_sites,
+            ref_panel_checked,
+            path,
+            query_checked,
+            emission_matrix,
+            prob_recombination,
+        )
 
     return log_lik

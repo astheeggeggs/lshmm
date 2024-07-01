@@ -16,6 +16,7 @@ class TestForwardBackwardHaploid(lsbase.ForwardBackwardAlgorithmBase):
             include_ancestors=include_ancestors,
             include_extreme_rates=True,
         ):
+            emission_func = core.get_emission_probability_haploid
             F_vs, c_vs, ll_vs = fbh.forwards_ls_hap(
                 n=n,
                 m=m,
@@ -23,6 +24,7 @@ class TestForwardBackwardHaploid(lsbase.ForwardBackwardAlgorithmBase):
                 s=s,
                 e=e_vs,
                 r=r,
+                emission_func=emission_func,
             )
             B_vs = fbh.backwards_ls_hap(
                 n=n,
@@ -32,6 +34,7 @@ class TestForwardBackwardHaploid(lsbase.ForwardBackwardAlgorithmBase):
                 e=e_vs,
                 c=c_vs,
                 r=r,
+                emission_func=emission_func,
             )
             F, c, ll = ls.forwards(
                 reference_panel=H_vs,
