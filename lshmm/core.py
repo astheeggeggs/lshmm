@@ -302,6 +302,73 @@ def get_emission_probability_haploid(ref_allele, query_allele, site, emission_ma
             return emission_matrix[site, 1]
 
 
+@jit.numba_njit
+def get_emission_matrix_hkylike(mu, kappa=None):
+    """
+    Return an emission probability matrix that allows for
+    differences between transition and transversion rates.
+
+    When `kappa` is set to None, it is equivalent to setting it to 1.
+
+    :param float mu: Probability of mutation to any allele.
+    :param float kappa: Transition-to-transversion rate ratio.
+    """
+    if kappa is not None:
+        if kappa <= 0:
+            raise ValueError("Ts/tv ratio must be positive.")
+    num_sites = len(mu)
+    num_alleles = 4  # Assume that ACGT are encoded as 0 to 3.
+    emission_matrix = (
+        np.zeros((num_sites, num_alleles, num_alleles), dtype=np.float64) - 1
+    )
+    for i in range(num_sites):
+        for j in range(num_alleles):
+            for k in range(num_alleles):
+                if j == k:
+                    emission_matrix[i, j, k] = 1 - mu[i]
+                else:
+                    emission_matrix[i, j, k] = mu[i] / 3
+                    if kappa is not None:
+                        # Transitions: A <-> G, C <-> T.
+                        is_transition_AG = i in [0, 2] and j in [0, 2]
+                        is_transition_CT = i in [1, 3] and j in [1, 3]
+                        if is_transition_AG or is_transition_CT:
+                            emission_matrix[i, j, k] *= kappa
+    return emission_matrix
+
+
+@jit.numba_njit
+def get_emission_probability_haploid_hkylike(
+    ref_allele, query_allele, site, emission_matrix
+):
+    """
+    Return the emission probability at a specified site for the haploid case,
+    given an emission probability matrix.
+
+    The emission probability matrix is an array of size (m, 4),
+    where m = number of sites.
+
+    :param int ref_allele: Reference allele.
+    :param int query_allele: Query allele.
+    :param int site: Site index.
+    :param numpy.ndarray emission_matrix: Emission probability matrix.
+    :return: Emission probability.
+    :rtype: float
+    """
+    if ref_allele == MISSING:
+        raise ValueError("Reference allele cannot be MISSING.")
+    if query_allele == NONCOPY:
+        raise ValueError("Query allele cannot be NONCOPY.")
+    if emission_matrix.shape[1] != 4 or emission_matrix.shape[2] != 4:
+        raise ValueError("Emission probability matrix has incorrect shape.")
+    if ref_allele == NONCOPY:
+        return 0.0
+    elif query_allele == MISSING:
+        return 1.0
+    else:
+        return emission_matrix[site, ref_allele, query_allele]
+
+
 # Functions to assign emission probabilities for diploid LS HMM.
 @jit.numba_njit
 def get_emission_matrix_diploid(mu, num_sites, num_alleles, scale_mutation_rate):
