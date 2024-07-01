@@ -287,10 +287,10 @@ class LSBase:
         assert ts.num_sites > 3
         return ts
 
-    def get_ts_multiallelic_n6(self, seed=42):
+    def get_ts_multiallelic(self, num_samples, seed=42):
         ts = msprime.sim_mutations(
             msprime.sim_ancestry(
-                samples=6,
+                samples=num_samples,
                 recombination_rate=1e-4,
                 sequence_length=40,
                 population_size=1e4,
@@ -299,37 +299,7 @@ class LSBase:
             rate=1e-3,
             random_seed=seed,
         )
-        assert ts.num_sites > 5
-        return ts
-
-    def get_ts_multiallelic_n8(self, seed=42):
-        ts = msprime.sim_mutations(
-            msprime.sim_ancestry(
-                samples=8,
-                recombination_rate=1e-4,
-                sequence_length=20,
-                population_size=1e4,
-                random_seed=seed,
-            ),
-            rate=1e-4,
-            random_seed=seed,
-        )
         assert ts.num_trees > 15
-        assert ts.num_sites > 5
-        return ts
-
-    def get_ts_multiallelic_n16(self, seed=42):
-        ts = msprime.sim_mutations(
-            msprime.sim_ancestry(
-                samples=16,
-                recombination_rate=1e-2,
-                sequence_length=20,
-                population_size=1e4,
-                random_seed=seed,
-            ),
-            rate=1e-4,
-            random_seed=seed,
-        )
         assert ts.num_sites > 5
         return ts
 
