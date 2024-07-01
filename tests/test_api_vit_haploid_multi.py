@@ -50,32 +50,11 @@ class TestViterbiHaploid(lsbase.ViterbiAlgorithmBase):
             include_ancestors=include_ancestors,
         )
 
+    @pytest.mark.parametrize("num_samples", [6, 8, 16])
     @pytest.mark.parametrize("scale_mutation_rate", [True, False])
     @pytest.mark.parametrize("include_ancestors", [True, False])
-    def test_ts_multiallelic_n6(self, scale_mutation_rate, include_ancestors):
-        ts = self.get_ts_multiallelic_n6()
-        self.verify(
-            ts,
-            scale_mutation_rate=scale_mutation_rate,
-            include_ancestors=include_ancestors,
-        )
-
-    @pytest.mark.parametrize("scale_mutation_rate", [True, False])
-    @pytest.mark.parametrize("include_ancestors", [True, False])
-    def test_ts_multiallelic_n8(self, scale_mutation_rate, include_ancestors):
-        ts = self.get_ts_multiallelic_n8()
-        self.verify(
-            ts,
-            scale_mutation_rate=scale_mutation_rate,
-            include_ancestors=include_ancestors,
-        )
-
-    @pytest.mark.parametrize("scale_mutation_rate", [True, False])
-    @pytest.mark.parametrize("include_ancestors", [True, False])
-    def test_ts_multiallelic_n16(self, scale_mutation_rate, include_ancestors):
-        ts = self.get_ts_multiallelic_n16()
-        self.verify(
-            ts,
-            scale_mutation_rate=scale_mutation_rate,
-            include_ancestors=include_ancestors,
-        )
+    def test_ts_multiallelic_n16(
+        self, num_samples, scale_mutation_rate, include_ancestors
+    ):
+        ts = self.get_ts_multiallelic(num_samples)
+        self.verify(ts, scale_mutation_rate, include_ancestors)
