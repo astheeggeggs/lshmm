@@ -17,41 +17,56 @@ NONCOPY = -2
 # Helper functions.
 # https://github.com/numba/numba/issues/1269
 @jit.numba_njit
-def np_apply_along_axis(func1d, axis, arr):
-    """Create Numpy-like functions for max, sum, etc."""
+def _check_arr(arr, axis):
     if arr.ndim != 2:
-        err_msg = "Array does not have two dimensions."
-        raise ValueError(err_msg)
-    if axis not in [0, 1]:
-        err_msg = "Axis is not 0 or 1."
-        raise ValueError(err_msg)
+        raise ValueError("Array does not have two dimensions.")
+    if axis not in (0, 1):
+        raise ValueError("Invalid axis.")
+
+
+@jit.numba_njit
+def np_amax(arr, axis):
+    """Max along axis for 2D arrays (Numba-compatible)."""
+    _check_arr(arr, axis)
+    n = arr.shape[axis - 1]
+    x = np.empty(n, dtype=arr.dtype)
     if axis == 0:
-        result = np.empty(arr.shape[1])
-        for i in range(len(result)):
-            result[i] = func1d(arr[:, i])
+        for i in range(n):
+            x[i] = np.amax(arr[:, i])
     else:
-        result = np.empty(arr.shape[0])
-        for i in range(len(result)):
-            result[i] = func1d(arr[i, :])
-    return result
+        for i in range(n):
+            x[i] = np.amax(arr[i, :])
+    return x
 
 
 @jit.numba_njit
-def np_amax(array, axis):
-    """Numba implementation of Numpy-vectorised max."""
-    return np_apply_along_axis(np.amax, axis, array)
+def np_sum(arr, axis):
+    """Sum along axis for 2D arrays (Numba-compatible)."""
+    _check_arr(arr, axis)
+    n = arr.shape[axis - 1]
+    x = np.empty(n, dtype=arr.dtype)
+    if axis == 0:
+        for i in range(n):
+            x[i] = np.sum(arr[:, i])
+    else:
+        for i in range(n):
+            x[i] = np.sum(arr[i, :])
+    return x
 
 
 @jit.numba_njit
-def np_sum(array, axis):
-    """Numba implementation of Numpy-vectorised sum."""
-    return np_apply_along_axis(np.sum, axis, array)
-
-
-@jit.numba_njit
-def np_argmax(array, axis):
-    """Numba implementation of Numpy-vectorised argmax."""
-    return np_apply_along_axis(np.argmax, axis, array)
+def np_argmax(arr, axis):
+    """Argmax along axis for 2D arrays (Numba-compatible)."""
+    _check_arr(arr, axis)
+    n = arr.shape[axis - 1]
+    x = np.empty(n, dtype=np.int64)
+    if axis == 0:
+        for i in range(n):
+            x[i] = np.argmax(arr[:, i])
+    else:
+        for i in range(n):
+            x[i] = np.argmax(arr[i, :])
+    return x
 
 
 # Functions used across different implementations of LS HMM. """
