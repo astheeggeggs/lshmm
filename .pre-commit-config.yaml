@@ -1,17 +1,17 @@
 ---
 repos:
   - repo: https://github.com/pre-commit/pre-commit-hooks
-    rev: "v4.0.1"
+    rev: "v6.0.0"
     hooks:
       - id: check-yaml
       - id: end-of-file-fixer
       - id: trailing-whitespace
   - repo: https://github.com/psf/black
-    rev: "21.9b0" # This should be kept in sync with the version in requirements.dev.in
+    rev: "26.1.0" # This should be kept in sync with the version in requirements.dev.in
     hooks:
       - id: black
         language_version: python3
   - repo: https://github.com/pycqa/isort
-    rev: "5.9.3" # This should be kept in sync with the version in requirements.dev.in
+    rev: "7.0.0" # This should be kept in sync with the version in requirements.dev.in
     hooks:
       - id: isort
