@@ -2,8 +2,7 @@
 
 import numpy as np
 
-from . import core
-from . import jit
+from . import core, jit
 
 
 @jit.numba_njit
@@ -440,7 +439,7 @@ def backwards_viterbi_dip_no_pointer(
             current_best_template = V_argmaxes[l]
         # Current_best_template in recombs_single[l + 1]
         elif in_list(recombs_single[l + 1], current_best_template):
-            (j1, j2) = divmod(current_best_template, n)
+            j1, j2 = divmod(current_best_template, n)
             if V_rowcol_maxes[l, j1] > V_rowcol_maxes[l, j2]:
                 current_best_template = j1 * n + V_rowcol_argmaxes[l, j1]
             else:
