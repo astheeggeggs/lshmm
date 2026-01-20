@@ -1,9 +1,10 @@
 import pytest
 
-from . import lsbase
 import lshmm as ls
 import lshmm.core as core
 import lshmm.vit_diploid as vd
+
+from . import lsbase
 
 
 class TestViterbiDiploid(lsbase.ViterbiAlgorithmBase):

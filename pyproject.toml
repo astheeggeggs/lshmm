@@ -36,4 +36,3 @@ dynamic = [
 ]
 [tool.setuptools_scm]
 write_to = "lshmm/_version.py"
-

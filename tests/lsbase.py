@@ -1,9 +1,8 @@
 import bisect
 import itertools
 
-import numpy as np
-
 import msprime
+import numpy as np
 
 import lshmm.core as core
 
