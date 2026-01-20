@@ -2,8 +2,7 @@
 
 import numpy as np
 
-from lshmm import core
-from lshmm import jit
+from lshmm import core, jit
 
 
 @jit.numba_njit

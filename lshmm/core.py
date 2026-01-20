@@ -2,7 +2,6 @@ import numpy as np
 
 from lshmm import jit
 
-
 EQUAL_BOTH_HOM = 4
 UNEQUAL_BOTH_HOM = 0
 BOTH_HET = 7

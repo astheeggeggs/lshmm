@@ -1,11 +1,11 @@
+import numba as nb
+import numpy as np
 import pytest
 
-import numpy as np
-import numba as nb
-
-from . import lsbase
 import lshmm.core as core
 import lshmm.fb_diploid as fbd
+
+from . import lsbase
 
 
 class TestNonTreeForwardBackwardDiploid(lsbase.ForwardBackwardAlgorithmBase):

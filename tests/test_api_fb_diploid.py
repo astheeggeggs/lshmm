@@ -1,9 +1,10 @@
 import pytest
 
-from . import lsbase
 import lshmm as ls
 import lshmm.core as core
 import lshmm.fb_diploid as fbd
+
+from . import lsbase
 
 
 class TestForwardBackwardDiploid(lsbase.ForwardBackwardAlgorithmBase):
