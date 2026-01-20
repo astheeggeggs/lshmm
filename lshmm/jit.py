@@ -25,7 +25,7 @@ if not ENABLE_NUMBA:
 
 DEFAULT_NUMBA_ARGS = {
     "nopython": True,
-    "cache": True,
+    "cache": False,
 }
 
 
