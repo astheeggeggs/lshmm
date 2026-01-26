@@ -34,5 +34,11 @@ dynamic = [
     "classifiers",
     "requires-python",
 ]
+
+[project.urls]
+"Homepage" = "https://github.com/astheeggeggs/lshmm"
+"Source" = "https://github.com/astheeggeggs/lshmm"
+"Bug Tracker" = "https://github.com/astheeggeggs/lshmm/issues"
+
 [tool.setuptools_scm]
 write_to = "lshmm/_version.py"
